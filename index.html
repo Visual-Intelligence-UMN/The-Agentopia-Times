@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Web game created using phaser-rpg" />
+    <link rel="apple-touch-icon" href="logo192.png" />
+
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <link rel="stylesheet" href="src/style.css" />
+
+    <!--
+      GitHub Corners. See https://github.com/remarkablemark/github-corners
+    -->
+    <% if (process.env.BUNDLE !== 'true') { %>
+    <!-- <script
+      src="https://unpkg.com/github-corners/dist/embed.min.js"
+      data-href="https://github.com/remarkablegames/phaser-rpg"
+      data-target="_blank"
+      async
+      defer
+    ></script> -->
+    <style>
+      .github-corner > svg {
+        opacity: 0.5;
+        transition: opacity 0.4s;
+      }
+      .github-corner:hover > svg {
+        opacity: 1;
+      }
+    </style>
+    <% } %>
+
+    <title>Phaser RPG | remarkablegames</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to play this game.</noscript>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () {
+        dataLayer.push(arguments);
+      };
+      gtag('js', new Date());
+    </script>
+
+    <script type="module" src="src/index.ts"></script>
+  </body>
+</html>
