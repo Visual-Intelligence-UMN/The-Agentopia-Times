@@ -8,6 +8,9 @@
 # vite
 /dist
 .env.local
+.env
+
+
 
 # misc
 *.swp

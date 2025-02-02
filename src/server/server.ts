@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const openaiApiUrl = 'https://api.openai.com/v1/chat/completions'; 
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
 
 const apiClient = axios.create({
   baseURL: openaiApiUrl,

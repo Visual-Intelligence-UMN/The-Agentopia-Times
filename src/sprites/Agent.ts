@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { key } from '../constants';
+import { Inventory } from './Player';
 
 enum Animation {
   Left = 'player_left',
@@ -9,10 +10,16 @@ enum Animation {
   Down = 'player_down',
 }
 
-export class NPC extends Phaser.Physics.Arcade.Sprite {
+export class Agent extends Phaser.Physics.Arcade.Sprite {
   body!: Phaser.Physics.Arcade.Body;
+  selector: Phaser.Physics.Arcade.StaticBody;
   private nameTag: Phaser.GameObjects.Text;
   name: string;
+
+  public inventory: Inventory = {
+      promptUtils: [],
+      tools: [],
+    }
 
   constructor(
     scene: Phaser.Scene,
@@ -20,11 +27,22 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     y: number,
     texture = key.atlas.player,
     frame = 'misa-front',
-    name: string = "NPC"
+    name: string = "Agent"
   ) {
     super(scene, x, y, texture, frame);
 
     this.name = name;
+
+    this.nameTag = scene.add.text(x, y - 20, name, {
+        fontSize: '14px',
+        color: '#ffffff',
+        backgroundColor: '#00000088',
+        padding: { x: 4, y: 2 },
+        align: 'center',
+      }).setOrigin(0.5, 1); 
+
+      this.nameTag.setDepth(10);
+  
 
     // Add the sprite to the scene
     scene.add.existing(this);
@@ -40,18 +58,13 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     // Collide the sprite body with the world boundary
     this.setImmovable(true);
     this.body.setAllowGravity(false);
-
-    this.nameTag = scene.add.text(x, y - 20, name, {
-      fontSize: '14px',
-      color: '#ffffff',
-      backgroundColor: '#00000088',
-      padding: { x: 4, y: 2 },
-      align: 'center',
-    }).setOrigin(0.5, 1); 
+    this.setCollideWorldBounds(true);
 
 
     // Create sprite animations
     this.createAnimations();
+
+    this.selector = scene.physics.add.staticBody(x - 8, y + 32, 16, 16);
 
   }
 
@@ -59,6 +72,54 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     // 更新文本位置，使其跟随 Agent
     this.nameTag.setPosition(this.x, this.y - 25);
   }
+
+  public getName(){
+        return this.name;
+  }
+
+  public changeNameTagColor(color: string){
+    this.nameTag.setColor(color);
+  } 
+
+  public moveSelector(animation: Animation) {
+      const { body, selector } = this;
+  
+      switch (animation) {
+        case Animation.Left:
+          selector.x = body.x - 19;
+          selector.y = body.y + 14;
+          break;
+  
+        case Animation.Right:
+          selector.x = body.x + 35;
+          selector.y = body.y + 14;
+          break;
+  
+        case Animation.Up:
+          selector.x = body.x + 8;
+          selector.y = body.y - 18;
+          break;
+  
+        case Animation.Down:
+          selector.x = body.x + 8;
+          selector.y = body.y + 46;
+          break;
+      }
+    }
+
+    public addPromptUtils(promptUtils: string) {
+        this.inventory.promptUtils.push(promptUtils);
+      }
+    
+      public getPromptUtils() {
+        return this.inventory.promptUtils;
+      }
+
+
+    public setTexture(key: string, frame?: string | number): this {
+        super.setTexture(key, frame);
+        return this;
+    }
 
   private createAnimations() {
     const anims = this.scene.anims;

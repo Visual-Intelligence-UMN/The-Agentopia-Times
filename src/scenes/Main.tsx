@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { render } from 'phaser-jsx';
+import { Rectangle, render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
+import { Button, TilemapDebug, Typewriter } from '../components';
 import {
   Depth,
   key,
@@ -12,14 +12,23 @@ import {
 import { Player } from '../sprites';
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
+import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
 import { HUDScene } from './HUD';
 import { TextInput } from '../components/TextInput';
 import { TextField } from '@mui/material';
 import { Inventory } from '../components/Inventory';
+import { Velocity } from '../sprites';
+import { Animation } from '../sprites';
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
+}
+
+interface MessageRecord {
+  system: string;
+  user: string;
+  gpt: string;
 }
 
 export class Main extends Phaser.Scene {
@@ -29,17 +38,61 @@ export class Main extends Phaser.Scene {
   private worldLayer!: Phaser.Tilemaps.TilemapLayer;
   private itemGroup!: Phaser.Physics.Arcade.StaticGroup;
   private deductiveItem!: Phaser.Physics.Arcade.StaticGroup;
+  private itemText!: Phaser.GameObjects.Text;
   private npc!: Phaser.Physics.Arcade.Sprite;
+  private deductiveItemText!: Phaser.GameObjects.Text;
   private hudText!: Phaser.GameObjects.Text;
   private inventory!: Inventory;
   private promptTexts: Phaser.GameObjects.Text[] = [];
   private persona: string = "You name is Elias. Elias is a lifelong resident of Willowbrook Village, where he has cultivated a reputation as a knowledgeable herbalist and a reliable farmer. He lives a simple life, tending to his crops and helping fellow villagers with remedies for common ailments. He prefers a peaceful existence, avoiding unnecessary conflicts, but he has a strong sense of justice when it comes to protecting his home and people."
+  private mssgData: MessageRecord[] = [];
+  private mssgMenu: Phaser.GameObjects.Rectangle | null = null;
+  private mssgMenuText: Phaser.GameObjects.Text | null = null;
+  private mssgGroup!: Phaser.GameObjects.Group;
+  private subMssg: Phaser.GameObjects.Rectangle | null = null;
+  private subMssgText: Phaser.GameObjects.Text | null = null;
+  private controllableCharacters: any[] = [];
+  private activateIndex: number = 0;
+  private playerControlledAgent!: Agent;
+  private cursors!: any;
+
+  private agentGroup!: any;
+  
+  private testnpc!: Phaser.Physics.Arcade.Sprite;
+
 
   constructor() {
     super(key.scene.main);
   }
 
   create() {
+
+    this.agentGroup = this.physics.add.group();
+
+    //add player to controllableCharacters
+    this.cursors = this.input.keyboard ? this.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.UP,
+      down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+      left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+      right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      w: Phaser.Input.Keyboard.KeyCodes.W,
+      a: Phaser.Input.Keyboard.KeyCodes.A,
+      s: Phaser.Input.Keyboard.KeyCodes.S,
+      d: Phaser.Input.Keyboard.KeyCodes.D,
+      space: Phaser.Input.Keyboard.KeyCodes.SPACE,
+    }) : null;
+    //add player to controllableCharacters
+
+    
+
+    // dummy history data
+    // for(let i = 0; i < 2; i++) {
+    //   this.mssgData.push({
+    //     system: "system message",
+    //     user: "user message",
+    //     gpt: "Parameters are the name you gave the tileset in Tiled and"
+    //   });
+    // }
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 
     // Parameters are the name you gave the tileset in Tiled and
@@ -78,13 +131,28 @@ export class Main extends Phaser.Scene {
     // Higher depths will sit on top of lower depth objects.
     aboveLayer.setDepth(Depth.AbovePlayer);
 
-    this.addPlayer();
+    // this.addPlayer();
+
+    //TODO: add dynamic animation and text labeling
 
     this.itemGroup = this.physics.add.staticGroup();
     this.deductiveItem = this.physics.add.staticGroup();
+    this.itemText = this.add.text(350, 950, 'think step-by-step');
+    this.deductiveItemText = this.add.text(450, 1050, 'deductive reasoning');
+
+    this.tweens.add({
+      targets: [this.itemText, this.deductiveItemText], // 目标元素
+      y: "+=10", // 向下移动 10 像素
+      duration: 800, // 持续时间 800 毫秒
+      ease: "Sine.easeInOut", // 使运动更平滑
+      yoyo: true, // 反向回到原位置
+      repeat: -1 // 无限循环
+    });
     
     const item1 = this.itemGroup.create(400, 1000, 'logo').setScale(0.25);
     const item2 = this.deductiveItem.create(500, 1100, 'logo').setScale(0.25);
+
+    
 
     this.physics.world.enable([item1, item2]);
 
@@ -105,7 +173,7 @@ export class Main extends Phaser.Scene {
     );
 
     this.physics.add.overlap(
-      this.player,
+      this.agentGroup,
       this.itemGroup,
       this.collectItem,
       undefined,
@@ -113,25 +181,51 @@ export class Main extends Phaser.Scene {
     );
 
     this.physics.add.overlap(
-      this.player,
+      this.agentGroup,
       this.deductiveItem,
       this.collectDeductiveReasoning,
       undefined,
       this
     );
 
-    this.physics.add.overlap(
-      this.player,
-      this.npc,
-      this.onPlayerNearNPC,
-      undefined,
-      this
-    );
+    // this.physics.add.overlap(
+    //   this.agentGroup as Phaser.Physics.Arcade.Group,
+    //   this.npc as Phaser.Physics.Arcade.Sprite,
+    //   this.onPlayerNearNPC,
+    //   undefined,
+    //   this
+    // );
     
     this.npc = new NPC(this, 600, 900);
     this.physics.add.collider(this.npc, this.worldLayer);
 
-    this.physics.add.overlap(this.player, this.npc, this.onPlayerNearNPC, undefined, this);
+    this.physics.add.collider(this.agentGroup, this.worldLayer);
+
+//this.testnpc = new NPC(this, 100, 100, "player", "misa-front")
+
+    //this.physics.add.collider(this.testnpc, this.worldLayer);
+
+    const agent1 = new Agent(this, 350, 1200, "player", "misa-front", "Alice");
+    const agent2 = new Agent(this, 450, 1050, "player", "misa-front", "Bob");
+    const agent3 = new Agent(this, 300, 950, "player", "misa-front", "Cathy");
+
+
+    this.agentGroup.add(agent1);
+    this.agentGroup.add(agent2);
+    this.agentGroup.add(agent3);
+
+    this.controllableCharacters.push(agent1);
+    this.controllableCharacters.push(agent2);
+    this.controllableCharacters.push(agent3);
+
+    console.log("controled characters",this.controllableCharacters);
+
+    //set the camera
+    this.cameras.main.startFollow(this.controllableCharacters[0]); 
+    this.controllableCharacters[0].changeNameTagColor("#ff0000");
+
+
+    this.physics.add.overlap(this.agentGroup, this.npc, this.onPlayerNearNPC, undefined, this);
 
 
 
@@ -145,7 +239,7 @@ export class Main extends Phaser.Scene {
 
     render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
-    this.hudText = this.add.text(50, 450, 'Agent A(Player-controlled) ' + this.player.getPromptUtils(), {
+    this.hudText = this.add.text(50, 450, `${this.controllableCharacters[this.activateIndex].getName()} (Player-controlled) `, {
       fontSize: '18px',
       color: '#ffffff',
       backgroundColor: '#000000',
@@ -195,15 +289,17 @@ export class Main extends Phaser.Scene {
 
           console.log('popupRect add', popupRect);
 
+          //TODO: make prompt utility more explicitly
+
           let textLabel = "empty";
-          if(this.player.getPromptUtils().length > i) {
-            textLabel = this.player.getPromptUtils()[i];
+          if(this.playerControlledAgent.getPromptUtils().length > i) {
+            textLabel = this.playerControlledAgent.getPromptUtils()[i];
           }
 
           popupText = this.add.text(
             worldPoint.x - 35, 
             worldPoint.y, 
-            textLabel, { fontSize: '10px', color: '#ffffff' }
+            textLabel, { fontSize: '10px', color: '#ffffff', wordWrap: { width: 150, useAdvancedWrap: true } }
           ).setDepth(1001);
         }
       });
@@ -219,14 +315,132 @@ export class Main extends Phaser.Scene {
       });
     }
 
+    // let mssgMenu:any = null;
+
+    //render(<Button text="Message" x={25} y={50} />, this);
+    
+    const mssgBtn = this.add
+      .rectangle(50, 400, 50, 50, 0x000000)
+      .setDepth(1002)
+      .setStrokeStyle(2, 0xffffff)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setAlpha(0.5);
+
+    const mssgBtnText = this.add
+    .text(30, 390, 'History \nMessage', { 
+      fontSize: '10px', 
+      color: '#ffffff' 
+    })
+    .setScrollFactor(0).setDepth(1003);
+
+    mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      console.log("mssgBtn clicked");
+    
+      if (this.mssgMenu) { 
+        console.log('Destroying mssgMenu');
+        this.mssgMenu.destroy();
+        this.mssgMenuText?.destroy();
+        this.mssgMenu = null;
+        this.mssgMenuText = null;
+        this.mssgGroup.clear(true, true);
+      } else { 
+        console.log('Creating mssgMenu');
+        this.mssgMenu = this.add.rectangle(300, 300, 350, 125, 0x000000)
+          .setDepth(1001)
+          .setStrokeStyle(2, 0xffffff)
+          .setScrollFactor(0)
+          .setAlpha(0.5);
+        
+        // let mssgText = "empty";
+        // if (this.mssgData.length > 0) {
+        //   mssgText = this.mssgData[this.mssgData.length - 1].gpt;
+        // }
+    
+        // this.mssgMenuText = this.add.text(200, 600, mssgText, { fontSize: '10px', color: '#ffffff' })
+        //   .setDepth(1002).setScrollFactor(0);
+
+        this.mssgGroup = this.add.group();
+
+        for(let i = 0; i < this.mssgData.length; i++) {
+          const mssg = this.mssgData[i];
+          const mssgText = `${mssg.gpt}`;
+          // this.add.text(200, 300 + i * 100, mssgText, { fontSize: '10px', color: '#ffffff' })
+          //   .setDepth(1002).setScrollFactor(0);
+
+          const mssgBox = this.add.rectangle(300 - 140 + i*75, 290, 50, 50, 0x000000)
+            .setScrollFactor(0)
+            .setDepth(1003)
+            .setAlpha(0.5);
+            
+          const mssgLabel = this.add.text(300 - 140 + i*75 - 15, 280, `Histor\nMessage ${i}`, { fontSize: '10px', color: '#ffffff' })
+            .setScrollFactor(0)
+            .setDepth(1004);
+
+            mssgBox.setInteractive({ useHandCursor: true });
+            //TODO: finish the message display feature
+          mssgBox.on('pointerover', (pointer: Phaser.Input.Pointer) => {
+
+            const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+
+            if(!this.subMssg) {
+
+            
+
+            this.subMssgText = this.add.text(
+              worldPoint.x, worldPoint.y,
+              mssgText, 
+              { 
+                fontSize: '10px', 
+                color: '#ffffff' ,
+                wordWrap: { width: 150, useAdvancedWrap: true } 
+              })
+              .setDepth(1010).setScrollFactor(1).setAlpha(1);
+
+              this.subMssg = this.add.rectangle(worldPoint.x, worldPoint.y, 175, this.subMssgText.height+50, 0x000000)
+              .setDepth(1007)
+              .setStrokeStyle(2, 0xffffff)
+              .setAlpha(1).setOrigin(0, 0);
+
+              console.log("subMssgText", this.subMssgText, this.subMssg);
+            }
+
+
+          });
+
+          mssgBox.on('pointerout', () => {
+            if(this.subMssg) {
+              this.subMssg.destroy();
+              this.subMssgText?.destroy();
+              this.subMssg = null;
+              this.subMssgText = null;
+            }
+          })
+
+          this.mssgGroup.add(mssgBox);
+          this.mssgGroup.add(mssgLabel);
+
+          }
+      }
+    });
+    
+
+
+    // this.input.keyboard!.on("keydown-ESC", () => {
+    //   if(mssgMenu) {
+    //     mssgMenu.destroy();
+    //     mssgMenu = null;
+    //   }
+    // })
+
     // let promptTexts = [];
 
     for(let i = 0; i < 3; i++) {
       const text = this.add.text(
         startX + i * (squareSize + spacing)-15, 
-        startY, 
+        startY-15, 
         `empty`, 
-        { fontSize: '10px', color: '#ffffff' }
+        { fontSize: '10px', color: '#ffffff', wordWrap: { width: squareSize, useAdvancedWrap: true } }
       );
       this.promptTexts.push(text);
       text.setScrollFactor(0);
@@ -236,7 +450,7 @@ export class Main extends Phaser.Scene {
     state.isTypewriting = true;
     render(
       <Typewriter
-        text="WASD or arrow keys to move, space to interact."
+        text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
         onEnd={() => (state.isTypewriting = false)}
       />,
       this,
@@ -268,6 +482,7 @@ export class Main extends Phaser.Scene {
                   item.destroy();
                   player.addPromptUtils("think step by step");
                   console.log("Item destroyed!");
+                  this.itemText?.destroy();
                 }
 
                 spaceKey?.off('down', destroyItem);
@@ -297,7 +512,8 @@ export class Main extends Phaser.Scene {
                     if (item.active) {
                         item.destroy();
                         player.addPromptUtils("deductive reasoning");
-                        console.log("Item destroyed!");
+                        this.deductiveItemText?.destroy();
+                  
                     }
 
                     spaceKey?.off('down', destroyItem);
@@ -309,20 +525,33 @@ export class Main extends Phaser.Scene {
     );
   }
 
-  private async onPlayerNearNPC(player: any, npc: any) {
-    if (player.cursors.space.isDown && !state.isTypewriting) {
+  private async onPlayerNearNPC(npc: any, agent: any) {
+    // console.log("prompt utils", npc, agent);
+    //console.log('onPlayerNearNPC', agent, npc);
+    if (this.cursors.space.isDown && !state.isTypewriting) {
       state.isTypewriting = true;
+
+      const player = agent;
+
+      console.log("prompt utils", player, npc, agent);
   
       const npcName = npc.getData('npcName') || 'Mysterious NPC';
 
       let systemMssg = `${this.persona}, this prompt is for testing`;
 
-      if(player.getPromptUtils().length > 0) {
+      if(agent.inventory.promptUtils.length > 0) {
         systemMssg += `
-        you have collected ${player.getPromptUtils()}, 
+        you have collected ${agent.inventory.promptUtils}, 
         please utilize collected prompt utils to solve the task
         `
       }
+
+      const userMssg = `
+            you have collected ${agent.inventory.promptUtils}, 
+            please utilize collected prompt utils to solve the task
+            please solve this task(maxn words: 150):
+            How many R's are in the word strawberry?
+          `;
 
       const messages = [
         { 
@@ -331,12 +560,7 @@ export class Main extends Phaser.Scene {
         },
         { 
           role: 'user', 
-          content: `
-            you have collected ${player.getPromptUtils()}, 
-            please utilize collected prompt utils to solve the task
-            please solve this task:
-            How many R's are in the word strawberry?
-          ` 
+          content: userMssg
         }
       ];
 
@@ -347,6 +571,14 @@ export class Main extends Phaser.Scene {
         console.log('OpenAI return:', response);
   
         const aiReply = response.choices[0].message.content;
+
+        this.mssgData.push({
+          system: systemMssg,
+          user: userMssg,
+          gpt: aiReply
+        });
+
+        console.log('mssgData:', this.mssgData);
   
         render(
           <Typewriter
@@ -416,15 +648,149 @@ export class Main extends Phaser.Scene {
   }
 
   update() {
-    this.player.update();
     //console.log(this.scene.manager.scenes);
 
-    for(let i=0; i<this.player.getPromptUtils().length; i++) {
-      if(i<3){
-        this.promptTexts[i].setText("Util "+i);
+    this.playerControlledAgent = this.controllableCharacters[this.activateIndex];
+
+    for(let i=0; i<3; i++) {
+      if(i<this.playerControlledAgent.getPromptUtils().length){
+        this.promptTexts[i].setText(this.playerControlledAgent.getPromptUtils()[i]);
+      }else{
+        this.promptTexts[i].setText("empty");
       }
     }
 
+    this.controllableCharacters.forEach((agent: any) => {
+      agent.update();
+    });
+
+    this.hudText.setText(`${this.controllableCharacters[this.activateIndex].getName()}(Player-controlled) `);
+
+    if (this.input.keyboard!.checkDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ONE), 250)) {
+      console.log('Key "1" pressed');
+      this.activateIndex = 0;
+      this.cameras.main.startFollow(this.controllableCharacters[this.activateIndex]); 
+      this.playerControlledAgent = this.controllableCharacters[this.activateIndex];
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor("#ffffff");
+      })
+      this.playerControlledAgent.changeNameTagColor("#ff0000");
+      console.log("switched utils", this.playerControlledAgent.getPromptUtils());
+    } else if (this.input.keyboard!.checkDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO), 250)) {
+      console.log('Key "2" pressed');
+      this.activateIndex = 1;
+      this.cameras.main.startFollow(this.controllableCharacters[this.activateIndex]); 
+      this.playerControlledAgent = this.controllableCharacters[this.activateIndex];
+      console.log("switched utils", this.playerControlledAgent.getPromptUtils());
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor("#ffffff");
+      })
+      this.playerControlledAgent.changeNameTagColor("#ff0000");
+    } else if (this.input.keyboard!.checkDown(this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE), 250)) {
+      console.log('Key "3" pressed');
+      this.activateIndex = 2;
+      this.cameras.main.startFollow(this.controllableCharacters[this.activateIndex]); 
+      this.playerControlledAgent = this.controllableCharacters[this.activateIndex];
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor("#ffffff");
+      })
+      this.playerControlledAgent.changeNameTagColor("#ff0000");
+      console.log("switched utils", this.playerControlledAgent.getPromptUtils());
+    }
+
+    // agent movement controls
+    const { anims, body } = this.playerControlledAgent;
+    const prevVelocity = body.velocity.clone();
+    
+        // Stop any previous movement from the last frame
+        body.setVelocity(0);
+    
+        // Horizontal movement
+        switch (true) {
+          case this.cursors.left.isDown:
+          case this.cursors.a.isDown:
+            body.setVelocityX(-Velocity.Horizontal);
+            break;
+    
+          case this.cursors.right.isDown:
+          case this.cursors.d.isDown:
+            body.setVelocityX(Velocity.Horizontal);
+            break;
+        }
+    
+        // Vertical movement
+        switch (true) {
+          case this.cursors.up.isDown:
+          case this.cursors.w.isDown:
+            body.setVelocityY(-Velocity.Vertical);
+            break;
+    
+          case this.cursors.down.isDown:
+          case this.cursors.s.isDown:
+            body.setVelocityY(Velocity.Vertical);
+            break;
+        }
+    
+        // Normalize and scale the velocity so that player can't move faster along a diagonal
+        body.velocity.normalize().scale(Velocity.Horizontal);
+    
+        // Update the animation last and give left/right animations precedence over up/down animations
+        switch (true) {
+          case this.cursors.left.isDown:
+          case this.cursors.a.isDown:
+            anims.play(Animation.Left, true);
+            this.playerControlledAgent.moveSelector(Animation.Left);
+            break;
+    
+          case this.cursors.right.isDown:
+          case this.cursors.d.isDown:
+            anims.play(Animation.Right, true);
+            this.playerControlledAgent.moveSelector(Animation.Right);
+            break;
+    
+          case this.cursors.up.isDown:
+          case this.cursors.w.isDown:
+            anims.play(Animation.Up, true);
+            this.playerControlledAgent.moveSelector(Animation.Up);
+            break;
+    
+          case this.cursors.down.isDown:
+          case this.cursors.s.isDown:
+            anims.play(Animation.Down, true);
+            this.playerControlledAgent.moveSelector(Animation.Down);
+            break;
+    
+          default:
+            anims.stop();
+    
+            // If we were moving, pick an idle frame to use
+            switch (true) {
+              case prevVelocity.x < 0:
+                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-left');
+                this.playerControlledAgent.moveSelector(Animation.Left);
+                break;
+    
+              case prevVelocity.x > 0:
+                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-right');
+                this.playerControlledAgent.moveSelector(Animation.Right);
+                break;
+    
+              case prevVelocity.y < 0:
+                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-back');
+                this.playerControlledAgent.moveSelector(Animation.Up);
+                break;
+    
+              case prevVelocity.y > 0:
+                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-front');
+                this.playerControlledAgent.moveSelector(Animation.Down);
+                break;
+            }
+        }
+      }
+
+    
+
+
 
   }
-}
+12321

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { key } from '../constants';
 
-enum Animation {
+export enum Animation {
   Left = 'player_left',
   Right = 'player_right',
   Up = 'player_up',
@@ -14,7 +14,7 @@ type Cursors = Record<
   Phaser.Input.Keyboard.Key
 >;
 
-const Velocity = {
+export const Velocity = {
   Horizontal: 175,
   Vertical: 175,
 } as const;
@@ -152,7 +152,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private moveSelector(animation: Animation) {
+  public moveSelector(animation: Animation) {
     const { body, selector } = this;
 
     switch (animation) {
