@@ -11,9 +11,9 @@ enum Animation {
 }
 
 interface Memory {
-  role: string;
-  content: string;
   system: string;
+  user: string;
+  gpt: string;
 }
 
 export class Agent extends Phaser.Physics.Arcade.Sprite {
@@ -91,8 +91,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     this.nameTag.setColor(color);
   } 
 
-  public storeMemory(role: string, content: string, system: string) {
-    this.memory.push({ role, content, system });
+  public storeMemory(system: string, user: string, gpt: string) {
+    this.memory.push({ system, user, gpt });
   }
 
   public getMemory() {

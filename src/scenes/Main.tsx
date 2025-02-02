@@ -20,6 +20,8 @@ import { TextField } from '@mui/material';
 import { Inventory } from '../components/Inventory';
 import { Velocity } from '../sprites';
 import { Animation } from '../sprites';
+import * as ts from "typescript";
+
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
@@ -42,9 +44,7 @@ export class Main extends Phaser.Scene {
   private npc!: Phaser.Physics.Arcade.Sprite;
   private deductiveItemText!: Phaser.GameObjects.Text;
   private hudText!: Phaser.GameObjects.Text;
-  private inventory!: Inventory;
   private promptTexts: Phaser.GameObjects.Text[] = [];
-  private persona: string = "You name is Elias. Elias is a lifelong resident of Willowbrook Village, where he has cultivated a reputation as a knowledgeable herbalist and a reliable farmer. He lives a simple life, tending to his crops and helping fellow villagers with remedies for common ailments. He prefers a peaceful existence, avoiding unnecessary conflicts, but he has a strong sense of justice when it comes to protecting his home and people."
   private mssgData: MessageRecord[] = [];
   private mssgMenu: Phaser.GameObjects.Rectangle | null = null;
   private mssgMenuText: Phaser.GameObjects.Text | null = null;
@@ -66,6 +66,11 @@ export class Main extends Phaser.Scene {
   }
 
   create() {
+
+    //TESTING: run TS in runtime
+    const testCode = `console.log("hello world")`;
+    const jsCode = ts.transpile(testCode);
+    eval(jsCode);
 
     this.agentGroup = this.physics.add.group();
 
@@ -363,7 +368,7 @@ export class Main extends Phaser.Scene {
         this.mssgGroup = this.add.group();
 
         for(let i = 0; i < this.mssgData.length; i++) {
-          const mssg = this.mssgData[i];
+          const mssg = this.playerControlledAgent.getMemory()[i];
           const mssgText = `${mssg.gpt}`;
           // this.add.text(200, 300 + i * 100, mssgText, { fontSize: '10px', color: '#ffffff' })
           //   .setDepth(1002).setScrollFactor(0);
@@ -795,4 +800,3 @@ export class Main extends Phaser.Scene {
 
 
   }
-12321
