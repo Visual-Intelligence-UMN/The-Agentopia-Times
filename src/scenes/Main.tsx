@@ -21,7 +21,10 @@ import { Inventory } from '../components/Inventory';
 import { Velocity } from '../sprites';
 import { Animation } from '../sprites';
 import * as ts from "typescript";
-
+import { controlAgentMovements } from '../utils/controlUtils';
+import { controlPlayerPerspective } from '../utils/controlUtils';
+import { setupKeyListeners } from '../utils/controlUtils';
+import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
@@ -55,8 +58,12 @@ export class Main extends Phaser.Scene {
   private activateIndex: number = 0;
   private playerControlledAgent!: Agent;
   private cursors!: any;
+  private controlMapping!: AgentPerspectiveKeyMapping[];
+  private keyMap!: any;
+  private agentControlButtons!: Phaser.GameObjects.Group;
 
   private agentGroup!: any;
+  private agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
   
   private testnpc!: Phaser.Physics.Arcade.Sprite;
 
@@ -440,6 +447,14 @@ export class Main extends Phaser.Scene {
 
     // let promptTexts = [];
 
+    this.controlMapping = [
+      { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
+      { activateIndex: 1, triggerKey: Phaser.Input.Keyboard.KeyCodes.TWO },
+      { activateIndex: 2, triggerKey: Phaser.Input.Keyboard.KeyCodes.THREE }
+  ];
+  
+  this.keyMap = setupKeyListeners(this.controlMapping, this.input);
+
     for(let i = 0; i < 3; i++) {
       const text = this.add.text(
         startX + i * (squareSize + spacing)-15, 
@@ -451,6 +466,35 @@ export class Main extends Phaser.Scene {
       text.setScrollFactor(0);
       text.setDepth(1000);
     }
+
+
+    // add controls UI
+    this.agentControlButtons = this.add.group();
+    this.agentControlButtonLabels = [];
+
+    for(let i=0; i<this.controllableCharacters.length; i++) {
+      let buttonGroup = this.add.group();
+      const btn = this.add.rectangle(425 + i * 60, 540, 50, 50, 0x000000).setScrollFactor(0).setDepth(999).setAlpha(0.5).setStrokeStyle(2, 0xffffff).setInteractive();
+      const btnLabel = this.add.text(425 + i * 60 - 15, 535, this.controllableCharacters[i].getName(), { fontSize: '10px', color: '#ffffff' }).setScrollFactor(0).setDepth(1000);
+      buttonGroup.add(btn);
+      buttonGroup.add(btnLabel);
+      this.agentControlButtonLabels.push(btnLabel);
+      btn.on('pointerdown', () => {
+        this.activateIndex = i;
+        this.cameras.main.startFollow(this.controllableCharacters[this.activateIndex]); 
+        this.playerControlledAgent = this.controllableCharacters[this.activateIndex];
+        this.controllableCharacters.forEach((agent: any) => {
+          agent.changeNameTagColor("#ffffff");
+        });
+        this.agentControlButtonLabels.forEach((btnLabel: any) => {
+          btnLabel.setColor("#ffffff");
+        });
+        btnLabel.setColor("#ff0000");
+        this.playerControlledAgent.changeNameTagColor("#ff0000");
+      });
+    }
+
+    this.agentControlButtonLabels[0].setColor("#ff0000");
 
     state.isTypewriting = true;
     render(
@@ -705,95 +749,14 @@ export class Main extends Phaser.Scene {
       console.log("switched utils", this.playerControlledAgent.getPromptUtils());
     }
 
-    // agent movement controls
-    const { anims, body } = this.playerControlledAgent;
-    const prevVelocity = body.velocity.clone();
     
-        // Stop any previous movement from the last frame
-        body.setVelocity(0);
-    
-        // Horizontal movement
-        switch (true) {
-          case this.cursors.left.isDown:
-          case this.cursors.a.isDown:
-            body.setVelocityX(-Velocity.Horizontal);
-            break;
-    
-          case this.cursors.right.isDown:
-          case this.cursors.d.isDown:
-            body.setVelocityX(Velocity.Horizontal);
-            break;
-        }
-    
-        // Vertical movement
-        switch (true) {
-          case this.cursors.up.isDown:
-          case this.cursors.w.isDown:
-            body.setVelocityY(-Velocity.Vertical);
-            break;
-    
-          case this.cursors.down.isDown:
-          case this.cursors.s.isDown:
-            body.setVelocityY(Velocity.Vertical);
-            break;
-        }
-    
-        // Normalize and scale the velocity so that player can't move faster along a diagonal
-        body.velocity.normalize().scale(Velocity.Horizontal);
-    
-        // Update the animation last and give left/right animations precedence over up/down animations
-        switch (true) {
-          case this.cursors.left.isDown:
-          case this.cursors.a.isDown:
-            anims.play(Animation.Left, true);
-            this.playerControlledAgent.moveSelector(Animation.Left);
-            break;
-    
-          case this.cursors.right.isDown:
-          case this.cursors.d.isDown:
-            anims.play(Animation.Right, true);
-            this.playerControlledAgent.moveSelector(Animation.Right);
-            break;
-    
-          case this.cursors.up.isDown:
-          case this.cursors.w.isDown:
-            anims.play(Animation.Up, true);
-            this.playerControlledAgent.moveSelector(Animation.Up);
-            break;
-    
-          case this.cursors.down.isDown:
-          case this.cursors.s.isDown:
-            anims.play(Animation.Down, true);
-            this.playerControlledAgent.moveSelector(Animation.Down);
-            break;
-    
-          default:
-            anims.stop();
-    
-            // If we were moving, pick an idle frame to use
-            switch (true) {
-              case prevVelocity.x < 0:
-                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-left');
-                this.playerControlledAgent.moveSelector(Animation.Left);
-                break;
-    
-              case prevVelocity.x > 0:
-                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-right');
-                this.playerControlledAgent.moveSelector(Animation.Right);
-                break;
-    
-              case prevVelocity.y < 0:
-                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-back');
-                this.playerControlledAgent.moveSelector(Animation.Up);
-                break;
-    
-              case prevVelocity.y > 0:
-                this.playerControlledAgent.setTexture(key.atlas.player, 'misa-front');
-                this.playerControlledAgent.moveSelector(Animation.Down);
-                break;
-            }
-        }
-      }
+  
+
+  
+
+    controlAgentMovements(this.playerControlledAgent, this.cursors);
+
+  }
 
     
 
