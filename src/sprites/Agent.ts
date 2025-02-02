@@ -10,11 +10,20 @@ enum Animation {
   Down = 'player_down',
 }
 
+interface Memory {
+  role: string;
+  content: string;
+  system: string;
+}
+
 export class Agent extends Phaser.Physics.Arcade.Sprite {
   body!: Phaser.Physics.Arcade.Body;
   selector: Phaser.Physics.Arcade.StaticBody;
-  private nameTag: Phaser.GameObjects.Text;
   name: string;
+
+  private nameTag: Phaser.GameObjects.Text;
+  private memory: Memory[] = [];
+  private persona: string = "a helpful AI assistant";
 
   public inventory: Inventory = {
       promptUtils: [],
@@ -27,11 +36,13 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     y: number,
     texture = key.atlas.player,
     frame = 'misa-front',
-    name: string = "Agent"
+    name: string = "Agent",
+    persona: string = "a helpful AI assistant"
   ) {
     super(scene, x, y, texture, frame);
 
     this.name = name;
+    this.persona = persona;
 
     this.nameTag = scene.add.text(x, y - 20, name, {
         fontSize: '14px',
@@ -69,7 +80,6 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    // 更新文本位置，使其跟随 Agent
     this.nameTag.setPosition(this.x, this.y - 25);
   }
 
@@ -80,6 +90,19 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   public changeNameTagColor(color: string){
     this.nameTag.setColor(color);
   } 
+
+  public storeMemory(role: string, content: string, system: string) {
+    this.memory.push({ role, content, system });
+  }
+
+  public getMemory() {
+    return this.memory;
+  }
+
+  public getPersona() {
+    return this.persona;
+  }
+
 
   public moveSelector(animation: Animation) {
       const { body, selector } = this;

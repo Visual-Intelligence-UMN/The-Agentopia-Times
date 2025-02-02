@@ -537,7 +537,7 @@ export class Main extends Phaser.Scene {
   
       const npcName = npc.getData('npcName') || 'Mysterious NPC';
 
-      let systemMssg = `${this.persona}, this prompt is for testing`;
+      let systemMssg = `${agent.getPersona()}, this prompt is for testing`;
 
       if(agent.inventory.promptUtils.length > 0) {
         systemMssg += `
@@ -578,7 +578,9 @@ export class Main extends Phaser.Scene {
           gpt: aiReply
         });
 
-        console.log('mssgData:', this.mssgData);
+        agent.storeMemory(systemMssg, userMssg, aiReply);
+
+        console.log('mssgData:', this.mssgData, agent.getMemory());
   
         render(
           <Typewriter
