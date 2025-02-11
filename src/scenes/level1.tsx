@@ -14,20 +14,14 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
-import { HUDScene } from './HUD';
-import { TextInput } from '../components/TextInput';
-import { TextField } from '@mui/material';
-import { Inventory } from '../components/Inventory';
-import { Velocity } from '../sprites';
-import { Animation } from '../sprites';
 import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
-import { controlPlayerPerspective } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
+
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
@@ -39,7 +33,7 @@ interface MessageRecord {
   gpt: string;
 }
 
-export class Main extends Phaser.Scene {
+export class Level1 extends Phaser.Scene {
   private player!: Player;
   private sign!: Sign;
   private tilemap!: Phaser.Tilemaps.Tilemap;
@@ -71,12 +65,12 @@ export class Main extends Phaser.Scene {
   private debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
   private isDebate: boolean = false;
 
-  private sceneName: string = "Game: Level 0"
+  private sceneName: string = "Game: Level 1";
 
   private testnpc!: Phaser.Physics.Arcade.Sprite;
 
   constructor() {
-    super(key.scene.main);
+    super({ key: 'level1' });
   }
 
   create() {
@@ -85,14 +79,14 @@ export class Main extends Phaser.Scene {
     const jsCode = ts.transpile(testCode);
     eval(jsCode);
 
-
     addSceneNameHUD.call(this);
-    
+
 
     this.agentGroup = this.physics.add.group();
 
     //add player to controllableCharacters
     this.cursors = initKeyboardInputs.call(this);
+    //add player to controllableCharacters
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 
     // Parameters are the name you gave the tileset in Tiled and
@@ -177,16 +171,10 @@ export class Main extends Phaser.Scene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
 
     const agent1 = new Agent(this, 350, 1200, 'player', 'misa-front', 'Alice');
-    const agent2 = new Agent(this, 450, 1050, 'player', 'misa-front', 'Bob');
-    const agent3 = new Agent(this, 300, 950, 'player', 'misa-front', 'Cathy');
 
     this.agentGroup.add(agent1);
-    this.agentGroup.add(agent2);
-    this.agentGroup.add(agent3);
 
     this.controllableCharacters.push(agent1);
-    this.controllableCharacters.push(agent2);
-    this.controllableCharacters.push(agent3);
 
     console.log('controled characters', this.controllableCharacters);
 
@@ -217,6 +205,10 @@ export class Main extends Phaser.Scene {
     const startX = 75;
     const startY = 520;
     addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+
+    // let mssgMenu:any = null;
+
+    //render(<Button text="Message" x={25} y={50} />, this);
 
     const mssgBtn = this.add
       .rectangle(50, 400, 50, 50, 0x000000)
@@ -258,7 +250,6 @@ export class Main extends Phaser.Scene {
         for (let i = 0; i < this.mssgData.length; i++) {
           const mssg = this.playerControlledAgent.getMemory()[i];
           const mssgText = `${mssg.gpt}`;
-
           const mssgBox = this.add
             .rectangle(300 - 140 + i * 75, 290, 50, 50, 0x000000)
             .setScrollFactor(0)
@@ -601,65 +592,20 @@ export class Main extends Phaser.Scene {
         'switched utils',
         this.playerControlledAgent.getPromptUtils(),
       );
-    } else if (
-      this.input.keyboard!.checkDown(
-        this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
-        250,
-      )
-    ) {
-      console.log('Key "2" pressed');
-      this.activateIndex = 1;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      console.log(
-        'switched utils',
-        this.playerControlledAgent.getPromptUtils(),
-      );
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
-    } else if (
-      this.input.keyboard!.checkDown(
-        this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
-        250,
-      )
-    ) {
-      console.log('Key "3" pressed');
-      this.activateIndex = 2;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
-      console.log(
-        'switched utils',
-        this.playerControlledAgent.getPromptUtils(),
-      );
-    }
-
-
-    
+    } 
 
     controlAgentMovements(this.playerControlledAgent, this.cursors);
-
-    if(this.cursors.seven.isDown) {
-      this.scene.start('level1');
-    } else if(this.cursors.eight.isDown) {
-      this.scene.start('level2');
-    } else if(this.cursors.nine.isDown) {
-      // this.scene.start('level3');
-    }
 
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {
       console.log('overlapstart', agent, item);
     });
+
+    if(this.cursors.seven.isDown) {
+      // this.scene.start('level1');
+    } else if(this.cursors.eight.isDown) {
+      this.scene.start('level2');
+    } else if(this.cursors.nine.isDown) {
+      this.scene.start(key.scene.main);
+    }
   }
 }

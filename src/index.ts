@@ -13,7 +13,9 @@ new Phaser.Game({
   version: import.meta.env.VITE_APP_VERSION,
   scene: [
     scenes.Boot,
-    ...Object.values(scenes).filter((scene) => scene !== scenes.Boot),
+    scenes.Level1,
+    scenes.Level2,
+    scenes.Main,
   ],
   physics: {
     default: 'arcade',

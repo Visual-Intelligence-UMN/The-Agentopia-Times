@@ -114,23 +114,47 @@ export function setupKeyListeners(
 
 export function controlPlayerPerspective(
     controlMapping: AgentPerspectiveKeyMapping[], 
-    cameras: Phaser.Cameras.Scene2D.CameraManager,
-    controllableCharacters: any[],
-    keyMap: Map<number, Phaser.Input.Keyboard.Key>
-) {
-    controlMapping.forEach(mapping => {
-        if (keyMap.get(mapping.triggerKey)!.isDown) {
-            switchPlayerPerspective(cameras, controllableCharacters, mapping.activateIndex);
-        }
+    cameras: any,
+    controllableCharacters: any,
+    input: any
+){
+    controlMapping.forEach((mapping: AgentPerspectiveKeyMapping) => {
+        updatePlayerPerspective(cameras, controllableCharacters, mapping.activateIndex, input, mapping.triggerKey);
     });
 }
 
-function switchPlayerPerspective(
-    cameras: Phaser.Cameras.Scene2D.CameraManager, 
-    controllableCharacters: any[], 
-    activateIndex: number
+function updatePlayerPerspective(
+    cameras: any, 
+    controllableCharacters: any, 
+    activateIndex: number, 
+    input: any, 
+    triggerKey:any
 ) {
-    cameras.main.startFollow(controllableCharacters[activateIndex]); 
-    controllableCharacters.forEach(agent => agent.changeNameTagColor("#ffffff"));
-    controllableCharacters[activateIndex].changeNameTagColor("#ff0000");
+    if (input.keyboard!.checkDown(input.keyboard!.addKey(triggerKey), 250)) {
+        cameras.main.startFollow(controllableCharacters[activateIndex]); 
+        controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor("#ffffff");
+        })
+        controllableCharacters[activateIndex].changeNameTagColor("#ff0000");
+    }
+}
+
+export function initKeyboardInputs(this: any){
+  return (this.input.keyboard
+        ? this.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.UP,
+            down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+            left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+            right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+            w: Phaser.Input.Keyboard.KeyCodes.W,
+            a: Phaser.Input.Keyboard.KeyCodes.A,
+            s: Phaser.Input.Keyboard.KeyCodes.S,
+            d: Phaser.Input.Keyboard.KeyCodes.D,
+            one: Phaser.Input.Keyboard.KeyCodes.ONE,
+            seven: Phaser.Input.Keyboard.KeyCodes.SEVEN,
+            eight: Phaser.Input.Keyboard.KeyCodes.EIGHT,
+            nine: Phaser.Input.Keyboard.KeyCodes.NINE,
+            space: Phaser.Input.Keyboard.KeyCodes.SPACE,
+          })
+        : null);
 }
