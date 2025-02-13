@@ -1,8 +1,30 @@
+export function addButtonHUD(
+  this: any, 
+  x: number, 
+  y: number, 
+  height: number, 
+  width: number,
+  text: string, 
+  xOffset: number = 0,
+  yOffset: number = 0,
+){
+  const button = this.add.rectangle(x, y, width, height, 0x000000)
+  .setInteractive({ useHandCursor: true })
+  .setStrokeStyle(2, 0xffffff)
+  .setScrollFactor(0)
+  .setDepth(999)
+  .setAlpha(0.5);
 
-export function addDebateButton(){
-  
+  const buttonText = this.add.text(x - xOffset, y - yOffset, text, {
+    fontSize: '10px',
+    color: '#ffffff',
+    wordWrap: { width: 50, useAdvancedWrap: true },
+  })
+  .setScrollFactor(0)
+  .setDepth(1000);
+
+  return button;
 }
-
 
 export function addAgentPanelHUD(
   this: any,

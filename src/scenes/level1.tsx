@@ -18,7 +18,7 @@ import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addButtonHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
 
@@ -59,8 +59,12 @@ export class Level1 extends Phaser.Scene {
   private keyMap!: any;
   private agentControlButtons!: Phaser.GameObjects.Group;
 
+  private levelPassed: boolean = false;
+
   private agentGroup!: any;
   private agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
+  private levelBtn!: Phaser.GameObjects.Rectangle;
+  private levelText!: Phaser.GameObjects.Text;
   private overlappedItems: Set<any> = new Set();
   private debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
   private isDebate: boolean = false;
@@ -81,7 +85,7 @@ export class Level1 extends Phaser.Scene {
 
     addSceneNameHUD.call(this);
 
-
+    
     this.agentGroup = this.physics.add.group();
 
     //add player to controllableCharacters
@@ -540,6 +544,23 @@ export class Level1 extends Phaser.Scene {
           />,
           this,
         );
+
+        // add to next level if the answer is correct
+        if (aiReply.includes("three") || aiReply.includes("Three") || aiReply.includes("3")) {
+          console.log("CORRECT ANSWER");
+          // add a level-transition button to the UI
+          if(!this.levelPassed){
+            console.log("levelPassed", this.levelPassed);
+            this.levelPassed = true;
+            this.levelBtn = addButtonHUD.call(this, 425, 475, 50, 50, 'Next Level', 17.5, 10);
+            this.levelBtn?.on('pointerdown', () => {
+              console.log('levelBtn clicked');
+              this.scene.start("level2");
+            }, this)
+          }
+        }
+
+
       } catch (error) {
         console.error('API request failed', error);
         state.isTypewriting = false;
@@ -549,6 +570,8 @@ export class Level1 extends Phaser.Scene {
 
   update() {
     //console.log(this.scene.manager.scenes);
+
+    
 
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
