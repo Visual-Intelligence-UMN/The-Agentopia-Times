@@ -121,19 +121,10 @@ export class Main extends Phaser.Scene {
     this.physics.world.bounds.width = this.worldLayer.width;
     this.physics.world.bounds.height = this.worldLayer.height;
 
-    // this.scene.launch('HUDScene');
-
-    // this.npc = this.physics.add.sprite(1000, 500, 'npcSprite');
-    // this.npc.setImmovable(true);
-
     // By default, everything gets depth sorted on the screen in the order we created things.
     // We want the "Above Player" layer to sit on top of the player, so we explicitly give it a depth.
     // Higher depths will sit on top of lower depth objects.
     aboveLayer.setDepth(Depth.AbovePlayer);
-
-    // this.addPlayer();
-
-    //TODO: add dynamic animation and text labeling
 
     this.itemGroup = this.physics.add.staticGroup();
     this.deductiveItem = this.physics.add.staticGroup();

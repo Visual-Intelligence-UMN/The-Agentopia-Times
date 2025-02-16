@@ -84,9 +84,7 @@ export class Level1 extends Phaser.Scene {
 
     this.agentGroup = this.physics.add.group();
 
-    //add player to controllableCharacters
     this.cursors = initKeyboardInputs.call(this);
-    //add player to controllableCharacters
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 
     // Parameters are the name you gave the tileset in Tiled and
@@ -115,19 +113,10 @@ export class Level1 extends Phaser.Scene {
     this.physics.world.bounds.width = this.worldLayer.width;
     this.physics.world.bounds.height = this.worldLayer.height;
 
-    // this.scene.launch('HUDScene');
-
-    // this.npc = this.physics.add.sprite(1000, 500, 'npcSprite');
-    // this.npc.setImmovable(true);
-
     // By default, everything gets depth sorted on the screen in the order we created things.
     // We want the "Above Player" layer to sit on top of the player, so we explicitly give it a depth.
     // Higher depths will sit on top of lower depth objects.
     aboveLayer.setDepth(Depth.AbovePlayer);
-
-    // this.addPlayer();
-
-    //TODO: add dynamic animation and text labeling
 
     this.itemGroup = this.physics.add.staticGroup();
     this.deductiveItem = this.physics.add.staticGroup();
@@ -206,10 +195,6 @@ export class Level1 extends Phaser.Scene {
     const startY = 520;
     addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
-    // let mssgMenu:any = null;
-
-    //render(<Button text="Message" x={25} y={50} />, this);
-
     const mssgBtn = this.add
       .rectangle(50, 400, 50, 50, 0x000000)
       .setDepth(1002)
@@ -265,7 +250,6 @@ export class Level1 extends Phaser.Scene {
             .setDepth(1004);
 
           mssgBox.setInteractive({ useHandCursor: true });
-          //TODO: finish the message display feature
           mssgBox.on('pointerover', (pointer: Phaser.Input.Pointer) => {
             const worldPoint = this.cameras.main.getWorldPoint(
               pointer.x,
@@ -477,8 +461,6 @@ export class Level1 extends Phaser.Scene {
   }
 
   private async onPlayerNearNPC(npc: any, agent: any) {
-    // console.log("prompt utils", npc, agent);
-    //console.log('onPlayerNearNPC', agent, npc);
     if (this.cursors.space.isDown && !state.isTypewriting) {
       state.isTypewriting = true;
 
@@ -548,8 +530,6 @@ export class Level1 extends Phaser.Scene {
   }
 
   update() {
-    //console.log(this.scene.manager.scenes);
-
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
 
@@ -601,7 +581,6 @@ export class Level1 extends Phaser.Scene {
     });
 
     if(this.cursors.seven.isDown) {
-      // this.scene.start('level1');
     } else if(this.cursors.eight.isDown) {
       this.scene.start('level2');
     } else if(this.cursors.nine.isDown) {
