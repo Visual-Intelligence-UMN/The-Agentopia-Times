@@ -15,7 +15,7 @@ import { debateWithJudging } from '../server/simulations/debate';
 import { ParentScene } from './ParentScene';
 import { chain, parallel, route } from '../server/llmUtils';
 
-export class Level1 extends Phaser.Scene {
+export class Level1 extends ParentScene {
 
   constructor() {
     super();
