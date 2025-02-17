@@ -28,6 +28,7 @@ import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
+import { ParentScene } from './ParentScene';
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
@@ -39,44 +40,11 @@ interface MessageRecord {
   gpt: string;
 }
 
-export class Level2 extends Phaser.Scene {
-  private player!: Player;
-  private sign!: Sign;
-  private tilemap!: Phaser.Tilemaps.Tilemap;
-  private worldLayer!: Phaser.Tilemaps.TilemapLayer;
-  private itemGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private deductiveItem!: Phaser.Physics.Arcade.StaticGroup;
-  private itemText!: Phaser.GameObjects.Text;
-  private npc!: Phaser.Physics.Arcade.Sprite;
-  private deductiveItemText!: Phaser.GameObjects.Text;
-  private hudText!: Phaser.GameObjects.Text;
-  private promptTexts: Phaser.GameObjects.Text[] = [];
-  private mssgData: MessageRecord[] = [];
-  private mssgMenu: Phaser.GameObjects.Rectangle | null = null;
-  private mssgMenuText: Phaser.GameObjects.Text | null = null;
-  private mssgGroup!: Phaser.GameObjects.Group;
-  private subMssg: Phaser.GameObjects.Rectangle | null = null;
-  private subMssgText: Phaser.GameObjects.Text | null = null;
-  private controllableCharacters: any[] = [];
-  private activateIndex: number = 0;
-  private playerControlledAgent!: Agent;
-  private cursors!: any;
-  private controlMapping!: AgentPerspectiveKeyMapping[];
-  private keyMap!: any;
-  private agentControlButtons!: Phaser.GameObjects.Group;
-
-  private agentGroup!: any;
-  private agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
-  private overlappedItems: Set<any> = new Set();
-  private debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private isDebate: boolean = false;
-
-  private sceneName: string = "Game: Level 2"
-
-  private testnpc!: Phaser.Physics.Arcade.Sprite;
+export class Level2 extends ParentScene {
 
   constructor() {
-    super({key: "level2"});
+    super("level2");
+    this.sceneName = "Game: Level 2";
   }
 
   create() {

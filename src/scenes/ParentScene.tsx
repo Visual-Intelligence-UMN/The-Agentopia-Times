@@ -54,8 +54,12 @@ export class ParentScene extends Phaser.Scene {
 
   protected testnpc!: Phaser.Physics.Arcade.Sprite;
 
-  constructor() {
-    super({ key: 'level1' });
+  constructor(
+    keyName: string = 'level1', 
+    sceneName: string = 'Game: Level 1'
+) {
+    super({ key: keyName});
+    this.sceneName = sceneName;
   }
 
   create(){
