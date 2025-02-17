@@ -18,9 +18,10 @@ import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addButtonHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
+import { ParentScene } from './ParentScene';
 
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
@@ -33,44 +34,10 @@ interface MessageRecord {
   gpt: string;
 }
 
-export class Level1 extends Phaser.Scene {
-  private player!: Player;
-  private sign!: Sign;
-  private tilemap!: Phaser.Tilemaps.Tilemap;
-  private worldLayer!: Phaser.Tilemaps.TilemapLayer;
-  private itemGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private deductiveItem!: Phaser.Physics.Arcade.StaticGroup;
-  private itemText!: Phaser.GameObjects.Text;
-  private npc!: Phaser.Physics.Arcade.Sprite;
-  private deductiveItemText!: Phaser.GameObjects.Text;
-  private hudText!: Phaser.GameObjects.Text;
-  private promptTexts: Phaser.GameObjects.Text[] = [];
-  private mssgData: MessageRecord[] = [];
-  private mssgMenu: Phaser.GameObjects.Rectangle | null = null;
-  private mssgMenuText: Phaser.GameObjects.Text | null = null;
-  private mssgGroup!: Phaser.GameObjects.Group;
-  private subMssg: Phaser.GameObjects.Rectangle | null = null;
-  private subMssgText: Phaser.GameObjects.Text | null = null;
-  private controllableCharacters: any[] = [];
-  private activateIndex: number = 0;
-  private playerControlledAgent!: Agent;
-  private cursors!: any;
-  private controlMapping!: AgentPerspectiveKeyMapping[];
-  private keyMap!: any;
-  private agentControlButtons!: Phaser.GameObjects.Group;
-
-  private agentGroup!: any;
-  private agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
-  private overlappedItems: Set<any> = new Set();
-  private debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private isDebate: boolean = false;
-
-  private sceneName: string = "Game: Level 1";
-
-  private testnpc!: Phaser.Physics.Arcade.Sprite;
+export class Level1 extends ParentScene {
 
   constructor() {
-    super({ key: 'level1' });
+    super();
   }
 
   create() {
@@ -522,6 +489,22 @@ export class Level1 extends Phaser.Scene {
           />,
           this,
         );
+
+        // add to next level if the answer is correct
+        if (aiReply.includes("three") || aiReply.includes("Three") || aiReply.includes("3")) {
+          console.log("CORRECT ANSWER");
+          // add a level-transition button to the UI
+          if(!this.levelPassed){
+            console.log("levelPassed", this.levelPassed);
+            this.levelPassed = true;
+            this.levelBtn = addButtonHUD.call(this, 425, 475, 50, 50, 'Next Level', 17.5, 10);
+            this.levelBtn?.on('pointerdown', () => {
+              console.log('levelBtn clicked');
+              this.scene.start("level2");
+            }, this)
+          }
+        }
+
       } catch (error) {
         console.error('API request failed', error);
         state.isTypewriting = false;
