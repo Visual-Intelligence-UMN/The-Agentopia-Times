@@ -11,9 +11,7 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { fetchChatCompletion } from '../server/server';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
-import { setupKeyListeners } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem, setupScene } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
@@ -168,143 +166,7 @@ export class Level2 extends ParentScene {
     });
   }
 
-  private collectItem(player: any, item: any) {
-    if (state.isTypewriting || state.collectedItems?.has(item)) {
-      return;
-    }
-
-    state.isTypewriting = true;
-
-    render(
-      <Typewriter
-        text={`Prompt Utility: think step-by-step`}
-        onEnd={() => {
-          state.isTypewriting = false;
-          console.log('collected prompt utils', player.getPromptUtils());
-          const spaceKey = this.input.keyboard?.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-          );
-
-          const destroyItem = () => {
-            if (item.active) {
-              item.destroy();
-              player.addPromptUtils('think step by step');
-              console.log('Item destroyed!');
-              this.itemText?.destroy();
-            }
-
-            spaceKey?.off('down', destroyItem);
-          };
-          spaceKey?.on('down', destroyItem);
-        }}
-      />,
-      this,
-    );
-  }
-
-  private collectDeductiveReasoning(player: any, item: any) {
-    if (state.isTypewriting || state.collectedItems?.has(item)) {
-      return;
-    }
-
-    state.isTypewriting = true;
-
-    render(
-      <Typewriter
-        text={`Prompt Utility: Deductive Reasoning`}
-        onEnd={() => {
-          state.isTypewriting = false;
-          console.log('collected prompt utils', player.getPromptUtils());
-          const spaceKey = this.input.keyboard?.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-          );
-
-          const destroyItem = () => {
-            if (item.active) {
-              item.destroy();
-              player.addPromptUtils('deductive reasoning');
-              this.deductiveItemText?.destroy();
-            }
-
-            spaceKey?.off('down', destroyItem);
-          };
-          spaceKey?.on('down', destroyItem);
-        }}
-      />,
-      this,
-    );
-  }
-
-  private async onPlayerNearNPC(npc: any, agent: any) {
-    // console.log("prompt utils", npc, agent);
-    //console.log('onPlayerNearNPC', agent, npc);
-    if (this.cursors.space.isDown && !state.isTypewriting) {
-      state.isTypewriting = true;
-
-      const player = agent;
-
-      console.log('prompt utils', player, npc, agent);
-
-      const npcName = npc.getData('npcName') || 'Mysterious NPC';
-
-      let systemMssg = `${agent.getPersona()}, this prompt is for testing`;
-
-      if (agent.inventory.promptUtils.length > 0) {
-        systemMssg += `
-        you have collected ${agent.inventory.promptUtils}, 
-        please utilize collected prompt utils to solve the task
-        `;
-      }
-
-      const userMssg = `
-            you have collected ${agent.inventory.promptUtils}, 
-            please utilize collected prompt utils to solve the task
-            please solve this task(maxn words: 150):
-            How many R's are in the word strawberry?
-          `;
-
-      const messages = [
-        {
-          role: 'system',
-          content: systemMssg,
-        },
-        {
-          role: 'user',
-          content: userMssg,
-        },
-      ];
-
-      console.log('messages:', messages);
-
-      try {
-        const response = await fetchChatCompletion(messages);
-        console.log('OpenAI return:', response);
-
-        const aiReply = response.choices[0].message.content;
-
-        this.mssgData.push({
-          system: systemMssg,
-          user: userMssg,
-          gpt: aiReply,
-        });
-
-        agent.storeMemory(systemMssg, userMssg, aiReply);
-
-        console.log('mssgData:', this.mssgData, agent.getMemory());
-
-        render(
-          <Typewriter
-            text={aiReply}
-            onEnd={() => (state.isTypewriting = false)}
-          />,
-          this,
-        );
-      } catch (error) {
-        console.error('API request failed', error);
-        state.isTypewriting = false;
-      }
-    }
-  }
+  
 
   update() {
     this.playerControlledAgent =
