@@ -15,7 +15,7 @@ import { debateWithJudging } from '../server/simulations/debate';
 import { ParentScene } from './ParentScene';
 import { chain, parallel, route } from '../server/llmUtils';
 
-export class Level1 extends ParentScene {
+export class Level1 extends Phaser.Scene {
 
   constructor() {
     super();
@@ -314,7 +314,7 @@ export class Level1 extends ParentScene {
 
     
   }
-
+  
   update() {
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
