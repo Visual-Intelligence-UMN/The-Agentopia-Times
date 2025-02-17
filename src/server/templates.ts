@@ -5,7 +5,7 @@ export function selector(
 ): string {
     return `
         Analyze the input and select the most appropriate support team from these options: 
-        ${Object.keys(routes).join(', ')}
+        ${Array.from(routes.keys()).join(', ')}
         First explain your reasoning, 
         then provide your selection in this XML format:
 
