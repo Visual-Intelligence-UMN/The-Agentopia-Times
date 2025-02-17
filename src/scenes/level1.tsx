@@ -14,7 +14,7 @@ import { createItem, setupScene } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
 import { ParentScene } from './ParentScene';
 
-export class Level1 extends ParentScene {
+export class Level1 extends Phaser.Scene {
 
   constructor() {
     super();
@@ -159,7 +159,7 @@ export class Level1 extends ParentScene {
       this.scene.launch(key.scene.menu);
     });
   }
-
+  
   update() {
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];

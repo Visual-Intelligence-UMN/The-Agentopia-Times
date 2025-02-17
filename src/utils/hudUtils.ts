@@ -26,8 +26,6 @@ export function addButtonHUD(
   return button;
 }
 
-
-
 export function addAgentPanelHUD(
   this: any,
   startX: number,
