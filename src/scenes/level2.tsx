@@ -1,44 +1,24 @@
 import Phaser from 'phaser';
-import { Rectangle, render } from 'phaser-jsx';
+import { render } from 'phaser-jsx';
 
-import { Button, TilemapDebug, Typewriter } from '../components';
+import { TilemapDebug, Typewriter } from '../components';
 import {
   Depth,
   key,
   TilemapLayer,
-  TilemapObject,
   TILESET_NAME,
 } from '../constants';
-import { Player } from '../sprites';
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
-import { HUDScene } from './HUD';
-import { TextInput } from '../components/TextInput';
-import { TextField } from '@mui/material';
-import { Inventory } from '../components/Inventory';
-import { Velocity } from '../sprites';
-import { Animation } from '../sprites';
 import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
-import { controlPlayerPerspective } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
-import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
 import { ParentScene } from './ParentScene';
-
-interface Sign extends Phaser.Physics.Arcade.StaticBody {
-  text?: string;
-}
-
-interface MessageRecord {
-  system: string;
-  user: string;
-  gpt: string;
-}
 
 export class Level2 extends ParentScene {
 
@@ -48,11 +28,6 @@ export class Level2 extends ParentScene {
   }
 
   create() {
-    //TESTING: run TS in runtime
-    const testCode = `console.log("hello world")`;
-    const jsCode = ts.transpile(testCode);
-    eval(jsCode);
-
     this.agentGroup = this.physics.add.group();
 
     addSceneNameHUD.call(this);
