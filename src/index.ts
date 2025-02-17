@@ -15,7 +15,6 @@ new Phaser.Game({
     scenes.Boot,
     scenes.Level1,
     scenes.Level2,
-    scenes.Main,
   ],
   physics: {
     default: 'arcade',

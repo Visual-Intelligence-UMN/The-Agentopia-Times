@@ -67,20 +67,18 @@ export const parallel = async (prompt: string, inputs: string[], n_workers: numb
 export const route = async (input: string, routes: Map<string, string>) => {
     console.log("available routes:", routes.keys());
     const selectorPrompt = selector(input, routes);
+    console.log("Selector prompt:", selectorPrompt);
 
     try{
-        const routeResponse = await callLLM([{role: "user", content: selectorPrompt}]);
+        const routeResponse = (await callLLM([{role: "user", content: selectorPrompt}])).choices[0].message.content;
         const reasoning = extractXML(routeResponse, 'reasoning');
         const routeKey = extractXML(routeResponse, 'selection').trim().toLowerCase();
+
+        console.log("Intermediate steps:", routeResponse)
 
         console.log("Routing Analysis:");
         console.log(reasoning);
         console.log("\nSelected route:", routeKey);
-
-        if (!(routeKey in routes)) {
-            console.error(`Route "${routeKey}" not found in available routes.`);
-            return "[ERROR: Invalid route selection]";
-        }
 
         const selectedPrompt: string | undefined = routes.get(routeKey);
         if (!selectedPrompt) {
