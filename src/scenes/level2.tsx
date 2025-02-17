@@ -12,11 +12,10 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
-import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { createItem } from '../utils/sceneUtils';
+import { createItem, setupScene } from '../utils/sceneUtils';
 import { debateWithJudging } from '../server/simulations/debate';
 import { ParentScene } from './ParentScene';
 
@@ -28,49 +27,8 @@ export class Level2 extends ParentScene {
   }
 
   create() {
-    this.agentGroup = this.physics.add.group();
 
-    addSceneNameHUD.call(this);
-    this.cursors = initKeyboardInputs.call(this);
-    this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
-
-    // Parameters are the name you gave the tileset in Tiled and
-    // the key of the tileset image in Phaser's cache (name used in preload)
-    const tileset = this.tilemap.addTilesetImage(
-      TILESET_NAME,
-      key.image.tuxemon,
-    )!;
-
-    // Parameters: layer name (or index) from Tiled, tileset, x, y
-    this.tilemap.createLayer(TilemapLayer.BelowPlayer, tileset, 0, 0);
-    this.worldLayer = this.tilemap.createLayer(
-      TilemapLayer.World,
-      tileset,
-      0,
-      0,
-    )!;
-    const aboveLayer = this.tilemap.createLayer(
-      TilemapLayer.AbovePlayer,
-      tileset,
-      0,
-      0,
-    )!;
-
-    this.worldLayer.setCollisionByProperty({ collides: true });
-    this.physics.world.bounds.width = this.worldLayer.width;
-    this.physics.world.bounds.height = this.worldLayer.height;
-
-    // By default, everything gets depth sorted on the screen in the order we created things.
-    // We want the "Above Player" layer to sit on top of the player, so we explicitly give it a depth.
-    // Higher depths will sit on top of lower depth objects.
-    aboveLayer.setDepth(Depth.AbovePlayer);
-
-    this.itemGroup = this.physics.add.staticGroup();
-    this.deductiveItem = this.physics.add.staticGroup();
-    this.debatePositionGroup = this.physics.add.staticGroup();
-
-    this.itemText = this.add.text(350, 950, 'think step-by-step');
-    this.deductiveItemText = this.add.text(450, 1050, 'deductive reasoning');
+    setupScene.call(this);
 
     this.tweens.add({
       targets: [this.itemText, this.deductiveItemText], 
@@ -132,14 +90,6 @@ export class Level2 extends ParentScene {
       this,
     );
 
-    // Set the bounds of the camera
-    this.cameras.main.setBounds(
-      0,
-      0,
-      this.tilemap.widthInPixels,
-      this.tilemap.heightInPixels,
-    );
-
     render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
     const squareSize = 50;
@@ -147,136 +97,6 @@ export class Level2 extends ParentScene {
     const startX = 75;
     const startY = 520;
     addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
-
-    const mssgBtn = this.add
-      .rectangle(50, 400, 50, 50, 0x000000)
-      .setDepth(1002)
-      .setStrokeStyle(2, 0xffffff)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setAlpha(0.5);
-
-    const mssgBtnText = this.add
-      .text(30, 390, 'History \nMessage', {
-        fontSize: '10px',
-        color: '#ffffff',
-      })
-      .setScrollFactor(0)
-      .setDepth(1003);
-
-    mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      console.log('mssgBtn clicked');
-
-      if (this.mssgMenu) {
-        console.log('Destroying mssgMenu');
-        this.mssgMenu.destroy();
-        this.mssgMenuText?.destroy();
-        this.mssgMenu = null;
-        this.mssgMenuText = null;
-        this.mssgGroup.clear(true, true);
-      } else {
-        console.log('Creating mssgMenu');
-        this.mssgMenu = this.add
-          .rectangle(300, 300, 350, 125, 0x000000)
-          .setDepth(1001)
-          .setStrokeStyle(2, 0xffffff)
-          .setScrollFactor(0)
-          .setAlpha(0.5);
-
-        this.mssgGroup = this.add.group();
-
-        for (let i = 0; i < this.mssgData.length; i++) {
-          const mssg = this.playerControlledAgent.getMemory()[i];
-          const mssgText = `${mssg.gpt}`;
-
-          const mssgBox = this.add
-            .rectangle(300 - 140 + i * 75, 290, 50, 50, 0x000000)
-            .setScrollFactor(0)
-            .setDepth(1003)
-            .setAlpha(0.5);
-
-          const mssgLabel = this.add
-            .text(300 - 140 + i * 75 - 15, 280, `Histor\nMessage ${i}`, {
-              fontSize: '10px',
-              color: '#ffffff',
-            })
-            .setScrollFactor(0)
-            .setDepth(1004);
-
-          mssgBox.setInteractive({ useHandCursor: true });
-          //TODO: finish the message display feature
-          mssgBox.on('pointerover', (pointer: Phaser.Input.Pointer) => {
-            const worldPoint = this.cameras.main.getWorldPoint(
-              pointer.x,
-              pointer.y,
-            );
-
-            if (!this.subMssg) {
-              this.subMssgText = this.add
-                .text(worldPoint.x, worldPoint.y, mssgText, {
-                  fontSize: '10px',
-                  color: '#ffffff',
-                  wordWrap: { width: 150, useAdvancedWrap: true },
-                })
-                .setDepth(1010)
-                .setScrollFactor(1)
-                .setAlpha(1);
-
-              this.subMssg = this.add
-                .rectangle(
-                  worldPoint.x,
-                  worldPoint.y,
-                  175,
-                  this.subMssgText.height + 50,
-                  0x000000,
-                )
-                .setDepth(1007)
-                .setStrokeStyle(2, 0xffffff)
-                .setAlpha(1)
-                .setOrigin(0, 0);
-
-              console.log('subMssgText', this.subMssgText, this.subMssg);
-            }
-          });
-
-          mssgBox.on('pointerout', () => {
-            if (this.subMssg) {
-              this.subMssg.destroy();
-              this.subMssgText?.destroy();
-              this.subMssg = null;
-              this.subMssgText = null;
-            }
-          });
-
-          this.mssgGroup.add(mssgBox);
-          this.mssgGroup.add(mssgLabel);
-        }
-      }
-    });
-
-    this.controlMapping = [
-      { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
-      { activateIndex: 1, triggerKey: Phaser.Input.Keyboard.KeyCodes.TWO },
-      { activateIndex: 2, triggerKey: Phaser.Input.Keyboard.KeyCodes.THREE },
-    ];
-
-    this.keyMap = setupKeyListeners(this.controlMapping, this.input);
-
-    for (let i = 0; i < 3; i++) {
-      const text = this.add.text(
-        startX + i * (squareSize + spacing) - 15,
-        startY - 15,
-        `empty`,
-        {
-          fontSize: '10px',
-          color: '#ffffff',
-          wordWrap: { width: squareSize, useAdvancedWrap: true },
-        },
-      );
-      this.promptTexts.push(text);
-      text.setScrollFactor(0);
-      text.setDepth(1000);
-    }
 
     // add controls UI
     this.agentControlButtons = this.add.group();
