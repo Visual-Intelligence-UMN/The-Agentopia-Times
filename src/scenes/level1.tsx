@@ -11,7 +11,7 @@ import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils
 import { setupKeyListeners } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addButtonHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { createItem, setupScene } from '../utils/sceneUtils';
-import { debateWithJudging } from '../server/simulations/debate';
+import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { chain, parallel, route } from '../server/llmUtils';
 
@@ -133,7 +133,7 @@ export class Level1 extends ParentScene {
             .setDepth(1002);
           debateStartBtn.on('pointerdown', (pointer: any) => {
             console.log('start debate!!');
-            debateWithJudging('Is the earth flat?', 3);
+            debate('Is the earth flat?', 3);
           });
         }
       },
