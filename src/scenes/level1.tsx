@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Rectangle, render } from 'phaser-jsx';
 
-import { Button, TilemapDebug, Typewriter } from '../components';
+import { Button, TilemapDebug, Typewriter, Dialog } from '../components';
 import {
   Depth,
   key,
@@ -34,6 +34,11 @@ interface MessageRecord {
 }
 
 export class Level1 extends Phaser.Scene {
+  private inputElement!: HTMLInputElement;
+  private isInputLocked: boolean = true;  // Locked input state
+  private dialog: Phaser.GameObjects.Container | null = null;
+
+
   private player!: Player;
   private sign!: Sign;
   private tilemap!: Phaser.Tilemaps.Tilemap;
@@ -74,6 +79,7 @@ export class Level1 extends Phaser.Scene {
   }
 
   create() {
+
     //TESTING: run TS in runtime
     const testCode = `console.log("hello world")`;
     const jsCode = ts.transpile(testCode);
@@ -315,6 +321,7 @@ export class Level1 extends Phaser.Scene {
       }
     });
 
+    
     this.controlMapping = [
       { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
       { activateIndex: 1, triggerKey: Phaser.Input.Keyboard.KeyCodes.TWO },
@@ -401,6 +408,33 @@ export class Level1 extends Phaser.Scene {
         onEnd={() => (state.isTypewriting = false)}
       />,
       this,
+    );
+
+    // API Key validation
+    this.dialog = this.add.container(0, 0);
+    render(
+      <Dialog
+        text="Enter OpenAI API Key:"
+        isInputLocked={this.isInputLocked}
+        setIsInputLocked={(locked) => {
+          this.isInputLocked = locked;
+          console.log('Lock status updated:', this.isInputLocked);
+        }}
+        onEnd={() => {
+          // Destroy the Dialog component and remove DOM elements
+          if (this.dialog) {
+            this.dialog.destroy(); // Destroy the Phaser container
+            this.dialog = null;
+    
+            // Remove input and button from the DOM
+            const input = document.querySelector('input');
+            const button = document.querySelector('button');
+            if (input) input.remove();
+            if (button) button.remove();
+          }
+        }}
+      />,
+      this
     );
 
     this.input.keyboard!.on('keydown-ESC', () => {
@@ -548,6 +582,10 @@ export class Level1 extends Phaser.Scene {
   }
 
   update() {
+    if (this.isInputLocked) {
+      return;
+    }
+
     //console.log(this.scene.manager.scenes);
 
     this.playerControlledAgent =
