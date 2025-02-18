@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
+import { TilemapDebug, Typewriter, Dialog } from '../components';
 import { key } from '../constants';
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
@@ -9,13 +9,29 @@ import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addButtonHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { createItem, setupScene } from '../utils/sceneUtils';
+import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { createItem } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
-import { chain, parallel, route } from '../server/llmUtils';
+import { setupScene } from '../utils/sceneUtils';
+
+
+interface Sign extends Phaser.Physics.Arcade.StaticBody {
+  text?: string;
+}
+
+interface MessageRecord {
+  system: string;
+  user: string;
+  gpt: string;
+}
 
 export class Level1 extends ParentScene {
+
+  private inputElement!: HTMLInputElement;
+  private isInputLocked: boolean = true;  // Locked input state
+  private dialog: Phaser.GameObjects.Container | null = null;
 
   constructor() {
     super();
@@ -155,6 +171,41 @@ export class Level1 extends ParentScene {
       this,
     );
 
+    // API Key validation
+
+    localStorage.clear();
+
+    this.dialog = this.add.container(0, 0);
+
+    // console.log("local storage", localStorage.getItem('openai-api-key'));
+
+    if(!localStorage.getItem("openai-api-key")){render(
+      <Dialog
+        text="Enter OpenAI API Key:"
+        isInputLocked={this.isInputLocked}
+        setIsInputLocked={(locked) => {
+          this.isInputLocked = locked;
+          console.log('Lock status updated:', this.isInputLocked);
+        }}
+        onEnd={() => {
+          
+          // Destroy the Dialog component and remove DOM elements
+          if (localStorage.getItem('openai-api-key')) {
+            state.isAPIAvailable = true;
+            this.dialog?.destroy(); // Destroy the Phaser container
+            this.dialog = null;
+    
+            // Remove input and button from the DOM
+            const input = document.querySelector('input');
+            const button = document.querySelector('button');
+            if (input) input.remove();
+            if (button) button.remove();
+          }
+        }}
+      />,
+      this
+    )};
+
     this.input.keyboard!.on('keydown-ESC', () => {
       this.scene.pause(key.scene.main);
       this.scene.launch(key.scene.menu);
@@ -180,6 +231,12 @@ export class Level1 extends ParentScene {
   
   
   update() {
+    if (this.isInputLocked) {
+      return;
+    }
+
+    //console.log(this.scene.manager.scenes);
+
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
 
