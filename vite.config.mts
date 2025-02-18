@@ -7,4 +7,5 @@ export default defineConfig({
   },
   plugins: [createHtmlPlugin()],
   publicDir: 'public',
+  base: './',
 });
