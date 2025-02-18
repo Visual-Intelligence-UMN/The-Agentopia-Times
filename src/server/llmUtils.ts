@@ -92,3 +92,54 @@ export const route = async (input: string, routes: Map<string, string>) => {
 
 };
 
+
+// the judge agent for the Debate Design Pattern
+async function judgeDebate(messages: any) {
+    let judgeResponse = await callLLM([
+      ...messages,
+      { role: "user", content: "Judge, analyze the arguments and declare which agent made stronger points. Keep it brief." }
+    ]);
+  
+    let verdict = judgeResponse.choices[0].message.content;
+    console.log(`⚖️ Judge: ${verdict}\n`);
+}
+
+//  two agents debate a topic for a number of rounds, with a judge declaring the winner at the end.
+export async function debate(topic: string, rounds: number){
+    console.log("Debate Started!", topic, rounds);
+    let messages = [
+        { role: "system", content: `You are participating in a structured debate. 
+          Agent A will support the topic: "${topic}", while Agent B will oppose it.
+          Each response should be concise (maximum 2 sentences).` },
+        { role: "user", content: `Agent A, start the debate by stating your main argument for: "${topic}".` }
+    ];
+
+    let history = [];
+    let results = [];
+
+    for (let i = 0; i < rounds; i++) {
+          console.log(`\n🔵 Round ${i + 1}`);
+      
+          let responseA = await callLLM(messages);
+          let textA = responseA.choices[0].message.content;
+          console.log(`Agent A: ${textA}\n`);
+          messages.push({ role: "assistant", content: textA });
+      
+          let responseB = await callLLM([
+            ...messages,
+            { role: "user", content: `Agent B, rebut Agent A's argument.` }
+          ]);
+          let textB = responseB.choices[0].message.content;
+          console.log(`Agent B: ${textB}\n`);
+          messages.push({ role: "assistant", content: textB });
+
+          history.push({round: i+1, agentA: textA, agentB: textB});
+      
+          let result = await judgeDebate(messages);
+          results.push(result);
+    }
+      
+    console.log("⚖️ Debate Ended.");
+    return {results: results, history: history};
+}
+
