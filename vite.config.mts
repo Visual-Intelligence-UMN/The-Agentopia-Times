@@ -6,4 +6,5 @@ export default defineConfig({
     assetsInlineLimit: 0,
   },
   plugins: [createHtmlPlugin()],
+  publicDir: 'public',
 });
