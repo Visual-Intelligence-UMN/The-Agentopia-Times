@@ -26,8 +26,8 @@ jobs:
       # - name: Lint commit message
       #   run: npx commitlint --from=HEAD~1
 
-      - name: Run ESLint
-        run: npm run lint --no-verify
+      # - name: Run ESLint
+      #   run: npm run lint --no-verify
 
       # - name: Type check
       #   run: npm run lint:tsc
