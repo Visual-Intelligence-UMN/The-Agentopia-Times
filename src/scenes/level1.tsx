@@ -179,7 +179,7 @@ export class Level1 extends ParentScene {
 
     // console.log("local storage", localStorage.getItem('openai-api-key'));
 
-    if(!localStorage.getItem("openai-api-key")){render(
+    if(!localStorage.getItem("openai-api-key") && !import.meta.env.VITE_OPENAI_API_KEY){render(
       <Dialog
         text="Enter OpenAI API Key:"
         isInputLocked={this.isInputLocked}
