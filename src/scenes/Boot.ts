@@ -20,6 +20,6 @@ export class Boot extends Scene {
   }
 
   create() {
-    this.scene.start("level2");
+    this.scene.start("level1");
   }
 }
