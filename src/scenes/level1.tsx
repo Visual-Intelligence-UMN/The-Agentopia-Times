@@ -289,9 +289,9 @@ export class Level1 extends ParentScene {
 
     if(this.cursors.seven.isDown) {
     } else if(this.cursors.eight.isDown) {
+      console.log('Key "8" pressed');
       this.scene.start('level2');
-    } else if(this.cursors.nine.isDown) {
-      this.scene.start(key.scene.main);
-    }
+      
+    } 
   }
 }

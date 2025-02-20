@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha",
   "description": "A template for building Phaser RPG games.",
   "author": "Mark <mark@remarkablemark.org>",
+  "type": "module",
   "scripts": {
     "build": "vite build",
     "bundle": "scripts/bundle.sh",

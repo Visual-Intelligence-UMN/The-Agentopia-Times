@@ -166,7 +166,7 @@ export class ParentScene extends Phaser.Scene {
             you have collected ${agent.inventory.promptUtils}, 
             please utilize collected prompt utils to solve the task
             please solve this task(maxn words: 150):
-            How many R's are in the word strawberry?
+            which one is bigger: 9.11 or 9.9?
           `;
 
       const messages = [
