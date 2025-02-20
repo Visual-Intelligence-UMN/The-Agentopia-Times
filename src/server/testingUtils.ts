@@ -1,4 +1,4 @@
-import { chain, parallel, route } from '../server/llmUtils';
+import { callLLM, chain, parallel, route } from '../server/llmUtils';
 
 
 export async function testChain() {
@@ -54,6 +54,151 @@ export async function testParallel() {
     console.log('responses', responses);
     return responses;
 }
+
+export async function testChainCustomerSupport() {
+  const prompts = [
+      `Step 1: Extract the key issue from the customer inquiry.
+      Example:
+      Inquiry: "I was charged $49.99 instead of $29.99."
+      Key Issue: Unexpected charge on account.
+
+      Inquiry: "I forgot my password and can't log in."
+      Key Issue: Account access issue.
+
+      Inquiry: [CUSTOMER_INQUIRY]
+      Key Issue:`,
+
+      `Step 2: Classify the issue into one of the following categories: 
+      - billing
+      - technical
+      - account
+      - product
+
+      Example:
+      Key Issue: Unexpected charge on account.
+      Category: billing
+
+      Key Issue: Account access issue.
+      Category: account
+
+      Key Issue: [PREVIOUS_STEP_OUTPUT]
+      Category:`,
+
+      `Step 3: Generate a structured response based on the category.
+      Example:
+      Category: billing
+      Response:
+      "Billing Support Response: We acknowledge your concern about the unexpected charge. 
+      Your plan was upgraded on [DATE], leading to the price difference. If this was unintentional, 
+      you can revert by downgrading your plan in settings."
+
+      Category: account
+      Response:
+      "Account Support Response: If you forgot your password, please reset it using the ‘Forgot Password’ 
+      option. If you still can’t access your account, contact our security team."
+
+      Category: [PREVIOUS_STEP_OUTPUT]
+      Response:`,
+
+      `Step 4: Format the response professionally.
+      Example:
+      Raw Response: "Billing Support Response: We acknowledge your concern..."
+      Formatted Response:
+      --------------------------------------
+      **Billing Support Team**
+      We acknowledge your concern...
+      --------------------------------------
+
+      Raw Response: [PREVIOUS_STEP_OUTPUT]
+      Formatted Response:`
+  ];
+
+  const customerInquiry = `I just noticed a charge of $49.99 on my credit card, 
+  but I thought I was on the $29.99 plan. Can you explain this charge and adjust it if it's a mistake?`;
+
+  const result = await chain(customerInquiry, prompts);
+  console.log('Chain Mode Output:', result);
+  return result;
+}
+
+
+export async function evaluateCustomerSupportResponse(pattern: string, response: string) {
+  const evaluationPrompt = `
+  You are an expert evaluator of customer service responses in a multi-agent system.
+  Your job is to analyze the provided response based on the following criteria:
+  
+  1. **Clarity**: Is the response easy to understand?
+  2. **Accuracy**: Does it provide the correct and relevant information?
+  3. **Helpfulness**: Does it guide the customer to a resolution effectively?
+
+  **Scoring Criteria**:
+  - Rate each category from 1 (poor) to 10 (excellent).
+  - Provide a brief justification for each rating.
+  - If there are issues, suggest improvements.
+
+  **Example Evaluation**:
+  ---
+  **Response:** "Billing Support Response: We checked your billing details and found that your plan was upgraded..."
+  **Evaluation:**
+  - Clarity: 9/10 - The response is well-structured and professional.
+  - Accuracy: 8/10 - Provides relevant information but lacks a refund policy explanation.
+  - Helpfulness: 7/10 - Guides the user but could add alternative solutions.
+  - Suggested Improvements: Add refund policy details for clarity.
+
+  Now evaluate the following response from the **${pattern}** method:
+
+  **Customer Support Response:**
+  ${response}
+
+  **Your Evaluation:**
+  `;
+
+  const evaluationResult = await callLLM([{ role: 'user', content: evaluationPrompt }]);
+  return evaluationResult.choices[0].message.content;
+}
+
+
+export async function testParallelCustomerSupport() {
+  const inputs = [
+      `Step 1: Summarize the customer's issue in one sentence.
+      Example:
+      Inquiry: "I was charged $49.99 instead of $29.99."
+      Summary: The customer is concerned about an unexpected billing charge.
+
+      Inquiry: "I can't log into my account."
+      Summary: The customer has trouble accessing their account.
+
+      Inquiry: [CUSTOMER_INQUIRY]
+      Summary:`,
+
+      `Step 2: Retrieve similar past customer inquiries and solutions.
+      Example:
+      Inquiry: "I was charged $49.99 instead of $29.99."
+      Similar Case: Customer X had a billing mismatch because their subscription was upgraded.
+      Solution: Informed them of the upgrade and provided a downgrade option.
+
+      Inquiry: [CUSTOMER_INQUIRY]
+      Similar Case: `,
+
+      `Step 3: Generate a professional response based on customer history.
+      Example:
+      Inquiry: "I was charged $49.99 instead of $29.99."
+      Response:
+      "Billing Support Response: We checked your billing details and found that your plan was upgraded 
+      on [DATE]. If this was unintentional, you can revert to the lower plan in your account settings."
+
+      Inquiry: [CUSTOMER_INQUIRY]
+      Response:`
+  ];
+
+  const customerInquiry = `I just noticed a charge of $49.99 on my credit card, 
+  but I thought I was on the $29.99 plan. Can you explain this charge and adjust it if it's a mistake?`;
+
+  const responses = await parallel(customerInquiry, inputs);
+  console.log('Parallel Mode Output:', responses);
+  return responses;
+}
+
 
 export async function testRoute() {
     const supportedRoutes = new Map<string, string>([

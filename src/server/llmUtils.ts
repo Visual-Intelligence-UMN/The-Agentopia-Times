@@ -51,7 +51,7 @@ export const chain = async (input: string, prompts: string[]) => {
 
 // Process multiple inputs concurrently with the same prompt.
 export const parallel = async (prompt: string, inputs: string[], n_workers: number = 3) => {
-    const tasks = inputs.map(input => callLLM([{role: 'user', content: input}]));
+    const tasks = inputs.map((input, i) => callLLM([{role: 'system', content: inputs[i]}, {role: 'user', content: prompt}]));
     const responses = await Promise.allSettled(tasks);
     return responses.map(response => {
         if (response.status === 'fulfilled') {
@@ -84,7 +84,9 @@ export const route = async (input: string, routes: Map<string, string>) => {
         if (!selectedPrompt) {
             throw new Error(`Route "${routeKey}" not found in available routes.`);
         }
-        return await callLLM([{role: "system", content: input}, {role: "user", content: selectedPrompt}]);
+        const result = (await callLLM([{role: "system", content: input}, {role: "user", content: selectedPrompt}])).choices[0].message.content;
+        console.log("Final result:", result);
+        return result;
     } catch (error) {
         console.error("Route selection failed:", error);
         return "[ERROR: Route selection failed]";

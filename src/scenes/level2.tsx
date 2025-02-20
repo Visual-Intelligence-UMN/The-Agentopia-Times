@@ -16,8 +16,11 @@ import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../
 import { createItem, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
+import { evaluateCustomerSupportResponse, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 
 export class Level2 extends ParentScene {
+
+  private parrellePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
 
   constructor() {
     super("level2");
@@ -41,6 +44,12 @@ export class Level2 extends ParentScene {
     createItem.call(this, this.deductiveItem, 500, 1100, 'logo');
     createItem.call(this, this.debatePositionGroup, 700, 900, 'logo');
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
+
+    this.parrellePositionGroup = this.physics.add.staticGroup();
+
+    for(let i=0; i<3; i++){
+      createItem.call(this, this.parrellePositionGroup, 200+75*i, 900, 'logo');
+    }
 
     const overlaps = [
       { group: this.itemGroup, callback: this.collectItem },
@@ -151,6 +160,151 @@ export class Level2 extends ParentScene {
       overlappedItems.delete(item);
     });
 
+    this.physics.add.overlap(
+
+      this.agentGroup,
+      this.parrellePositionGroup,
+      (agent, item) => {
+        if (!overlappedItems.has(item)) {
+          overlappedItems.add(item);
+          this.events.emit('overlapstart', agent, item);
+        }
+
+        if (overlappedItems.size === 3 && !isDebate) {
+          isDebate = true;
+          console.log('Agent is overlapping both debate positions!');
+          debateStartBtn = this.add
+            .rectangle(50, 330, 50, 50, 0x000000)
+            .setScrollFactor(0)
+            .setDepth(1001)
+            .setAlpha(0.5)
+            .setStrokeStyle(2, 0xffffff)
+            .setInteractive();
+
+          debateStartLabel = this.add
+            .text(35, 320, 'Choose Pattern', {
+              fontSize: '10px',
+              color: '#ffffff',
+              wordWrap: { width: 50, useAdvancedWrap: true },
+            })
+            .setScrollFactor(0)
+            .setDepth(1002);
+          debateStartBtn.on('pointerdown', (pointer: any) => {
+            console.log('start!!');
+            if (this.mssgMenu) {
+              console.log('Destroying mssgMenu');
+              this.mssgMenu.destroy();
+              this.mssgMenuText?.destroy();
+              this.mssgMenu = null;
+              this.mssgMenuText = null;
+              this.mssgGroup.clear(true, true);
+            } else {
+              console.log('Creating mssgMenu');
+              this.mssgMenu = this.add
+                .rectangle(300, 300, 350, 125, 0x000000)
+                .setDepth(1001)
+                .setStrokeStyle(2, 0xffffff)
+                .setScrollFactor(0)
+                .setAlpha(0.5);
+      
+              this.mssgGroup = this.add.group();
+
+              let patterns = ["chain", "parallel", "route"];
+      
+              for (let i = 0; i < patterns.length; i++) {
+                const mssgBox = this.add
+                  .rectangle(300 - 140 + i * 75, 290, 50, 50, 0x000000)
+                  .setScrollFactor(0)
+                  .setDepth(1003)
+                  .setAlpha(0.5);
+      
+                const mssgLabel = this.add
+                  .text(300 - 140 + i * 75 - 15, 280, patterns[i], {
+                    fontSize: '10px',
+                    color: '#ffffff',
+                  })
+                  .setScrollFactor(0)
+                  .setDepth(1004);
+      
+                mssgBox.setInteractive({ useHandCursor: true });
+
+                mssgBox.on('pointerdown', (pointer: any) => {
+                  let result = null;
+                  console.log(patterns[i]);
+
+                  // if(patterns[i] === "parallel") {
+                  //   result = await testParallelCustomerSupport();
+                  // } else if(patterns[i] === "chain") {
+                  //   result = await testChainCustomerSupport();
+                  // } else if(patterns[i] === "route") {
+                  //   result = await testRoute();
+                  // }
+
+                  result = this.choosePattern(patterns[i]);
+
+                  console.log("MAS produced results", result);
+                });
+
+                mssgBox.on('pointerover', (pointer: Phaser.Input.Pointer) => {
+                  const worldPoint = this.cameras.main.getWorldPoint(
+                    pointer.x,
+                    pointer.y,
+                  );
+      
+                  if (!this.subMssg) {
+                    this.subMssgText = this.add
+                      .text(worldPoint.x, worldPoint.y, patterns[i], {
+                        fontSize: '10px',
+                        color: '#ffffff',
+                        wordWrap: { width: 150, useAdvancedWrap: true },
+                      })
+                      .setDepth(1010)
+                      .setScrollFactor(1)
+                      .setAlpha(1);
+      
+                    this.subMssg = this.add
+                      .rectangle(
+                        worldPoint.x,
+                        worldPoint.y,
+                        175,
+                        this.subMssgText.height + 50,
+                        0x000000,
+                      )
+                      .setDepth(1007)
+                      .setStrokeStyle(2, 0xffffff)
+                      .setAlpha(1)
+                      .setOrigin(0, 0);
+      
+                    console.log('subMssgText', this.subMssgText, this.subMssg);
+                  }
+                });
+      
+                mssgBox.on('pointerout', () => {
+                  if (this.subMssg) {
+                    this.subMssg.destroy();
+                    this.subMssgText?.destroy();
+                    this.subMssg = null;
+                    this.subMssgText = null;
+                  }
+                });
+      
+                this.mssgGroup.add(mssgBox);
+                this.mssgGroup.add(mssgLabel);
+              }
+            }
+
+          });
+        }
+      },
+    );
+
+    this.parrellePositionGroup.on('overlapsend', (item: any, agent: any) => {
+      console.log('overlapsend', item, agent);
+      isDebate = false;
+
+      overlappedItems.delete(item);
+    });
+
     state.isTypewriting = true;
     render(
       <Typewriter
@@ -165,6 +319,77 @@ export class Level2 extends ParentScene {
       this.scene.launch(key.scene.menu);
     });
   }
+
+  private async choosePattern(pattern: string) {
+    let result = "";
+    if(pattern === "parallel") {
+      result = (await testParallelCustomerSupport()).join(', ');
+    } else if(pattern=== "chain") {
+      result = await testChainCustomerSupport();
+    } else if(pattern === "route") {
+      result = (await testRoute()).join(', ');
+      console.log("route result", result);
+    }
+    console.log("MAS produced results - inside function", result);
+  //   render(
+  //     <Typewriter
+  //       text={result}
+  //       onEnd={() => (
+  //         state.isTypewriting = false
+  //       )}
+  //     />,
+  //     this,
+  //   );
+  //   // **Step 2: Call Evaluator Function**
+  //   const evaluation = await evaluateCustomerSupportResponse(pattern, result);
+
+  //   console.log("Evaluator Feedback:", evaluation);
+
+  //   // **Render Evaluator's Feedback**
+  //   render(
+  //       <Typewriter
+  //           text={`Evaluator Feedback:\n${evaluation}`}
+  //           onEnd={() => (state.isTypewriting = false)}
+  //       />,
+  //       this,
+  //   );
+
+  //   return result;
+  // }
+  await new Promise((resolve) => {
+    render(
+        <Typewriter
+            text={result}
+            onEnd={() => {
+                state.isTypewriting = false;
+                resolve(null); // Resolves the promise when Typewriter completes
+            }}
+        />,
+        this,
+    );
+});
+
+// Step 3: Call Evaluator Function AFTER Typewriter finishes
+const evaluation = await evaluateCustomerSupportResponse(pattern, result);
+console.log("Evaluator Feedback:", evaluation);
+
+// Step 4: Render Evaluator's Feedback and WAIT until it's finished
+await new Promise((resolve) => {
+    render(
+        <Typewriter
+            text={`Evaluator Feedback:\n${evaluation}`}
+            onEnd={() => {
+                state.isTypewriting = false;
+                resolve(null); // Resolves the promise when second Typewriter completes
+            }}
+        />,
+        this,
+    );
+});
+
+return result;
+}
+
 
   
 

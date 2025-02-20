@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { key } from '../constants';
 import { Inventory } from './Player';
+import { use } from 'matter';
 
 enum Animation {
   Left = 'player_left',
@@ -77,6 +78,9 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
     this.selector = scene.physics.add.staticBody(x - 8, y + 32, 16, 16);
 
+    this.setInteractive({ useHandCursor: true });
+    scene.input.on('gameobjectdown', this.onClick, this);
+
   }
 
   update() {
@@ -142,6 +146,13 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     public setTexture(key: string, frame?: string | number): this {
         super.setTexture(key, frame);
         return this;
+    }
+
+    private onClick(pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) {
+      if (gameObject === this) {
+        console.log(`Agent ${this.name} clicked!`);
+        this.changeNameTagColor('#ff00ff'); 
+      }
     }
 
   private createAnimations() {
