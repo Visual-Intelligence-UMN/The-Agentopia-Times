@@ -58,7 +58,8 @@ export class Level1 extends ParentScene {
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
 
     const overlaps = [
-      { group: this.itemGroup, callback: this.collectItem },
+      { group: this.itemGroup, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "think step by step")} },
       { group: this.deductiveItem, callback: this.collectDeductiveReasoning },
     ];
 

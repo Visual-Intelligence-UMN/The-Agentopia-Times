@@ -76,7 +76,7 @@ export class ParentScene extends Phaser.Scene {
 
   }
 
-  protected collectItem(player: any, item: any) {
+  protected collectItem(player: any, item: any, innerText: string) {
     if (state.isTypewriting || state.collectedItems?.has(item)) {
       return;
     }
@@ -85,7 +85,7 @@ export class ParentScene extends Phaser.Scene {
 
     render(
       <Typewriter
-        text={`Prompt Utility: think step-by-step`}
+        text={"Prompt Utils: "+innerText}
         onEnd={() => {
           state.isTypewriting = false;
           console.log('collected prompt utils', player.getPromptUtils());
@@ -96,7 +96,7 @@ export class ParentScene extends Phaser.Scene {
           const destroyItem = () => {
             if (item.active) {
               item.destroy();
-              player.addPromptUtils('think step by step');
+              player.addPromptUtils(innerText);
               console.log('Item destroyed!');
               this.itemText?.destroy();
             }
