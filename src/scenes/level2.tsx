@@ -52,8 +52,10 @@ export class Level2 extends ParentScene {
     }
 
     const overlaps = [
-      { group: this.itemGroup, callback: this.collectItem },
-      { group: this.deductiveItem, callback: this.collectDeductiveReasoning },
+      { group: this.itemGroup, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "think step by step", this.itemText)} },
+      { group: this.deductiveItem, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "deductive reasoning", this.deductiveItemText)}  },
     ];
 
     overlaps.forEach(({ group, callback }) => {

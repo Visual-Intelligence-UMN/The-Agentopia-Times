@@ -52,32 +52,32 @@ export class ParentScene extends Phaser.Scene {
   protected isDebate: boolean = false;
   protected levelBtn!: Phaser.GameObjects.Rectangle;
 
-
   protected levelPassed: boolean = false;
-
 
   protected sceneName: string = 'Game: Level 1';
 
   protected testnpc!: Phaser.Physics.Arcade.Sprite;
 
-  constructor(
-    keyName: string = 'level1', 
-    sceneName: string = 'Game: Level 1'
-) {
-    super({ key: keyName});
+  constructor(keyName: string = 'level1', sceneName: string = 'Game: Level 1') {
+    super({ key: keyName });
     this.sceneName = sceneName;
   }
 
-  create(){
+  create() {}
 
-  }
+  update() {}
 
-  update(){
-
-  }
-
-  protected collectItem(player: any, item: any, innerText: string) {
+  protected collectItem(
+    player: any,
+    item: any,
+    innerText: string,
+    itemText: any,
+  ) {
     if (state.isTypewriting || state.collectedItems?.has(item)) {
+      return;
+    }
+
+    if (!this.physics.overlap(player, item)) {
       return;
     }
 
@@ -85,58 +85,37 @@ export class ParentScene extends Phaser.Scene {
 
     render(
       <Typewriter
-        text={"Prompt Utils: "+innerText}
+        text={'Prompt Utils: ' + innerText}
         onEnd={() => {
-          state.isTypewriting = false;
-          console.log('collected prompt utils', player.getPromptUtils());
+          console.log('Typewriter finished.');
+
           const spaceKey = this.input.keyboard?.addKey(
             Phaser.Input.Keyboard.KeyCodes.SPACE,
           );
 
-          const destroyItem = () => {
+          const handleSpacePress = () => {
+            if (!this.physics.overlap(player, item)) {
+              console.log(
+                'Player is no longer overlapping with the item. Action canceled.',
+              );
+              return;
+            }
+
+            state.isTypewriting = false;
+
+            player.addPromptUtils(innerText);
+            console.log('PromptUtil collected:', innerText);
+
             if (item.active) {
               item.destroy();
-              player.addPromptUtils(innerText);
               console.log('Item destroyed!');
-              this.itemText?.destroy();
+              itemText?.destroy();
             }
 
-            spaceKey?.off('down', destroyItem);
+            spaceKey?.off('down', handleSpacePress);
           };
-          spaceKey?.on('down', destroyItem);
-        }}
-      />,
-      this,
-    );
-  }
 
-  protected collectDeductiveReasoning(player: any, item: any) {
-    if (state.isTypewriting || state.collectedItems?.has(item)) {
-      return;
-    }
-
-    state.isTypewriting = true;
-
-    render(
-      <Typewriter
-        text={`Prompt Utility: Deductive Reasoning`}
-        onEnd={() => {
-          state.isTypewriting = false;
-          console.log('collected prompt utils', player.getPromptUtils());
-          const spaceKey = this.input.keyboard?.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-          );
-
-          const destroyItem = () => {
-            if (item.active) {
-              item.destroy();
-              player.addPromptUtils('deductive reasoning');
-              this.deductiveItemText?.destroy();
-            }
-
-            spaceKey?.off('down', destroyItem);
-          };
-          spaceKey?.on('down', destroyItem);
+          spaceKey?.on('down', handleSpacePress);
         }}
       />,
       this,
@@ -207,27 +186,40 @@ export class ParentScene extends Phaser.Scene {
         );
 
         // add to next level if the answer is correct
-        if (aiReply.includes("three") || aiReply.includes("Three") || aiReply.includes("3")) {
-          console.log("CORRECT ANSWER");
+        if (
+          aiReply.includes('three') ||
+          aiReply.includes('Three') ||
+          aiReply.includes('3')
+        ) {
+          console.log('CORRECT ANSWER');
           // add a level-transition button to the UI
-          if(!this.levelPassed){
-            console.log("levelPassed", this.levelPassed);
+          if (!this.levelPassed) {
+            console.log('levelPassed', this.levelPassed);
             this.levelPassed = true;
-            this.levelBtn = addButtonHUD.call(this, 425, 475, 50, 50, 'Next Level', 17.5, 10);
-            this.levelBtn?.on('pointerdown', () => {
-              console.log('levelBtn clicked');
-              this.scene.start("level2");
-            }, this)
+            this.levelBtn = addButtonHUD.call(
+              this,
+              425,
+              475,
+              50,
+              50,
+              'Next Level',
+              17.5,
+              10,
+            );
+            this.levelBtn?.on(
+              'pointerdown',
+              () => {
+                console.log('levelBtn clicked');
+                this.scene.start('level2');
+              },
+              this,
+            );
           }
         }
-
       } catch (error) {
         console.error('API request failed', error);
         state.isTypewriting = false;
       }
     }
   }
-
-
-
 }

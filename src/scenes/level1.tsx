@@ -59,8 +59,9 @@ export class Level1 extends ParentScene {
 
     const overlaps = [
       { group: this.itemGroup, callback: (player:any, item:any) => {
-        this.collectItem(player, item, "think step by step")} },
-      { group: this.deductiveItem, callback: this.collectDeductiveReasoning },
+        this.collectItem(player, item, "think step by step", this.itemText)} },
+      { group: this.deductiveItem, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "deductive reasoning", this.deductiveItemText)}  },
     ];
 
     overlaps.forEach(({ group, callback }) => {
@@ -180,6 +181,8 @@ export class Level1 extends ParentScene {
 
     // console.log("local storage", localStorage.getItem('openai-api-key'));
 
+    
+
     if(!localStorage.getItem("openai-api-key") && !import.meta.env.VITE_OPENAI_API_KEY){render(
       <Dialog
         text="Enter OpenAI API Key:"
@@ -205,7 +208,11 @@ export class Level1 extends ParentScene {
         }}
       />,
       this
-    )};
+    )}else{
+      state.isAPIAvailable = true;
+      this.isInputLocked = false;
+      console.log('API key is available:')
+    }
 
     this.input.keyboard!.on('keydown-ESC', () => {
       this.scene.pause(key.scene.main);
