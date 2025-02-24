@@ -16,6 +16,41 @@ export function createItem(this: any, group: any, x: number, y: number, texture:
     );
 }
 
+export function addItem(this: any, itemSprite: string, itemName: string, x: number, y: number, scaleFactor = 0.25) {
+  const item = this.physics.add.sprite(0, 0, itemSprite).setScale(scaleFactor);
+
+  this.load.once('complete', () => {
+    const { width, height } = item;
+    item.body.setSize(width * scaleFactor, height * scaleFactor);
+    item.body.setOffset(
+      (width - width * scaleFactor) / 2,
+      (height - height * scaleFactor) / 2
+    );
+  });
+
+  const itemText = this.add.text(0, 0-50, itemName, {
+    fontSize: `16px`,
+    color: '#ffffff',
+    fontStyle: 'bold',
+    align: 'center'
+  }).setOrigin(0.5);
+
+  const itemContainer = this.add.container(x, y, [item, itemText]);
+
+  this.tweens.add({
+    targets: itemText, 
+    y: `+=${10 * scaleFactor}`, 
+    duration: 800, 
+    ease: 'Sine.easeInOut', 
+    yoyo: true,
+    repeat: -1, 
+  });
+
+  return { itemContainer, item };
+}
+
+
+
 export function setupHUD(this: any) {
 
 }

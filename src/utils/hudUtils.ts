@@ -162,3 +162,60 @@ export function addSceneNameHUD(this: any){
 
 
 
+export function drawArrow(
+  this: any,
+  start: { x: number, y: number },
+  end: { x: number, y: number },
+  r: number,
+  graphics: Phaser.GameObjects.Graphics|null,
+  color = 0xffffff,
+  thickness = 2,
+  fixedLength = 100 
+) {
+  if (!graphics) return;
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  if (length === 0) return; 
+
+  const dirX = dx / length;
+  const dirY = dy / length;
+
+  const fixedEnd = {
+    x: start.x + dirX * fixedLength,
+    y: start.y + dirY * fixedLength
+  };
+
+  const newStart = {
+    x: start.x + dirX * r,
+    y: start.y + dirY * r
+  };
+
+  graphics.lineStyle(thickness, color);
+  graphics.beginPath();
+  graphics.moveTo(newStart.x, newStart.y);
+  graphics.lineTo(fixedEnd.x, fixedEnd.y);
+  graphics.strokePath();
+
+  const arrowSize = 10;
+  const angle = Math.atan2(dirY, dirX);
+
+  const leftWing = {
+    x: fixedEnd.x - arrowSize * Math.cos(angle - Math.PI / 6),
+    y: fixedEnd.y - arrowSize * Math.sin(angle - Math.PI / 6)
+  };
+
+  const rightWing = {
+    x: fixedEnd.x - arrowSize * Math.cos(angle + Math.PI / 6),
+    y: fixedEnd.y - arrowSize * Math.sin(angle + Math.PI / 6)
+  };
+
+  graphics.fillStyle(color, 1);
+  graphics.beginPath();
+  graphics.moveTo(fixedEnd.x, fixedEnd.y);
+  graphics.lineTo(leftWing.x, leftWing.y);
+  graphics.lineTo(rightWing.x, rightWing.y);
+  graphics.lineTo(fixedEnd.x, fixedEnd.y);
+  graphics.fillPath();
+}

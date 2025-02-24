@@ -67,60 +67,92 @@ export class ParentScene extends Phaser.Scene {
 
   update() {}
 
+
+  protected renderDialog(dialogs: string[], currentDialogIndex: number) {
+    if (currentDialogIndex >= dialogs.length) {
+      return; 
+  }
+
+  state.isTypewriting = true;
+
+  render(
+      <Typewriter
+          text={dialogs[currentDialogIndex]}
+          onEnd={() => {
+              state.isTypewriting = false;
+              currentDialogIndex++;
+              this.time.delayedCall(500, () => {
+                  this.renderDialog(dialogs, currentDialogIndex);
+              });
+          }}
+      />,
+      this
+  );
+
+  }
+
   protected collectItem(
     player: any,
     item: any,
     innerText: string,
     itemText: any,
-  ) {
+    mode: string = "prompt"
+) {
     if (state.isTypewriting || state.collectedItems?.has(item)) {
-      return;
+        return;
     }
 
-    if (!this.physics.overlap(player, item)) {
-      return;
-    }
-
-    state.isTypewriting = true;
+    console.log('Player is overlapping with the item.', player);
+    state.isTypewriting = true; // 进入交互状态
 
     render(
-      <Typewriter
-        text={'Prompt Utils: ' + innerText}
-        onEnd={() => {
-          console.log('Typewriter finished.');
+        <Typewriter
+            text={'Prompt Utils: ' + innerText}
+            onEnd={() => {
+                console.log('Typewriter finished.');
 
-          const spaceKey = this.input.keyboard?.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-          );
+                const spaceKey = this.input.keyboard?.addKey(
+                    Phaser.Input.Keyboard.KeyCodes.SPACE,
+                );
 
-          const handleSpacePress = () => {
-            if (!this.physics.overlap(player, item)) {
-              console.log(
-                'Player is no longer overlapping with the item. Action canceled.',
-              );
-              return;
-            }
+                const handleSpacePress = () => {
+                    if (!this.physics.overlap(player, item)) {
+                        console.log('Player is no longer overlapping with the item. Action canceled.');
+                        return;
+                    }
 
-            state.isTypewriting = false;
+                    state.isTypewriting = false; // 允许与其他物品交互
 
-            player.addPromptUtils(innerText);
-            console.log('PromptUtil collected:', innerText);
+                    if (mode === "prompt") player.addPromptUtils(innerText);
+                    else if (mode === "instruction") player.setInstruction(innerText);
+                    console.log('PromptUtil collected:', innerText);
 
-            if (item.active) {
-              item.destroy();
-              console.log('Item destroyed!');
-              itemText?.destroy();
-            }
+                    if (item.active) {
+                        item.destroy();
+                        console.log('Item destroyed!');
+                        if (mode === "prompt") itemText?.destroy();
+                    }
 
-            spaceKey?.off('down', handleSpacePress);
-          };
+                    spaceKey?.off('down', handleSpacePress);
+                };
 
-          spaceKey?.on('down', handleSpacePress);
-        }}
-      />,
-      this,
+                spaceKey?.on('down', handleSpacePress);
+            }}
+        />,
+        this,
     );
+}
+
+protected onOverlapEnd(player: any, item: any) {
+  console.log(`Agent ${player.getName()} exited ${item.texture.key} zone.`);
+  
+  if (state.isTypewriting) {
+      state.isTypewriting = false;
+      console.log('Reset state.isTypewriting because Agent exited item zone.');
   }
+}
+
+
 
   protected async onPlayerNearNPC(npc: any, agent: any) {
     if (this.cursors.space.isDown && !state.isTypewriting) {

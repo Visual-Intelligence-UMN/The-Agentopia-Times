@@ -13,10 +13,11 @@ import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { createItem, setupScene } from '../utils/sceneUtils';
+import { addItem, createItem, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
+import { customerServicePersona } from '../server/prompts';
 
 export class Level2 extends ParentScene {
 
@@ -45,6 +46,40 @@ export class Level2 extends ParentScene {
     createItem.call(this, this.debatePositionGroup, 700, 900, 'logo');
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
 
+    // const { itemContainer: instruct1, item: item1 } = addItem.call(this, 'logo', 'tech', 600, 575);
+    // const { itemContainer: instruct2, item: item2 } = addItem.call(this, 'logo', 'accounting', 700, 575);
+    // const { itemContainer: instruct3, item: item3 } = addItem.call(this, 'logo', 'product', 800, 575);
+    // const { itemContainer: instruct4, item: item4 } = addItem.call(this, 'logo', 'billing', 900, 575);
+
+    // const instructions = [
+    //   {obj: item1, name: 'tech', persona: customerServicePersona["tech"]},
+    //   {obj: item2, name: 'accounting', persona: customerServicePersona["account"]},
+    //   {obj: item3, name: 'product', persona: customerServicePersona["product"]},
+    //   {obj: item4, name: 'billing', persona: customerServicePersona["billing"]},
+    // ];
+
+    // instructions.forEach(({ obj, name, persona }) => {
+    //   this.physics.add.overlap(
+    //     this.agentGroup, 
+    //     obj, 
+    //     (player, item) => {
+    //       this.collectItem(player, item, name, persona, "instruction");
+    //     });
+    // });
+
+    // this.physics.add.overlap(
+    //   this.agentGroup, 
+    //   item1, 
+    //   (player, item) => {
+    //     this.collectItem(player, item, "tech", customerServicePersona["tech"], "instruction");
+    //   });
+  
+  this.physics.world.on('overlapend', (player: any, item: any) => {
+      this.onOverlapEnd(player, item);
+  });
+  
+
+
     this.parrellePositionGroup = this.physics.add.staticGroup();
 
     for(let i=0; i<3; i++){
@@ -56,6 +91,7 @@ export class Level2 extends ParentScene {
         this.collectItem(player, item, "think step by step", this.itemText)} },
       { group: this.deductiveItem, callback: (player:any, item:any) => {
         this.collectItem(player, item, "deductive reasoning", this.deductiveItemText)}  },
+      
     ];
 
     overlaps.forEach(({ group, callback }) => {

@@ -10,11 +10,13 @@ import { fetchChatCompletion } from '../server/server';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { setupScene } from '../utils/sceneUtils';
+import { LEVEL1_STARTING_TUTORIAL } from '../utils/dialogs';
+import { calculateDistance } from '../utils/mathUtils';
 
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
@@ -32,6 +34,7 @@ export class Level1 extends ParentScene {
   private inputElement!: HTMLInputElement;
   private isInputLocked: boolean = true;  // Locked input state
   private dialog: Phaser.GameObjects.Container | null = null;
+  private graphics: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
     super();
@@ -39,6 +42,8 @@ export class Level1 extends ParentScene {
 
   create() {
     setupScene.call(this);
+
+    this.graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xffffff } });
 
     this.itemText = this.add.text(350, 950, 'think step-by-step');
     this.deductiveItemText = this.add.text(450, 1050, 'deductive reasoning');
@@ -164,14 +169,16 @@ export class Level1 extends ParentScene {
       overlappedItems.delete(item);
     });
 
-    state.isTypewriting = true;
-    render(
-      <Typewriter
-        text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
-        onEnd={() => (state.isTypewriting = false)}
-      />,
-      this,
-    );
+    // state.isTypewriting = true;
+    // render(
+    //   <Typewriter
+    //     text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
+    //     onEnd={() => (state.isTypewriting = false)}
+    //   />,
+    //   this,
+    // );
+
+    this.renderDialog(LEVEL1_STARTING_TUTORIAL, 0);
 
     // API Key validation
 
@@ -288,6 +295,32 @@ export class Level1 extends ParentScene {
         this.playerControlledAgent.getPromptUtils(),
       );
     } 
+
+    if(calculateDistance(
+      {
+        x: this.playerControlledAgent.x, 
+        y: this.playerControlledAgent.y
+      }, 
+      {
+        x: 600, 
+        y: 900
+      }
+    )>100){
+      this.graphics?.clear();
+      drawArrow.call(
+        this, 
+        {
+          x: this.playerControlledAgent.x, 
+          y: this.playerControlledAgent.y
+        }, 
+        {
+          x: 600, 
+          y: 900
+        }, 
+        50, 
+        this.graphics
+      );
+    }
 
     controlAgentMovements(this.playerControlledAgent, this.cursors);
 
