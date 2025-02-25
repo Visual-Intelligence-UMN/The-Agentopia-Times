@@ -176,7 +176,7 @@ protected onOverlapEnd(player: any, item: any) {
       const userMssg = `
             you have collected ${agent.inventory.promptUtils}, 
             please utilize collected prompt utils to solve the task
-            please solve this task(maxn words: 150):
+            please solve this task(max words: 200), using concise examplanations:
             which one is bigger: 9.11 or 9.9?
           `;
 
@@ -217,11 +217,31 @@ protected onOverlapEnd(player: any, item: any) {
           this,
         );
 
+        // send the response to another LLM for evaluation
+        const evalMssg = `
+          if the following response answered: 
+            9.9 is bigger than 9.11; 
+          Then answer with "yes", otherwise answer with "no" \n
+        ` + aiReply;
+
+        const evalResponse = (await fetchChatCompletion([
+          {
+            role: 'system',
+            content: 'evaluation',
+          },
+          {
+            role: 'user',
+            content: evalMssg,
+          },
+        ])).choices[0].message.content;
+
+        console.log('evaluation response:', evalResponse);
+
         // add to next level if the answer is correct
         if (
-          aiReply.includes('three') ||
-          aiReply.includes('Three') ||
-          aiReply.includes('3')
+          evalResponse.includes('yes') ||
+          evalResponse.includes('Yes') ||
+          evalResponse.includes('YES')
         ) {
           console.log('CORRECT ANSWER');
           // add a level-transition button to the UI
