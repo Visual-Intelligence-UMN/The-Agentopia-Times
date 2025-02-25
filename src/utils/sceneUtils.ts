@@ -1,7 +1,7 @@
 import { render } from "phaser-jsx";
 import { Depth, key, TilemapLayer, TILESET_NAME } from "../constants";
 import { initKeyboardInputs, setupKeyListeners } from "./controlUtils";
-import { addAgentPanelHUD, addSceneNameHUD } from "./hudUtils";
+import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from "./hudUtils";
 import { TilemapDebug, Typewriter } from '../components';
 
 export function createItem(this: any, group: any, x: number, y: number, texture: any, scaleFactor = 0.25) {
@@ -59,6 +59,7 @@ export function setupScene(this: any) {
 
     //set up
     addSceneNameHUD.call(this);
+    addCreditsHUD.call(this);
     this.agentGroup = this.physics.add.group();
     this.cursors = initKeyboardInputs.call(this);
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });

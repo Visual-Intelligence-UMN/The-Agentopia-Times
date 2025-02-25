@@ -30,6 +30,7 @@ export class ParentScene extends Phaser.Scene {
   protected npc!: Phaser.Physics.Arcade.Sprite;
   protected deductiveItemText!: Phaser.GameObjects.Text;
   protected hudText!: Phaser.GameObjects.Text;
+  protected creditsText!: Phaser.GameObjects.Text;
   protected promptTexts: Phaser.GameObjects.Text[] = [];
   protected mssgData: MessageRecord[] = [];
   protected mssgMenu: Phaser.GameObjects.Rectangle | null = null;
@@ -46,6 +47,8 @@ export class ParentScene extends Phaser.Scene {
   protected agentControlButtons!: Phaser.GameObjects.Group;
 
   protected agentGroup!: any;
+  protected coinGroup!: any;
+
   protected agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
   protected overlappedItems: Set<any> = new Set();
   protected debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
@@ -59,6 +62,8 @@ export class ParentScene extends Phaser.Scene {
   protected sceneName: string = 'Game: Level 1';
 
   protected testnpc!: Phaser.Physics.Arcade.Sprite;
+
+  protected credits: number = 0;
 
   constructor(keyName: string = 'level1', sceneName: string = 'Game: Level 1') {
     super({ key: keyName });
@@ -271,6 +276,21 @@ protected onOverlapEnd(player: any, item: any) {
               },
               this,
             );
+
+
+            // generate cois
+            for (let i = 0; i < 5; i++) {
+              const coin = this.coinGroup.create(
+                  Phaser.Math.Between(550, 650),
+                  Phaser.Math.Between(850, 950),
+                  'coin'
+              );
+          
+              coin.play('coin'); 
+          }
+          
+
+
           }
         } else {
 

@@ -6,6 +6,7 @@ const image = {
   spaceman: 'spaceman',
   tuxemon: 'tuxemon',
   logo: 'logo',
+  coin: 'coin',
 } as const;
 
 const scene = {
