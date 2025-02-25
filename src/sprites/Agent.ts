@@ -150,7 +150,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
       }
     
       public getPromptUtils() {
-        return this.inventory.promptUtils;
+        return [...this.inventory.promptUtils];
       }
 
 

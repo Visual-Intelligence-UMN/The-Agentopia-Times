@@ -276,7 +276,12 @@ protected onOverlapEnd(player: any, item: any) {
 
         }
 
-        agent.storeMemory(systemMssg, userMssg, aiReply, agent.getPromptUtils(), result);
+        let utils = [];
+        for(let i=0; i<agent.getPromptUtils().length; i++){
+          utils.push(agent.getPromptUtils()[i]);
+        }
+
+        agent.storeMemory(systemMssg, userMssg, aiReply, utils, result);
       } catch (error) {
         console.error('API request failed', error);
         state.isTypewriting = false;
