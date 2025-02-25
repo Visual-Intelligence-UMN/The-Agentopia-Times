@@ -269,6 +269,8 @@ export class Level1 extends ParentScene {
         50, 
         this.graphics
       );
+    } else {
+      this.graphics?.clear();
     }
 
     controlAgentMovements(this.playerControlledAgent, this.cursors);
