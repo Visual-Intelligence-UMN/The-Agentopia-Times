@@ -25,6 +25,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private nameTag: Phaser.GameObjects.Text;
   private memory: Memory[] = [];
   private persona: string = "a helpful AI assistant";
+  private instruction: string = "";
 
   public inventory: Inventory = {
       promptUtils: [],
@@ -132,6 +133,14 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           selector.y = body.y + 46;
           break;
       }
+    }
+
+    public setInstruction(instruction: string) {
+        this.instruction = instruction;
+      }
+
+    public getInstruction() {
+        return this.instruction;
     }
 
     public addPromptUtils(promptUtils: string) {

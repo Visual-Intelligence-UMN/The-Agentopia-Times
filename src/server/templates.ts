@@ -21,3 +21,4 @@ export function selector(
         Input: ${input}
     `.trim();
 }
+

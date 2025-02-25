@@ -10,11 +10,13 @@ import { fetchChatCompletion } from '../server/server';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { setupScene } from '../utils/sceneUtils';
+import { LEVEL1_STARTING_TUTORIAL } from '../utils/dialogs';
+import { calculateDistance } from '../utils/mathUtils';
 
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
@@ -32,6 +34,7 @@ export class Level1 extends ParentScene {
   private inputElement!: HTMLInputElement;
   private isInputLocked: boolean = true;  // Locked input state
   private dialog: Phaser.GameObjects.Container | null = null;
+  private graphics: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
     super();
@@ -39,6 +42,8 @@ export class Level1 extends ParentScene {
 
   create() {
     setupScene.call(this);
+
+    this.graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xffffff } });
 
     this.itemText = this.add.text(350, 950, 'think step-by-step');
     this.deductiveItemText = this.add.text(450, 1050, 'deductive reasoning');
@@ -58,8 +63,10 @@ export class Level1 extends ParentScene {
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
 
     const overlaps = [
-      { group: this.itemGroup, callback: this.collectItem },
-      { group: this.deductiveItem, callback: this.collectDeductiveReasoning },
+      { group: this.itemGroup, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "think step by step", this.itemText)} },
+      { group: this.deductiveItem, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "deductive reasoning", this.deductiveItemText)}  },
     ];
 
     overlaps.forEach(({ group, callback }) => {
@@ -162,14 +169,16 @@ export class Level1 extends ParentScene {
       overlappedItems.delete(item);
     });
 
-    state.isTypewriting = true;
-    render(
-      <Typewriter
-        text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
-        onEnd={() => (state.isTypewriting = false)}
-      />,
-      this,
-    );
+    // state.isTypewriting = true;
+    // render(
+    //   <Typewriter
+    //     text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
+    //     onEnd={() => (state.isTypewriting = false)}
+    //   />,
+    //   this,
+    // );
+
+    this.renderDialog(LEVEL1_STARTING_TUTORIAL, 0);
 
     // API Key validation
 
@@ -179,7 +188,9 @@ export class Level1 extends ParentScene {
 
     // console.log("local storage", localStorage.getItem('openai-api-key'));
 
-    if(!localStorage.getItem("openai-api-key")){render(
+    
+
+    if(!localStorage.getItem("openai-api-key") && !import.meta.env.VITE_OPENAI_API_KEY){render(
       <Dialog
         text="Enter OpenAI API Key:"
         isInputLocked={this.isInputLocked}
@@ -204,7 +215,11 @@ export class Level1 extends ParentScene {
         }}
       />,
       this
-    )};
+    )}else{
+      state.isAPIAvailable = true;
+      this.isInputLocked = false;
+      console.log('API key is available:')
+    }
 
     this.input.keyboard!.on('keydown-ESC', () => {
       this.scene.pause(key.scene.main);
@@ -280,6 +295,32 @@ export class Level1 extends ParentScene {
         this.playerControlledAgent.getPromptUtils(),
       );
     } 
+
+    if(calculateDistance(
+      {
+        x: this.playerControlledAgent.x, 
+        y: this.playerControlledAgent.y
+      }, 
+      {
+        x: 600, 
+        y: 900
+      }
+    )>100){
+      this.graphics?.clear();
+      drawArrow.call(
+        this, 
+        {
+          x: this.playerControlledAgent.x, 
+          y: this.playerControlledAgent.y
+        }, 
+        {
+          x: 600, 
+          y: 900
+        }, 
+        50, 
+        this.graphics
+      );
+    }
 
     controlAgentMovements(this.playerControlledAgent, this.cursors);
 
