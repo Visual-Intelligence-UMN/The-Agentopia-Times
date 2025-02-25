@@ -13,6 +13,10 @@ export class Boot extends Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.spritesheet(key.image.coin, assets.sprites.coin, {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
     this.load.image(key.image.tuxemon, assets.tilesets.tuxemon);
     this.load.image(key.image.logo, assets.sprites.logo);
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);

@@ -43,6 +43,8 @@ export class Level1 extends ParentScene {
   create() {
     setupScene.call(this);
 
+    this.coinGroup = this.physics.add.group();
+
     this.graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xffffff } });
 
     this.itemText = this.add.text(350, 950, 'think step-by-step');
@@ -85,6 +87,26 @@ export class Level1 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
 
     const agent1 = new Agent(this, 350, 1200, 'player', 'misa-front', 'Alice');
+
+
+    this.anims.create({
+      key: "coin",       
+      frames: this.anims.generateFrameNumbers("coin", { start: 0, end: 7 }), 
+      frameRate: 10, 
+      repeat: -1    
+    });
+
+    const coin = this.physics.add.sprite(400, 1200, 'coin').play('coin');
+    this.coinGroup.add(coin);
+
+    this.physics.add.overlap(this.agentGroup, this.coinGroup, (agent, coin) => {
+      console.log("Coin collected!");
+      this.credits ++;
+        coin.destroy(); 
+        this.creditsText.setText(this.credits.toString());
+    }, undefined, this);
+
+
 
     this.agentGroup.add(agent1);
 

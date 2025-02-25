@@ -161,6 +161,12 @@ export function addSceneNameHUD(this: any){
 }
 
 
+export function addCreditsHUD(this: any){
+  this.creditsText = this.add.text(600, 35, this.credits, {
+    fontSize: '20px',
+    color: '#ffffff',
+  }).setScrollFactor(0).setDepth(1000);
+}
 
 export function drawArrow(
   this: any,
