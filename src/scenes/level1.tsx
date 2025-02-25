@@ -18,9 +18,13 @@ import * as ts from 'typescript';
 import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
-// import { debateWithJudging } from '../server/simulations/debate';
+import { debate } from '../server/llmUtils';
+import { ParentScene } from './ParentScene';
+import { setupScene } from '../utils/sceneUtils';
+import { LEVEL1_STARTING_TUTORIAL } from '../utils/dialogs';
+import { calculateDistance } from '../utils/mathUtils';
 
 
 interface Sign extends Phaser.Physics.Arcade.StaticBody {
@@ -33,41 +37,12 @@ interface MessageRecord {
   gpt: string;
 }
 
-export class Level1 extends Phaser.Scene {
-  private player!: Player;
-  private sign!: Sign;
-  private tilemap!: Phaser.Tilemaps.Tilemap;
-  private worldLayer!: Phaser.Tilemaps.TilemapLayer;
-  private itemGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private deductiveItem!: Phaser.Physics.Arcade.StaticGroup;
-  private itemText!: Phaser.GameObjects.Text;
-  private npc!: Phaser.Physics.Arcade.Sprite;
-  private deductiveItemText!: Phaser.GameObjects.Text;
-  private hudText!: Phaser.GameObjects.Text;
-  private promptTexts: Phaser.GameObjects.Text[] = [];
-  private mssgData: MessageRecord[] = [];
-  private mssgMenu: Phaser.GameObjects.Rectangle | null = null;
-  private mssgMenuText: Phaser.GameObjects.Text | null = null;
-  private mssgGroup!: Phaser.GameObjects.Group;
-  private subMssg: Phaser.GameObjects.Rectangle | null = null;
-  private subMssgText: Phaser.GameObjects.Text | null = null;
-  private controllableCharacters: any[] = [];
-  private activateIndex: number = 0;
-  private playerControlledAgent!: Agent;
-  private cursors!: any;
-  private controlMapping!: AgentPerspectiveKeyMapping[];
-  private keyMap!: any;
-  private agentControlButtons!: Phaser.GameObjects.Group;
+export class Level1 extends ParentScene {
 
-  private agentGroup!: any;
-  private agentControlButtonLabels: Phaser.GameObjects.Text[] = [];
-  private overlappedItems: Set<any> = new Set();
-  private debatePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private isDebate: boolean = false;
-
-  private sceneName: string = "Game: Level 1";
-
-  private testnpc!: Phaser.Physics.Arcade.Sprite;
+  private inputElement!: HTMLInputElement;
+  private isInputLocked: boolean = true;  // Locked input state
+  private dialog: Phaser.GameObjects.Container | null = null;
+  private graphics: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
     super({ key: 'level1' });
@@ -134,6 +109,8 @@ export class Level1 extends Phaser.Scene {
     this.deductiveItem = this.physics.add.staticGroup();
     this.debatePositionGroup = this.physics.add.staticGroup();
 
+    this.graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xffffff } });
+
     this.itemText = this.add.text(350, 950, 'think step-by-step');
     this.deductiveItemText = this.add.text(450, 1050, 'deductive reasoning');
 
@@ -152,8 +129,10 @@ export class Level1 extends Phaser.Scene {
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
 
     const overlaps = [
-      { group: this.itemGroup, callback: this.collectItem },
-      { group: this.deductiveItem, callback: this.collectDeductiveReasoning },
+      { group: this.itemGroup, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "think step by step", this.itemText)} },
+      { group: this.deductiveItem, callback: (player:any, item:any) => {
+        this.collectItem(player, item, "deductive reasoning", this.deductiveItemText)}  },
     ];
 
     overlaps.forEach(({ group, callback }) => {
@@ -396,14 +375,16 @@ export class Level1 extends Phaser.Scene {
       overlappedItems.delete(item);
     });
 
-    state.isTypewriting = true;
-    render(
-      <Typewriter
-        text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
-        onEnd={() => (state.isTypewriting = false)}
-      />,
-      this,
-    );
+    // state.isTypewriting = true;
+    // render(
+    //   <Typewriter
+    //     text="WASD or arrow keys to move, space to interact; 1, 2, and 3 to switch agents."
+    //     onEnd={() => (state.isTypewriting = false)}
+    //   />,
+    //   this,
+    // );
+
+    this.renderDialog(LEVEL1_STARTING_TUTORIAL, 0);
 
     this.input.keyboard!.on('keydown-ESC', () => {
       this.scene.pause(key.scene.main);
@@ -417,28 +398,15 @@ export class Level1 extends Phaser.Scene {
     }
 
     state.isTypewriting = true;
+    
 
-    render(
-      <Typewriter
-        text={`Prompt Utility: think step-by-step`}
-        onEnd={() => {
-          state.isTypewriting = false;
-          console.log('collected prompt utils', player.getPromptUtils());
-          const spaceKey = this.input.keyboard?.addKey(
-            Phaser.Input.Keyboard.KeyCodes.SPACE,
-          );
-
-          const destroyItem = () => {
-            if (item.active) {
-              item.destroy();
-              player.addPromptUtils('think step by step');
-              console.log('Item destroyed!');
-              this.itemText?.destroy();
-            }
-
-            spaceKey?.off('down', destroyItem);
-          };
-          spaceKey?.on('down', destroyItem);
+    if(!localStorage.getItem("openai-api-key") && !import.meta.env.VITE_OPENAI_API_KEY){render(
+      <Dialog
+        text="Enter OpenAI API Key:"
+        isInputLocked={this.isInputLocked}
+        setIsInputLocked={(locked) => {
+          this.isInputLocked = locked;
+          console.log('Lock status updated:', this.isInputLocked);
         }}
       />,
       this,
@@ -474,8 +442,12 @@ export class Level1 extends Phaser.Scene {
           spaceKey?.on('down', destroyItem);
         }}
       />,
-      this,
-    );
+      this
+    )}else{
+      state.isAPIAvailable = true;
+      this.isInputLocked = false;
+      console.log('API key is available:')
+    }
   }
 
   private async onPlayerNearNPC(npc: any, agent: any) {
@@ -595,6 +567,32 @@ export class Level1 extends Phaser.Scene {
         this.playerControlledAgent.getPromptUtils(),
       );
     } 
+
+    if(calculateDistance(
+      {
+        x: this.playerControlledAgent.x, 
+        y: this.playerControlledAgent.y
+      }, 
+      {
+        x: 600, 
+        y: 900
+      }
+    )>100){
+      this.graphics?.clear();
+      drawArrow.call(
+        this, 
+        {
+          x: this.playerControlledAgent.x, 
+          y: this.playerControlledAgent.y
+        }, 
+        {
+          x: 600, 
+          y: 900
+        }, 
+        50, 
+        this.graphics
+      );
+    }
 
     controlAgentMovements(this.playerControlledAgent, this.cursors);
 
