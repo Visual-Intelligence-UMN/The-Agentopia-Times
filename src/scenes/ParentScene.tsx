@@ -52,6 +52,8 @@ export class ParentScene extends Phaser.Scene {
   protected isDebate: boolean = false;
   protected levelBtn!: Phaser.GameObjects.Rectangle;
 
+  protected promptCoainter!: Phaser.GameObjects.Container;
+
   protected levelPassed: boolean = false;
 
   protected sceneName: string = 'Game: Level 1';
@@ -205,7 +207,7 @@ protected onOverlapEnd(player: any, item: any) {
           gpt: aiReply,
         });
 
-        agent.storeMemory(systemMssg, userMssg, aiReply);
+        
 
         console.log('mssgData:', this.mssgData, agent.getMemory());
 
@@ -237,6 +239,8 @@ protected onOverlapEnd(player: any, item: any) {
 
         console.log('evaluation response:', evalResponse);
 
+        let result = false;
+
         // add to next level if the answer is correct
         if (
           evalResponse.includes('yes') ||
@@ -244,6 +248,7 @@ protected onOverlapEnd(player: any, item: any) {
           evalResponse.includes('YES')
         ) {
           console.log('CORRECT ANSWER');
+          result = true;
           // add a level-transition button to the UI
           if (!this.levelPassed) {
             console.log('levelPassed', this.levelPassed);
@@ -267,7 +272,11 @@ protected onOverlapEnd(player: any, item: any) {
               this,
             );
           }
+        } else {
+
         }
+
+        agent.storeMemory(systemMssg, userMssg, aiReply, agent.getPromptUtils(), result);
       } catch (error) {
         console.error('API request failed', error);
         state.isTypewriting = false;

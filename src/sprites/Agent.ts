@@ -15,6 +15,8 @@ interface Memory {
   system: string;
   user: string;
   gpt: string;
+  currentPrompts: string[];
+  result: boolean;
 }
 
 export class Agent extends Phaser.Physics.Arcade.Sprite {
@@ -96,8 +98,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     this.nameTag.setColor(color);
   } 
 
-  public storeMemory(system: string, user: string, gpt: string) {
-    this.memory.push({ system, user, gpt });
+  public storeMemory(system: string, user: string, gpt: string, currentPrompts: string[], result: boolean) {
+    this.memory.push({ system, user, gpt, currentPrompts, result });
   }
 
   public getMemory() {

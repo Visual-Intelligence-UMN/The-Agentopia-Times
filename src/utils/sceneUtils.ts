@@ -28,7 +28,7 @@ export function addItem(this: any, itemSprite: string, itemName: string, x: numb
     );
   });
 
-  const itemText = this.add.text(0, 0-50, itemName, {
+  const itemText = this.add.text(0, 20 * scaleFactor, itemName, {
     fontSize: `16px`,
     color: '#ffffff',
     fontStyle: 'bold',
@@ -159,10 +159,15 @@ export function setupScene(this: any) {
             .setDepth(1003)
             .setAlpha(0.5);
 
+          let color = "#ff0000";
+          if(this.playerControlledAgent.getMemory()[i].result){
+            color = "#ffffff";
+          }
+
           const mssgLabel = this.add
             .text(300 - 140 + i * 75 - 15, 280, `Histor\nMessage ${i}`, {
               fontSize: '10px',
-              color: '#ffffff',
+              color: color,
             })
             .setScrollFactor(0)
             .setDepth(1004);
@@ -198,6 +203,46 @@ export function setupScene(this: any) {
                 .setAlpha(1)
                 .setOrigin(0, 0);
 
+                if (this.promptContainer) {
+                  this.promptContainer.list.forEach((child:any) => child.destroy());
+                  this.promptContainer.destroy(true);
+                  this.promptContainer = null;
+                }
+
+              this.promptContainer = this.add.container(0, 0).setDepth(1100);
+
+
+              for(let i = 0; i < mssg.currentPrompts.length; i++){
+                const promptRect = this.add.rectangle(
+                  worldPoint.x + 200,
+                  worldPoint.y + i * 20,
+                  150,
+                  20,
+                  0x000000,
+                ).setDepth(1100)
+                .setStrokeStyle(2, 0xffffff)
+                .setAlpha(1)
+                .setOrigin(0, 0);
+                
+
+                const promptText = this.add.text(
+                  worldPoint.x + 200,
+                  worldPoint.y + i * 20,
+                  mssg.currentPrompts[i],
+                  {
+                    fontSize: '10px',
+                    color: '#ffffff',
+                    wordWrap: { width: 150, useAdvancedWrap: true },
+                  },
+                ).setDepth(1101)
+                .setScrollFactor(1)
+                .setAlpha(1);
+                
+
+                this.promptContainer.add(promptRect);
+                this.promptContainer.add(promptText);
+              }
+
               console.log('subMssgText', this.subMssgText, this.subMssg);
             }
           });
@@ -208,6 +253,9 @@ export function setupScene(this: any) {
               this.subMssgText?.destroy();
               this.subMssg = null;
               this.subMssgText = null;
+              this.promptContainer.list.forEach((child:any) => child.destroy());
+              this.promptContainer.destroy(true);
+              this.promptContainer = null;
             }
           });
 
