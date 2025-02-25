@@ -13,6 +13,7 @@ new Phaser.Game({
   version: import.meta.env.VITE_APP_VERSION,
   scene: [
     scenes.Boot,
+    scenes.MainMenu,
     scenes.Level1,
     scenes.Level2,
   ],
