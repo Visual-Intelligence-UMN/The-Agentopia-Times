@@ -162,6 +162,10 @@ export function addSceneNameHUD(this: any){
 
 
 export function addCreditsHUD(this: any){
+  // const creditsIcon = this.add.image(570, 35, 'coinIcon') 
+  //   .setOrigin(1, 0.5) 
+  //   .setScrollFactor(0)
+  //   .setDepth(1000);
   this.creditsText = this.add.text(600, 35, this.credits, {
     fontSize: '20px',
     color: '#ffffff',
