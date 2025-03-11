@@ -21,6 +21,8 @@ export class Boot extends Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+
+    
     this.load.image(key.image.tuxemon, assets.tilesets.tuxemon);
     this.load.image(key.image.office, assets.tilesets.office);
     this.load.image(key.image.room_builder_office, assets.tilesets.room_builder_office);
