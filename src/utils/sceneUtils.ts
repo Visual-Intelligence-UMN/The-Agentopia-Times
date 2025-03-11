@@ -101,19 +101,19 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     console.log('Tileset Office:', tilesetOffice);
     console.log('Tileset Room Builder:', tilesetRoomBuilder);
 
-    this.layerBelow = this.tilemap.createLayer(
+    this.BelowPlayer = this.tilemap.createLayer(
       TilemapLayer.BelowPlayer,
       [tilesetOffice, tilesetRoomBuilder],
       0,
       0,
     );
-    this.layerWorld = this.tilemap.createLayer(
+    this.worldLayer = this.tilemap.createLayer(
       TilemapLayer.World,
       [tilesetOffice, tilesetRoomBuilder],
       0,
       0,
     );
-    this.layerAbove = this.tilemap.createLayer(
+    this.aboveLayer = this.tilemap.createLayer(
       TilemapLayer.AbovePlayer,
       [tilesetOffice, tilesetRoomBuilder],
       0,
@@ -122,7 +122,16 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
 
     //console.log("Layers available:", this.tilemap.getLayerNames());
 
-    this.layerAbove.setDepth(10);
+    // this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
+
+
+    console.log("Tile properties:", this.worldLayer.layer.properties);
+
+
+    this.worldLayer.setCollisionByProperty({ collides: true });
+    
+
+    this.aboveLayer.setDepth(10);
   } else {
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 
@@ -155,6 +164,9 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
       0,
     )!;
 
+    console.log("Tile properties:", this.worldLayer.layer.properties);
+
+
     this.worldLayer.setCollisionByProperty({ collides: true });
 
     // By default, everything gets depth sorted on the screen in the order we created things.
@@ -167,8 +179,12 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
   this.deductiveItem = this.physics.add.staticGroup();
   this.debatePositionGroup = this.physics.add.staticGroup();
 
+  console.log("physical bounds: ", this.worldLayer.width, this.worldLayer.height);
+
   this.physics.world.bounds.width = this.worldLayer.width;
   this.physics.world.bounds.height = this.worldLayer.height;
+
+  console.log("physical bounds: ", this.physics.world.bounds.width, this.physics.world.bounds.height);
 
   // Set the bounds of the camera
   this.cameras.main.setBounds(

@@ -34,7 +34,7 @@ export class Level2 extends ParentScene {
 
   create() {
 
-    setupScene.call(this);
+    setupScene.call(this, "office");
 
     this.tweens.add({
       targets: [this.itemText, this.deductiveItemText], 
@@ -96,8 +96,9 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.npc, this.worldLayer);
 
     this.physics.add.collider(this.agentGroup, this.worldLayer);
+    
 
-    const agent1 = new Agent(this, 350, 1200, 'player', 'misa-front', 'Alice');
+    const agent1 = new Agent(this, 0, 50, 'player', 'misa-front', 'Alice');
     const agent2 = new Agent(this, 450, 1050, 'player', 'misa-front', 'Bob');
     const agent3 = new Agent(this, 300, 950, 'player', 'misa-front', 'Cathy');
 
