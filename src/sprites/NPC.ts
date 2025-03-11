@@ -56,7 +56,6 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    // 更新文本位置，使其跟随 Agent
     this.nameTag.setPosition(this.x, this.y - 25);
   }
 

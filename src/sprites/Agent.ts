@@ -29,6 +29,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private persona: string = "a helpful AI assistant";
   private instruction: string = "";
 
+  public assignToWorkplace: boolean = false;
+
   public inventory: Inventory = {
       promptUtils: [],
       tools: [],

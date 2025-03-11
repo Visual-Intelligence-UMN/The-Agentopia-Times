@@ -19,6 +19,11 @@ import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 import { customerServicePersona } from '../server/prompts';
 
+interface Zone {
+  zone: Phaser.GameObjects.Zone;
+  agentsInside: Set<string>;
+}
+
 export class Level2 extends ParentScene {
 
   private parrellePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
@@ -26,6 +31,7 @@ export class Level2 extends ParentScene {
   private agentIndex: number = 0;
   private isBirdMoving: boolean = false;
   private agentList: Agent[] = [];
+  private parallelZones: Zone[] = [];
 
   constructor() {
     super("level2");
@@ -98,9 +104,9 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
 
-    const agent1 = new Agent(this, 0, 50, 'player', 'misa-front', 'Alice');
-    const agent2 = new Agent(this, 450, 1050, 'player', 'misa-front', 'Bob');
-    const agent3 = new Agent(this, 300, 950, 'player', 'misa-front', 'Cathy');
+    const agent1 = new Agent(this, 50, 200, 'player', 'misa-front', 'Alice');
+    const agent2 = new Agent(this, 100, 200, 'player', 'misa-front', 'Bob');
+    const agent3 = new Agent(this, 200, 200, 'player', 'misa-front', 'Cathy');
 
     this.agentGroup.add(agent1);
     this.agentGroup.add(agent2);
@@ -124,6 +130,18 @@ export class Level2 extends ParentScene {
       undefined,
       this,
     );
+
+    // collision logics
+    this.parallelZones.forEach((zoneData) => {
+      this.physics.add.overlap(this.agentGroup, zoneData.zone, (zone, agent) => {
+        console.log("param",agent,zone);
+          if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
+              zoneData.agentsInside.add((agent as unknown as Agent).getName());
+              console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the area`, zoneData.zone);
+          }
+      });
+  });
+  
 
     render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
@@ -426,6 +444,21 @@ private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: numbe
   
 
   update() {
+
+    this.parallelZones.forEach((zoneData) => {
+      this.agentGroup.getChildren().forEach((agent:any) => {
+        // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
+          const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
+              agent.getBounds(),
+              zoneData.zone.getBounds()
+          );
+
+          if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
+              zoneData.agentsInside.delete((agent as Agent).getName());
+              console.log(`detection: Agent ${agent.getName() } exited area`, zoneData.zone);
+          }
+      });
+  });
 
     // if (!this.isBirdMoving && this.agentList.length > 0) {
     //   this.moveBirdToNextAgent(this.bird, 100, this.agentIndex);

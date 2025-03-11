@@ -120,6 +120,37 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
       0,
     );
 
+
+    const objectsLayer = this.tilemap.getObjectLayer('Objects');
+
+    const parallelZoneDataList = objectsLayer.objects.filter((obj:any) => obj.name === 'parallel');
+    
+    this.parallelZones = []; 
+    
+    parallelZoneDataList.forEach((parallelZoneData:any) => {
+        const parallelZone = this.add.zone(
+            parallelZoneData.x + parallelZoneData.width / 2,
+            parallelZoneData.y + parallelZoneData.height / 2,
+            parallelZoneData.width,
+            parallelZoneData.height
+        );
+        
+        this.physics.world.enable(parallelZone);
+        parallelZone.body.setAllowGravity(false);
+        parallelZone.body.setImmovable(true);
+    
+        this.parallelZones.push({
+          zone: parallelZone,
+          agentsInside: new Set() 
+        });
+    });
+    
+    console.log('Parallel Zones:', this.parallelZones);
+
+    
+  
+    
+
     //console.log("Layers available:", this.tilemap.getLayerNames());
 
     // this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
@@ -378,4 +409,6 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     text.setScrollFactor(0);
     text.setDepth(1000);
   }
+
+  
 }
