@@ -11,7 +11,7 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
+import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { addItem, createItem, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
@@ -549,8 +549,8 @@ private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: numbe
       );
     }
 
-    controlAgentMovements(this.playerControlledAgent, this.cursors);
-
+    // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {
       console.log('overlapstart', agent, item);
     });

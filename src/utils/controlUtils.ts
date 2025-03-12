@@ -184,6 +184,11 @@ export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent
 
   scene.input.off("pointerdown"); // Remove previously bound events first
   scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+
+    if(pointer.rightButtonDown()){
+      return ;
+    }
+
     if (scene.tweens.isTweening(playerControlledAgent)) {
       scene.tweens.killTweensOf(playerControlledAgent); // Stop current movement
     }
@@ -216,6 +221,33 @@ export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent
     scene.tweens.killTweensOf(playerControlledAgent);
     createOrUpdateGrid(tilemap, true);
   });
+}
+
+
+export function autoControlAgent(scene: Phaser.Scene, playerControlledAgent: any, tilemap: Phaser.Tilemaps.Tilemap, targetTileX: number, targetTileY: number) {
+  const finder = new PF.AStarFinder();
+
+  if (scene.tweens.isTweening(playerControlledAgent)) {
+    scene.tweens.killTweensOf(playerControlledAgent); // Stop current movement
+  }
+
+  const grid = createOrUpdateGrid(tilemap);
+  const agentTileX = Math.floor(playerControlledAgent.x / tilemap.tileWidth);
+  const agentTileY = Math.floor(playerControlledAgent.y / tilemap.tileHeight);
+
+  let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
+
+  if (path.length > 1) {
+    path.shift();
+  }
+
+  // Create a circle for the target position
+  createTargetCircle(scene, targetTileX, targetTileY, tilemap);
+
+  // Drawing path dashed lines
+  drawDashedPath(scene, path, tilemap);
+
+  moveAlongPath(scene, playerControlledAgent, path, tilemap);
 }
 
 // Creating a circle of target points
