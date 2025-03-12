@@ -7,6 +7,10 @@ const image = {
   tuxemon: 'tuxemon',
   logo: 'logo',
   coin: 'coin',
+  bird: 'bird',
+  coinIcon: 'coinIcon',
+  office: 'office',
+  room_builder_office: 'room_builder_office',
 } as const;
 
 const scene = {
@@ -17,6 +21,8 @@ const scene = {
 
 const tilemap = {
   tuxemon: 'tuxemon',
+  office: 'office',
+  room_builder_office: 'room_builder_office',
 } as const;
 
 export const key = {

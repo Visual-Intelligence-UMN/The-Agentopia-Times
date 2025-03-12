@@ -22,6 +22,10 @@ import { customerServicePersona } from '../server/prompts';
 export class Level2 extends ParentScene {
 
   private parrellePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
+  private bird!: Phaser.Physics.Arcade.Sprite;
+  private agentIndex: number = 0;
+  private isBirdMoving: boolean = false;
+  private agentList: Agent[] = [];
 
   constructor() {
     super("level2");
@@ -41,38 +45,22 @@ export class Level2 extends ParentScene {
       repeat: -1, 
     });
 
+    // this.anims.create({
+    //   key: "bird",
+    //   frames: this.anims.generateFrameNumbers("bird", { start: 0, end: 1 }),
+    //   frameRate: 10,
+    //   repeat: -1,
+    // });
+
+    // const bird = this.physics.add.sprite(500, 1000, "bird");
+    // bird.play("bird");
+
+    //this.bird = bird;
+
     createItem.call(this, this.itemGroup, 400, 1000, 'logo');
     createItem.call(this, this.deductiveItem, 500, 1100, 'logo');
     createItem.call(this, this.debatePositionGroup, 700, 900, 'logo');
     createItem.call(this, this.debatePositionGroup, 900, 900, 'logo');
-
-    // const { itemContainer: instruct1, item: item1 } = addItem.call(this, 'logo', 'tech', 600, 575);
-    // const { itemContainer: instruct2, item: item2 } = addItem.call(this, 'logo', 'accounting', 700, 575);
-    // const { itemContainer: instruct3, item: item3 } = addItem.call(this, 'logo', 'product', 800, 575);
-    // const { itemContainer: instruct4, item: item4 } = addItem.call(this, 'logo', 'billing', 900, 575);
-
-    // const instructions = [
-    //   {obj: item1, name: 'tech', persona: customerServicePersona["tech"]},
-    //   {obj: item2, name: 'accounting', persona: customerServicePersona["account"]},
-    //   {obj: item3, name: 'product', persona: customerServicePersona["product"]},
-    //   {obj: item4, name: 'billing', persona: customerServicePersona["billing"]},
-    // ];
-
-    // instructions.forEach(({ obj, name, persona }) => {
-    //   this.physics.add.overlap(
-    //     this.agentGroup, 
-    //     obj, 
-    //     (player, item) => {
-    //       this.collectItem(player, item, name, persona, "instruction");
-    //     });
-    // });
-
-    // this.physics.add.overlap(
-    //   this.agentGroup, 
-    //   item1, 
-    //   (player, item) => {
-    //     this.collectItem(player, item, "tech", customerServicePersona["tech"], "instruction");
-    //   });
   
   this.physics.world.on('overlapend', (player: any, item: any) => {
       this.onOverlapEnd(player, item);
@@ -121,6 +109,7 @@ export class Level2 extends ParentScene {
     this.controllableCharacters.push(agent2);
     this.controllableCharacters.push(agent3);
 
+    this.agentList.push(agent1, agent2, agent3);
     console.log('controled characters', this.controllableCharacters);
 
     //set the camera
@@ -369,31 +358,6 @@ export class Level2 extends ParentScene {
       console.log("route result", result);
     }
     console.log("MAS produced results - inside function", result);
-  //   render(
-  //     <Typewriter
-  //       text={result}
-  //       onEnd={() => (
-  //         state.isTypewriting = false
-  //       )}
-  //     />,
-  //     this,
-  //   );
-  //   // **Step 2: Call Evaluator Function**
-  //   const evaluation = await evaluateCustomerSupportResponse(pattern, result);
-
-  //   console.log("Evaluator Feedback:", evaluation);
-
-  //   // **Render Evaluator's Feedback**
-  //   render(
-  //       <Typewriter
-  //           text={`Evaluator Feedback:\n${evaluation}`}
-  //           onEnd={() => (state.isTypewriting = false)}
-  //       />,
-  //       this,
-  //   );
-
-  //   return result;
-  // }
   await new Promise((resolve) => {
     render(
         <Typewriter
@@ -428,10 +392,43 @@ await new Promise((resolve) => {
 return result;
 }
 
+  private getAllAgentPositions() {
+    return this.agentGroup.getChildren().map((agent:any) => ({
+        name: agent.name,  
+        x: agent.x,        
+        y: agent.y,        
+    }));
+}
+
+private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: number, currentTargetIndex: number) {
+  if (this.agentList.length === 0) return;
+
+  this.isBirdMoving = true;  
+
+  const targetAgent = this.agentList[currentTargetIndex];
+  this.physics.moveToObject(bird, targetAgent, birdSpeed); 
+
+  bird.update = () => {
+    if (Phaser.Math.Distance.Between(bird.x, bird.y, targetAgent.x, targetAgent.y) < 5) {
+      bird.setVelocity(0, 0); 
+      this.isBirdMoving = false;    
+
+      this.agentIndex = (this.agentIndex + 1) % this.agentList.length; 
+
+      this.time.delayedCall(1000, () => {
+        this.moveBirdToNextAgent(bird, birdSpeed, this.agentIndex); 
+      }, [], this);
+    }
+  };
+}
 
   
 
   update() {
+
+    // if (!this.isBirdMoving && this.agentList.length > 0) {
+    //   this.moveBirdToNextAgent(this.bird, 100, this.agentIndex);
+    // }
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
 
