@@ -7,7 +7,7 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
-import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
+import { controlAgentMovements, initKeyboardInputs, controlAgentWithMouse } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
@@ -204,7 +204,7 @@ export class Level1 extends ParentScene {
 
     // API Key validation
 
-    localStorage.clear();
+    // localStorage.clear();
 
     this.dialog = this.add.container(0, 0);
 
@@ -294,8 +294,10 @@ export class Level1 extends ParentScene {
     } else {
       this.graphics?.clear();
     }
+    
+    // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
 
-    controlAgentMovements(this.playerControlledAgent, this.cursors);
 
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {
       console.log('overlapstart', agent, item);
