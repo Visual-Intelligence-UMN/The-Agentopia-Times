@@ -3,6 +3,7 @@ import { Depth, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, Tilem
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
+import * as PF from "pathfinding";
 
 export function createItem(
   this: any,
@@ -362,4 +363,24 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     text.setScrollFactor(0);
     text.setDepth(1000);
   }
+}
+
+
+export function createGridFromTilemap(tilemap: Phaser.Tilemaps.Tilemap) {
+  const grid = new PF.Grid(tilemap.width, tilemap.height);
+  
+  tilemap.layers.forEach(layer => {
+    for (let y = 0; y < tilemap.height; y++) {
+      for (let x = 0; x < tilemap.width; x++) {
+        const tile = tilemap.getTileAt(x, y, false, layer.name);
+        
+        // Make sure the wall (or house) is impassable
+        if (tile && tile.properties && tile.properties.collides) {
+          grid.setWalkableAt(x, y, false);
+        }
+      }
+    }
+  });
+
+  return grid;
 }
