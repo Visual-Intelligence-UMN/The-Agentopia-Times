@@ -13,13 +13,13 @@ import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { addItem, createItem, setupScene } from '../utils/sceneUtils';
+import { addItem, areAllZonesOccupied, createItem, getAllAgents, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
-import { evaluateCustomerSupportResponse, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
+import { evaluateCustomerSupportResponse, eventBus, testChain, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 import { customerServicePersona } from '../server/prompts';
 
-interface Zone {
+export interface Zone {
   zone: Phaser.GameObjects.Zone;
   agentsInside: Set<string>;
 }
@@ -30,12 +30,23 @@ export class Level2 extends ParentScene {
   private bird!: Phaser.Physics.Arcade.Sprite;
   private agentIndex: number = 0;
   private isBirdMoving: boolean = false;
-  private agentList: Agent[] = [];
+  private agentList: Map<string, Agent> = new Map();
   private parallelZones: Zone[] = [];
+  private isWorkflowAvailable: boolean = false;
+  private debateStartBtn!: Phaser.GameObjects.Rectangle;
+  private debateStartLabel!: Phaser.GameObjects.Text;
 
   constructor() {
     super("level2");
     this.sceneName = "Game: Level 2";
+    eventBus.addEventListener("signal", (event:any) => {
+      console.log(`Level2 received: ${event.detail}`);
+      if (event.detail === "signal 1") {
+        console.log("Research phase completed.");
+      } else if (event.detail === "signal 2") {
+        console.log("News article formatting completed.");
+      }
+    });
   }
 
   create() {
@@ -104,9 +115,12 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
 
-    const agent1 = new Agent(this, 50, 200, 'player', 'misa-front', 'Alice');
-    const agent2 = new Agent(this, 100, 200, 'player', 'misa-front', 'Bob');
-    const agent3 = new Agent(this, 200, 200, 'player', 'misa-front', 'Cathy');
+    const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
+    const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
+    const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
+
+    // just for testing
+    // testChain();
 
     this.agentGroup.add(agent1);
     this.agentGroup.add(agent2);
@@ -116,7 +130,9 @@ export class Level2 extends ParentScene {
     this.controllableCharacters.push(agent2);
     this.controllableCharacters.push(agent3);
 
-    this.agentList.push(agent1, agent2, agent3);
+    this.agentList.set(agent1.getName(), agent1);
+    this.agentList.set(agent2.getName(), agent2);
+    this.agentList.set(agent3.getName(), agent3);
     console.log('controled characters', this.controllableCharacters);
 
     //set the camera
@@ -134,7 +150,7 @@ export class Level2 extends ParentScene {
     // collision logics
     this.parallelZones.forEach((zoneData) => {
       this.physics.add.overlap(this.agentGroup, zoneData.zone, (zone, agent) => {
-        console.log("param",agent,zone);
+        //console.log("param",agent,zone);
           if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
               zoneData.agentsInside.add((agent as unknown as Agent).getName());
               console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the area`, zoneData.zone);
@@ -364,6 +380,15 @@ export class Level2 extends ParentScene {
       this.scene.pause(key.scene.main);
       this.scene.launch(key.scene.menu);
     });
+
+    for(let i=0; i<this.parallelZones.length; i++) {
+
+    }
+
+    if(this.parallelZones){
+
+    }
+
   }
 
   private async choosePattern(pattern: string) {
@@ -419,27 +444,27 @@ return result;
     }));
 }
 
-private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: number, currentTargetIndex: number) {
-  if (this.agentList.length === 0) return;
+// private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: number, currentTargetIndex: number) {
+//   if (this.agentList.length === 0) return;
 
-  this.isBirdMoving = true;  
+//   this.isBirdMoving = true;  
 
-  const targetAgent = this.agentList[currentTargetIndex];
-  this.physics.moveToObject(bird, targetAgent, birdSpeed); 
+//   const targetAgent = this.agentList[currentTargetIndex];
+//   this.physics.moveToObject(bird, targetAgent, birdSpeed); 
 
-  bird.update = () => {
-    if (Phaser.Math.Distance.Between(bird.x, bird.y, targetAgent.x, targetAgent.y) < 5) {
-      bird.setVelocity(0, 0); 
-      this.isBirdMoving = false;    
+//   bird.update = () => {
+//     if (Phaser.Math.Distance.Between(bird.x, bird.y, targetAgent.x, targetAgent.y) < 5) {
+//       bird.setVelocity(0, 0); 
+//       this.isBirdMoving = false;    
 
-      this.agentIndex = (this.agentIndex + 1) % this.agentList.length; 
+//       this.agentIndex = (this.agentIndex + 1) % this.agentList.length; 
 
-      this.time.delayedCall(1000, () => {
-        this.moveBirdToNextAgent(bird, birdSpeed, this.agentIndex); 
-      }, [], this);
-    }
-  };
-}
+//       this.time.delayedCall(1000, () => {
+//         this.moveBirdToNextAgent(bird, birdSpeed, this.agentIndex); 
+//       }, [], this);
+//     }
+//   };
+// }
 
   
 
@@ -459,6 +484,53 @@ private moveBirdToNextAgent(bird: Phaser.Physics.Arcade.Sprite, birdSpeed: numbe
           }
       });
   });
+
+  if(areAllZonesOccupied(this.parallelZones) && !this.isWorkflowAvailable) {
+    this.isWorkflowAvailable = true;
+    console.log("All zones are occupied!");
+    // create a start workflow button
+    this.debateStartBtn = this.add
+            .rectangle(50, 330, 50, 50, 0x000000)
+            .setScrollFactor(0)
+            .setDepth(1001)
+            .setAlpha(0.5)
+            .setStrokeStyle(2, 0xffffff)
+            .setInteractive();
+
+          this.debateStartLabel = this.add
+            .text(35, 320, 'Start Workflow', {
+              fontSize: '10px',
+              color: '#ffffff',
+              wordWrap: { width: 50, useAdvancedWrap: true },
+            })
+            .setScrollFactor(0)
+            .setDepth(1002);
+
+    this.debateStartBtn.on('pointerdown', (pointer: any) => {
+       const agentsInfo = getAllAgents(this.parallelZones);
+       console.log("agentsInfo", agentsInfo);
+       
+       const agentName1 = agentsInfo[0].agents[0];
+        const agentName2 = agentsInfo[1].agents[0];
+
+        const agent1 = this.agentList.get(agentName1);
+        const agent2 = this.agentList.get(agentName2);
+
+        console.log("agent1", agent1, agent1?.x, agent1?.y);
+        console.log("agent2", agent2, agent2?.x, agent2?.y);
+
+        testChain(agent1, agent2, this, this.tilemap);
+
+        eventBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
+    });
+  } 
+  // else if(!areAllZonesOccupied(this.parallelZones) && this.isWorkflowAvailable) {
+  //   this.isWorkflowAvailable = false;
+  //   console.log("Not all zones are occupied!");
+  //   // remove the start workflow button
+  //   this.debateStartBtn.destroy();
+  //   this.debateStartLabel.destroy();
+  // }
 
     // if (!this.isBirdMoving && this.agentList.length > 0) {
     //   this.moveBirdToNextAgent(this.bird, 100, this.agentIndex);

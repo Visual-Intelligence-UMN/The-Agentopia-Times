@@ -199,6 +199,8 @@ export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent
     const targetTileX = Math.floor(pointer.worldX / tilemap.tileWidth);
     const targetTileY = Math.floor(pointer.worldY / tilemap.tileHeight);
 
+    console.log("final destination", pointer.worldX, pointer.worldY)
+
     let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
 
     if (path.length > 1) {
@@ -224,31 +226,122 @@ export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent
 }
 
 
-export function autoControlAgent(scene: Phaser.Scene, playerControlledAgent: any, tilemap: Phaser.Tilemaps.Tilemap, targetTileX: number, targetTileY: number) {
-  const finder = new PF.AStarFinder();
+export async function autoControlAgent(
+  scene: Phaser.Scene,
+  playerControlledAgent: any,
+  tilemap: Phaser.Tilemaps.Tilemap,
+  goX: number,
+  goY: number
+): Promise<void> {
+  return new Promise(async (resolve) => {
+    const finder = new PF.AStarFinder();
 
-  if (scene.tweens.isTweening(playerControlledAgent)) {
-    scene.tweens.killTweensOf(playerControlledAgent); // Stop current movement
-  }
+    if (scene.tweens.isTweening(playerControlledAgent)) {
+      scene.tweens.killTweensOf(playerControlledAgent); // 停止当前移动
+    }
 
-  const grid = createOrUpdateGrid(tilemap);
-  const agentTileX = Math.floor(playerControlledAgent.x / tilemap.tileWidth);
-  const agentTileY = Math.floor(playerControlledAgent.y / tilemap.tileHeight);
+    const grid = createOrUpdateGrid(tilemap);
+    const agentTileX = Math.floor(playerControlledAgent.x / tilemap.tileWidth);
+    const agentTileY = Math.floor(playerControlledAgent.y / tilemap.tileHeight);
+    const targetTileX = Math.floor(goX / tilemap.tileWidth);
+    const targetTileY = Math.floor(goY / tilemap.tileHeight);
 
-  let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
+    
 
-  if (path.length > 1) {
-    path.shift();
-  }
+    let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
 
-  // Create a circle for the target position
-  createTargetCircle(scene, targetTileX, targetTileY, tilemap);
+    if (path.length > 1) {
+      path.shift();
+    }
 
-  // Drawing path dashed lines
-  drawDashedPath(scene, path, tilemap);
+    createTargetCircle(scene, targetTileX, targetTileY, tilemap);
+    drawDashedPath(scene, path, tilemap);
 
-  moveAlongPath(scene, playerControlledAgent, path, tilemap);
+    console.log(`🚀 Moving agent to (${targetTileX}, ${targetTileY})`);
+
+    // **确保路径为空时也会 resolve**
+    if (path.length === 0) {
+      console.log("❌ No valid path, resolving immediately.");
+      resolve();
+      return;
+    }
+
+    // **等待 `asyncMoveAlongPath` 完成**
+    await asyncMoveAlongPath(scene, playerControlledAgent, path, tilemap);
+
+    console.log("✅ Agent reached target!");
+    resolve(); // **确保 resolve 被调用**
+  });
 }
+
+
+function asyncMoveAlongPath(
+  scene: Phaser.Scene,
+  agent: Phaser.GameObjects.Sprite,
+  path: number[][],
+  tilemap: Phaser.Tilemaps.Tilemap
+): Promise<void> {
+  return new Promise((resolve) => {
+    if (!path || path.length === 0) {
+      console.log("✅ Path complete, stopping animation!");
+
+      if (targetCircle) {
+        targetCircle.destroy();
+      }
+
+      agent.anims.stop(); // **确保动画停止**
+      resolve(); // **完成移动**
+      return;
+    }
+
+    const nextPoint = path.shift();
+    const targetX = nextPoint![0] * tilemap.tileWidth + tilemap.tileWidth / 2;
+    const targetY = nextPoint![1] * tilemap.tileHeight + tilemap.tileHeight / 2;
+
+    const dx = targetX - agent.x;
+    const dy = targetY - agent.y;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) {
+        agent.anims.play(Animation.Right, true);
+        agent.setTexture(key.atlas.player, "misa-right");
+      } else {
+        agent.anims.play(Animation.Left, true);
+        agent.setTexture(key.atlas.player, "misa-left");
+      }
+    } else {
+      if (dy > 0) {
+        agent.anims.play(Animation.Down, true);
+        agent.setTexture(key.atlas.player, "misa-front");
+      } else {
+        agent.anims.play(Animation.Up, true);
+        agent.setTexture(key.atlas.player, "misa-back");
+      }
+    }
+
+    scene.tweens.add({
+      targets: agent,
+      x: targetX,
+      y: targetY,
+      duration: 500,
+      ease: "Linear",
+      onComplete: async () => {
+        if (path.length === 0) {
+          console.log("✅ Final destination reached, stopping animation!");
+          agent.anims.stop(); // **确保最后一个点停止动画**
+          resolve();
+          return;
+        }
+
+        await asyncMoveAlongPath(scene, agent, path, tilemap);
+        resolve(); // **递归结束后 `resolve()`**
+      },
+    });
+  });
+}
+
+
+
 
 // Creating a circle of target points
 function createTargetCircle(scene: Phaser.Scene, tileX: number, tileY: number, tilemap: Phaser.Tilemaps.Tilemap) {

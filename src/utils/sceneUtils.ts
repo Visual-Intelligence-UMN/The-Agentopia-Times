@@ -4,6 +4,21 @@ import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
 import * as PF from "pathfinding";
+import { Zone } from '../scenes';
+
+export function getAllAgents(zones: Zone[]) {
+  return zones.map((zone:Zone) => ({
+      zone: zone.zone, 
+      agents: Array.from(zone.agentsInside) 
+  }));
+}
+
+
+
+export function areAllZonesOccupied(zones: any) {
+  return zones.every((zone:any) => zone.agentsInside.size > 0);
+}
+
 
 export function createItem(
   this: any,

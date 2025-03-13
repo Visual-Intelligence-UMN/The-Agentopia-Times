@@ -38,7 +38,10 @@ export const chain = async (input: string, prompts: string[]) => {
     let result: string = input;
     for (const prompt of prompts) {
         try{
-        const messages: Message[] = [{role: 'system', content: result}, {role: 'user', content: prompt}];
+        const messages: Message[] = [
+          {role: 'system', content: result}, 
+          {role: 'user', content: prompt}
+        ];
         const response = await callLLM(messages);
         result = response.choices[0].message.content;
         } catch (error) {

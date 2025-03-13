@@ -1,47 +1,88 @@
 import { callLLM, chain, parallel, route } from '../server/llmUtils';
+import { EventEmitter } from "events";
+import { autoControlAgent } from '../utils/controlUtils';
 
+export const eventBus = new EventTarget();
 
-export async function testChain() {
-    // testing for new LLM APIs
-    const prompts = [
-        `Extract only the numerical values and their associated metrics from the text.
-      Format each as 'value: metric' on a new line.
-      Example format:
-      92: customer satisfaction
-      45%: revenue growth`,
-        `Convert all numerical values to percentages where possible.
-      If not a percentage or points, convert to decimal (e.g., 92 points -> 92%).
-      Keep one number per line.
-      Example format:
-      92%: customer satisfaction
-      45%: revenue growth`,
-        `Sort all lines in descending order by numerical value.
-      Keep the format 'value: metric' on each line.
+export async function testChain(agent1: any, agent2: any, scene: any, tilemap: any) {
+  const researcherPrompts = [
+      `You are a data analyst at a top news agency. Your task is to extract all quantitative information (numbers, percentages, currency values) from the given report.
+      Format each extracted value with its corresponding metric in the format: 'value: metric'.
+      Ensure that the extracted data retains context and is meaningful for financial and performance analysis.
       Example:
-      92%: customer satisfaction
-      87%: employee satisfaction`,
-        `Format the sorted data as a markdown table with columns:
+      92: Customer Satisfaction Score
+      45%: Annual Revenue Growth`,
+
+      `As a financial researcher, convert all extracted numerical values into a standard format.
+      - Convert scores to percentages (e.g., 92 points -> 92%).
+      - Keep financial values (e.g., revenue or cost) as-is.
+      - Ensure each value remains on a separate line.
+      Example:
+      92%: Customer Satisfaction Score
+      45%: Annual Revenue Growth`,
+
+      `You are a journalist preparing an industry report. Organize the extracted data in descending order of importance, starting with the most impactful business metrics.
+      Example:
+      92%: Customer Satisfaction Score
+      87%: Employee Satisfaction Score
+      45%: Annual Revenue Growth`
+  ];
+
+  const report = `
+      Q3 Performance Report:
+      This quarter, customer satisfaction increased to 92 points, showing a strong positive trend.
+      Annual revenue saw a 45% growth, surpassing projections.
+      Our market share now stands at 23% in our primary sector.
+      Customer churn dropped from 8% to 5%, indicating stronger customer retention.
+      The cost of acquiring a new user is now $43 per user.
+      Our product adoption rate is at 78%, reflecting positive reception.
+      Employee satisfaction has climbed to 87 points, showing workplace improvements.
+      Operating margin improved significantly, reaching 34%.
+  `;
+
+  console.log("🔍 Researcher: Extracting and refining key business data...");
+  const researchResult = await chain(report, researcherPrompts);
+
+  // signal 1
+  eventBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 1" }));
+
+  const originalAgent1X = agent1.x;
+  const originalAgent1Y = agent1.y;
+
+  console.log("debug 1", agent2?.x, agent2?.y, originalAgent1X, originalAgent1Y);
+
+  await autoControlAgent(scene, agent1, tilemap, (agent2?.x as number), (agent2?.y as number));
+
+  const writerPrompts = [
+      `As a financial journalist, format the given data as a concise and well-structured Markdown table for an industry report.
+      - Use clear, professional language.
+      - Ensure the table is aligned correctly and values are formatted consistently.
+      - The table should have two columns: 'Metric' and 'Value'.
+      Example:
       | Metric | Value |
       |:--|--:|
-      | Customer Satisfaction | 92% |
-      `
-    ];
+      | Customer Satisfaction | 92% |`
+  ];
 
-    const report = `
-      Q3 Performance Summary:
-      Our customer satisfaction score rose to 92 points this quarter.
-      Revenue grew by 45% compared to last year.
-      Market share is now at 23% in our primary market.
-      Customer churn decreased to 5% from 8%.
-      New user acquisition cost is $43 per user.
-      Product adoption rate increased to 78%.
-      Employee satisfaction is at 87 points.
-      Operating margin improved to 34%.
-    `;
+  console.log("📝 News Writer: Formatting the processed business report...");
+  const finalResult = await chain(researchResult, writerPrompts);
 
-    const result = await chain(report, prompts);
-    return result;
+  // signal 2
+  eventBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 2" }));
+  await autoControlAgent(scene, agent1, tilemap, originalAgent1X, originalAgent1Y);
+
+
+  console.log("Final Output:", finalResult);
+
+  //240, 290
+  const originalAgent2X = agent2.x;
+  const originalAgent2Y = agent2.y;
+  await autoControlAgent(scene, agent2, tilemap, 240, 290);
+  await autoControlAgent(scene, agent2, tilemap, originalAgent2X, originalAgent2Y);
+
+  return finalResult;
 }
+
 
 export async function testParallel() {
     const inputs = [
