@@ -131,11 +131,24 @@ export function setupScene(this: any) {
       .setScrollFactor(0)
       .setDepth(1003);
 
+    // Add them to hudElements
+    if (this.hudElements) {
+      this.hudElements.push(mssgBtn, mssgBtnText);
+    }
+
     mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       console.log('mssgBtn clicked');
 
       if (this.mssgMenu) {
         console.log('Destroying mssgMenu');
+
+        // Remove all related elements from hubElements
+        this.hudElements = this.hudElements.filter((hud: Phaser.GameObjects.GameObject) => 
+          hud !== this.mssgMenu &&
+          hud !== this.mssgMenuText &&
+          !(this.mssgGroup && this.mssgGroup.getChildren().includes(hud))
+        );
+      
         this.mssgMenu.destroy();
         this.mssgMenuText?.destroy();
         this.mssgMenu = null;
@@ -149,6 +162,11 @@ export function setupScene(this: any) {
           .setStrokeStyle(2, 0xffffff)
           .setScrollFactor(0)
           .setAlpha(0.5);
+
+        // Add floating windows to hudElements
+        if (this.hudElements) {
+          this.hudElements.push(this.mssgMenu);
+        }
 
         this.mssgGroup = this.add.group();
 
@@ -260,6 +278,11 @@ export function setupScene(this: any) {
               this.promptContainer = null;
             }
           });
+
+          // Add the popup element to hudElements
+          if (this.hudElements) {
+            this.hudElements.push(mssgBox, mssgLabel);
+          }
 
           this.mssgGroup.add(mssgBox);
           this.mssgGroup.add(mssgLabel);

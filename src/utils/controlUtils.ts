@@ -179,11 +179,40 @@ function createOrUpdateGrid(tilemap: Phaser.Tilemaps.Tilemap, forceUpdate = fals
   return cachedGrid;
 }
 
-export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent: any, tilemap: Phaser.Tilemaps.Tilemap) {
+// this is the function to test if the player click on HUD
+
+export function isClickOnHUD(pointer: Phaser.Input.Pointer, hudElements: Phaser.GameObjects.GameObject[]): boolean {
+  return hudElements.some(hud => {
+    if (hud instanceof Phaser.GameObjects.Rectangle || hud instanceof Phaser.GameObjects.Text) {
+      const bounds = hud.getBounds();
+      return Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y);
+    }
+    return false;
+  });
+}
+
+
+export function controlAgentWithMouse(
+  scene: Phaser.Scene,
+  playerControlledAgent: any,
+  tilemap: Phaser.Tilemaps.Tilemap,
+  isClickOnHUD: (pointer: Phaser.Input.Pointer) => boolean
+) {
   const finder = new PF.AStarFinder();
 
   scene.input.off("pointerdown"); // Remove previously bound events first
   scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    
+    // Called only once to avoid repeated calls
+    const isHudClicked = isClickOnHUD(pointer);
+    
+    if (isHudClicked) {
+      // console.log("Click on the HUD without moving the character");
+      return;
+    }
+
+    // console.log("Click on the map to move the character");
+
     if (scene.tweens.isTweening(playerControlledAgent)) {
       scene.tweens.killTweensOf(playerControlledAgent); // Stop current movement
     }
@@ -337,4 +366,30 @@ function moveAlongPath(scene: Phaser.Scene, agent: Phaser.GameObjects.Sprite, pa
       moveAlongPath(scene, agent, path, tilemap);
     },
   });
+}
+
+/* 
+WASD to move camera 
+*/
+
+export function controlCameraMovements(scene: Phaser.Scene, cursors: any, speed: number = 5) {
+  const camera = scene.cameras.main;
+
+  // First check if WASD is pressed
+  if (cursors.w.isDown || cursors.a.isDown || cursors.s.isDown || cursors.d.isDown) {
+    // If the camera is following the character, unfollow
+    if ((scene as any).isCameraFollowing) {
+      (scene as any).isCameraFollowing = false;
+      camera.stopFollow();
+      // console.log("Camera is unlocked and free to move");
+    }
+  }
+
+  // WASD can only control the camera when the camera is not following the character
+  if (!(scene as any).isCameraFollowing) {
+    if (cursors.w.isDown) camera.scrollY -= speed;
+    if (cursors.s.isDown) camera.scrollY += speed;
+    if (cursors.a.isDown) camera.scrollX -= speed;
+    if (cursors.d.isDown) camera.scrollX += speed;
+  }
 }

@@ -7,7 +7,7 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { fetchChatCompletion } from '../server/server';
-import { controlAgentMovements, initKeyboardInputs, controlAgentWithMouse } from '../utils/controlUtils';
+import { controlAgentMovements, initKeyboardInputs, controlAgentWithMouse, controlCameraMovements, isClickOnHUD } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
@@ -36,12 +36,23 @@ export class Level1 extends ParentScene {
   private dialog: Phaser.GameObjects.Container | null = null;
   private graphics: Phaser.GameObjects.Graphics | null = null;
 
+  private hudElements: Phaser.GameObjects.GameObject[] = []; // Store all HUD elements
+
+  private isCameraFollowing: boolean = false; // Default camera does not follow
+
+
+
   constructor() {
     super();
   }
 
   create() {
+
+    // Initialize the HUD array
+    this.hudElements = [];
+
     setupScene.call(this);
+
 
     this.coinGroup = this.physics.add.group();
 
@@ -116,6 +127,13 @@ export class Level1 extends ParentScene {
 
     //set the camera
     this.cameras.main.startFollow(this.controllableCharacters[0]);
+
+    // 1 second to unfollow the camera, allowing the player to move freely.
+    this.time.delayedCall(1, () => {
+      this.cameras.main.stopFollow();
+    }, [], this);
+
+
     this.controllableCharacters[0].changeNameTagColor('#ff0000');
 
     this.physics.add.overlap(
@@ -210,12 +228,17 @@ export class Level1 extends ParentScene {
 
     // console.log("local storage", localStorage.getItem('openai-api-key'));
 
-    
+
+
+    // Limit the camera movement range to prevent it from going beyond the map range.
+    this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
+  
+    // console.log("HUD Elements List:", this.hudElements);
 
   }
+  
 
-  
-  
+
   update() {
     // if (this.isInputLocked) {
     //   return;
@@ -295,9 +318,23 @@ export class Level1 extends ParentScene {
       this.graphics?.clear();
     }
     
-    // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
+    /* Control Aengent */
 
+    // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+      (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    );
+
+
+    const cursors = this.input!.keyboard!.addKeys({
+      w: Phaser.Input.Keyboard.KeyCodes.W,
+      a: Phaser.Input.Keyboard.KeyCodes.A,
+      s: Phaser.Input.Keyboard.KeyCodes.S,
+      d: Phaser.Input.Keyboard.KeyCodes.D,
+    });
+
+    // Getting Camera Behavior Right
+    controlCameraMovements(this, cursors, 10);
 
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {
       console.log('overlapstart', agent, item);
