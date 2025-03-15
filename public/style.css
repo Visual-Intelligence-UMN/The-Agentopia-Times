@@ -46,3 +46,41 @@ body {
         color: rgba(255, 255, 255, 0.3);
     }
 }
+
+.window {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 300px;
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    z-index: 1000;
+    color: black; /* ✅ 确保所有文本默认是黑色 */
+}
+
+.window-header {
+    background: #007bff;
+    color: white;
+    padding: 8px;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.window-header button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.window-content {
+    padding: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+    color: black; /* ✅ 让文本变黑 */
+}

@@ -1,9 +1,11 @@
-import * as scenes from './scenes';
-import { Game } from 'phaser';
+import Phaser from 'phaser';
 
-//  Find out more information about the Game Config at:
-//  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
-const config: Phaser.Types.Core.GameConfig = {
+import * as scenes from './scenes';
+
+/**
+ * https://rexrainbow.github.io/phaser3-rex-notes/docs/site/game/
+ */
+new Phaser.Game({
   width: 800, // 1024
   height: 600, // 768
   title: 'Phaser RPG',
@@ -28,12 +30,4 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   pixelArt: true,
-}
-
-const StartGame = (parent: string) => {
-
-    return new Game({ ...config, parent });
-
-}
-
-export default StartGame;
+});

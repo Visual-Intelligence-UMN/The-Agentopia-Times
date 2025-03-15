@@ -1,102 +1,51 @@
-import { useRef, useState } from 'react';
-import { IRefPhaserGame, PhaserGame } from './game/PhaserGame';
-import { MainMenu } from './game/scenes/MainMenu';
+import { useEffect, useState } from 'react';
+import { PhaserGame } from './game/PhaserGame';
+import { EventBus } from './game/EventBus';
+import DraggableWindow from './components/DraggableWindow';
+import { testGraphChain } from './langgraph/testLanggraph';
 
 function App()
 {
-    // The sprite can only be moved in the MainMenu Scene
-    const [canMoveSprite, setCanMoveSprite] = useState(true);
 
-    //  References to the PhaserGame component (game and scene are exposed)
-    const phaserRef = useRef<IRefPhaserGame | null>(null);
-    const [spritePosition, setSpritePosition] = useState({ x: 0, y: 0 });
+    const [report, setReport] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
 
-    const changeScene = () => {
+    useEffect(()=>{
+        const handleReportReceiving = (data: { report: string }) => {
+            console.log("report", data);
+            setReport(data.report);
+            setIsOpen(true);
+        };
 
-        if(phaserRef.current)
-        {     
-            const scene = phaserRef.current.scene as MainMenu;
+        EventBus.on("final-report", handleReportReceiving);
+
+        return () => {
+            EventBus.off("final-report", handleReportReceiving);
+        };
+    },[]);
+
+    // const callGraph = async () => {
+    //     const state = await testGraphChain.invoke({ topic: "cats" });
+    //         console.log("Initial joke:");
+    //         console.log(state.joke);
+    //         console.log("\n--- --- ---\n");
+    //         if (state.improvedJoke !== undefined) {
+    //           console.log("Improved joke:");
+    //           console.log(state.improvedJoke);
+    //           console.log("\n--- --- ---\n");
             
-            if (scene)
-            {
-                scene.changeScene();
-            }
-        }
-    }
-
-    const moveSprite = () => {
-
-        if(phaserRef.current)
-        {
-
-            const scene = phaserRef.current.scene as MainMenu;
-
-            if (scene && scene.scene.key === 'MainMenu')
-            {
-                // Get the update logo position
-                scene.moveLogo(({ x, y }) => {
-
-                    setSpritePosition({ x, y });
-
-                });
-            }
-        }
-
-    }
-
-    const addSprite = () => {
-
-        if (phaserRef.current)
-        {
-            const scene = phaserRef.current.scene;
-
-            if (scene)
-            {
-                // Add more stars
-                const x = Phaser.Math.Between(64, scene.scale.width - 64);
-                const y = Phaser.Math.Between(64, scene.scale.height - 64);
-    
-                //  `add.sprite` is a Phaser GameObjectFactory method and it returns a Sprite Game Object instance
-                const star = scene.add.sprite(x, y, 'star');
-    
-                //  ... which you can then act upon. Here we create a Phaser Tween to fade the star sprite in and out.
-                //  You could, of course, do this from within the Phaser Scene code, but this is just an example
-                //  showing that Phaser objects and systems can be acted upon from outside of Phaser itself.
-                scene.add.tween({
-                    targets: star,
-                    duration: 500 + Math.random() * 1000,
-                    alpha: 0,
-                    yoyo: true,
-                    repeat: -1
-                });
-            }
-        }
-    }
-
-    // Event emitted from the PhaserGame component
-    const currentScene = (scene: Phaser.Scene) => {
-
-        setCanMoveSprite(scene.scene.key !== 'MainMenu');
-        
-    }
+    //           console.log("Final joke:");
+    //           console.log(state.finalJoke);
+    //         } else {
+    //           console.log("Joke failed quality gate - no punchline detected!");
+    //         }
+    // }
 
     return (
         <div id="app">
-            <PhaserGame ref={phaserRef} currentActiveScene={currentScene} />
-            <div>
-                <div>
-                    <button className="button" onClick={changeScene}>Change Scene</button>
-                </div>
-                <div>
-                    <button disabled={canMoveSprite} className="button" onClick={moveSprite}>Toggle Movement</button>
-                </div>
-                <div className="spritePosition">Sprite Position:
-                    <pre>{`{\n  x: ${spritePosition.x}\n  y: ${spritePosition.y}\n}`}</pre>
-                </div>
-                <div>
-                    <button className="button" onClick={addSprite}>Add New Sprite</button>
-                </div>
-            </div>
+            {/* <button onClick={callGraph}>Test LangGraph</button> */}
+            <PhaserGame />
+            {isOpen && <DraggableWindow title="Final Report" context={report} onClose={() => {setIsOpen(false)}} />}
         </div>
     )
 }
