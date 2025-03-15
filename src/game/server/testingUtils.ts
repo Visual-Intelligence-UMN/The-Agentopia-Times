@@ -6,6 +6,9 @@ import { EventBus } from '../EventBus';
 export const eventBus = new EventTarget();
 
 export async function testChain(agent1: any, agent2: any, scene: any, tilemap: any) {
+  scene.registry.set("isWorkflowRunning", true);
+  console.log("start workflow", scene.registry.get("isWorkflowRunning"));
+  
   const researcherPrompts = [
       `You are a data analyst at a top news agency. Your task is to extract all quantitative information (numbers, percentages, currency values) from the given report.
       Format each extracted value with its corresponding metric in the format: 'value: metric'.
@@ -82,6 +85,9 @@ export async function testChain(agent1: any, agent2: any, scene: any, tilemap: a
   const originalAgent2Y = agent2.y;
   await autoControlAgent(scene, agent2, tilemap, 240, 290, "Send Report to Final Location");
   await autoControlAgent(scene, agent2, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
+
+  await scene.registry.set("isWorkflowRunning", false);
+  await console.log("end workflow", scene.registry.get("isWorkflowRunning"));
 
   return finalResult;
 }

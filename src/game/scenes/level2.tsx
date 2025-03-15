@@ -60,6 +60,10 @@ export class Level2 extends ParentScene {
 
     setupScene.call(this, "office");
 
+    // register a global variable
+    this.registry.set('isWorkflowRunning', false);
+    console.log("isWorkflowRunning", this.registry.get('isWorkflowRunning'));
+
     this.tweens.add({
       targets: [this.itemText, this.deductiveItemText], 
       y: '+=10', 
@@ -461,7 +465,12 @@ return result;
       });
   });
 
-  if(areAllZonesOccupied(this.parallelZones) && !this.isWorkflowAvailable) {
+  if(
+    (areAllZonesOccupied(this.parallelZones)
+     && !this.isWorkflowAvailable
+     && !this.registry.get('isWorkflowRunning')
+    )
+  ) {
     this.isWorkflowAvailable = true;
     console.log("All zones are occupied!");
     // create a start workflow button
@@ -500,6 +509,15 @@ return result;
         eventBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });
   } 
+
+  if(this.registry.get('isWorkflowRunning')==false&&!areAllZonesOccupied(this.parallelZones)){
+    this.isWorkflowAvailable = false;
+    if(this.debateStartBtn){
+      this.debateStartBtn.destroy();
+      this.debateStartLabel.destroy();
+    }
+  }
+
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
 
