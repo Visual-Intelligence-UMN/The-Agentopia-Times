@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import { key } from '../constants';
 import { Inventory } from './Player';
-import { use } from 'matter';
+import { GraphState, StateAnnotation } from '../../langgraph/langgraphUtils';
 
 enum Animation {
   Left = 'player_left',
@@ -20,7 +20,7 @@ interface Memory {
 }
 
 export class Agent extends Phaser.Physics.Arcade.Sprite {
-  body!: Phaser.Physics.Arcade.Body;
+  declare body: Phaser.Physics.Arcade.Body;
   selector: Phaser.Physics.Arcade.StaticBody;
   name: string;
 
@@ -30,6 +30,10 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private instruction: string = "";
 
   public assignToWorkplace: boolean = false;
+  private activationFunction: (state: typeof StateAnnotation.State) => typeof StateAnnotation.State = (state: typeof StateAnnotation.State) => {
+    console.log(`---Step for Agent: ${this.name}---`);
+    return state;
+};
 
   public inventory: Inventory = {
       promptUtils: [],
@@ -112,6 +116,15 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     return this.persona;
   }
 
+  public activate() {
+        return this.activationFunction;
+    }
+
+    public setActivationFunction(activationFunction: (state: typeof StateAnnotation.State) => typeof StateAnnotation.State) {
+        this.activationFunction = activationFunction;
+    }
+
+  
 
   public moveSelector(animation: Animation) {
       const { body, selector } = this;

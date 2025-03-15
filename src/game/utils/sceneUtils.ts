@@ -9,7 +9,8 @@ import { Zone } from '../scenes';
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
       zone: zone.zone, 
-      agents: Array.from(zone.agentsInside) 
+      agents: Array.from(zone.agentsInside),
+      name: zone.zoneName
   }));
 }
 

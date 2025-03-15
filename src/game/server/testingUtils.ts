@@ -2,13 +2,24 @@ import { callLLM, chain, parallel, route } from '../server/llmUtils';
 import { EventEmitter } from "events";
 import { autoControlAgent } from '../utils/controlUtils';
 import { EventBus } from '../EventBus';
+import { Zone } from '../scenes';
+import { transformDataMap } from '../../langgraph/langgraphUtils';
 
-export const eventBus = new EventTarget();
+export const eventTargetBus = new EventTarget();
 
-export async function testChain(agent1: any, agent2: any, scene: any, tilemap: any) {
+export async function testChain(
+  agent1: any, 
+  agent2: any, 
+  scene: any, 
+  tilemap: any,
+  zones: Zone[]
+) {
   scene.registry.set("isWorkflowRunning", true);
   console.log("start workflow", scene.registry.get("isWorkflowRunning"));
+  console.log("in the function", zones);
+
   
+
   const researcherPrompts = [
       `You are a data analyst at a top news agency. Your task is to extract all quantitative information (numbers, percentages, currency values) from the given report.
       Format each extracted value with its corresponding metric in the format: 'value: metric'.
@@ -48,7 +59,7 @@ export async function testChain(agent1: any, agent2: any, scene: any, tilemap: a
   const researchResult = await chain(report, researcherPrompts);
 
   // signal 1
-  eventBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 1" }));
+  eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 1" }));
 
   const originalAgent1X = agent1.x;
   const originalAgent1Y = agent1.y;
@@ -74,7 +85,7 @@ export async function testChain(agent1: any, agent2: any, scene: any, tilemap: a
   EventBus.emit("final-report", {report:String(finalResult)});
 
   // signal 2
-  eventBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 2" }));
+  eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "signal 2" }));
   await autoControlAgent(scene, agent1, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
 

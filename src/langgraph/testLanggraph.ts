@@ -8,7 +8,7 @@ const llm = new ChatOpenAI({
 });
 
 // Graph state
-export const StateAnnotation = Annotation.Root({
+const StateAnnotation = Annotation.Root({
   topic: Annotation<string>,
   joke: Annotation<string>,
   improvedJoke: Annotation<string>,

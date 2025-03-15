@@ -11,15 +11,17 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs } from '../utils/controlUtils';
+import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs, startControlDesignatedAgent } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
 import { addItem, areAllZonesOccupied, createItem, getAllAgents, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
-import { evaluateCustomerSupportResponse, eventBus, testChain, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
+import { evaluateCustomerSupportResponse, eventTargetBus, testChain, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 import { customerServicePersona } from '../server/prompts';
 import { testGraphChain } from '../../langgraph/testLanggraph';
 import { EventBus } from '../EventBus';
+import { constructLangGraph, transformDataMap } from '../../langgraph/langgraphUtils';
+import { testInput } from '../../langgraph/agents';
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -42,7 +44,7 @@ export class Level2 extends ParentScene {
   constructor() {
     super("level2");
     this.sceneName = "Game: Level 2";
-    eventBus.addEventListener("signal", (event:any) => {
+    eventTargetBus.addEventListener("signal", (event:any) => {
       console.log(`Level2 received: ${event.detail}`);
       if (event.detail === "signal 1") {
         console.log("Research phase completed.");
@@ -130,6 +132,7 @@ export class Level2 extends ParentScene {
     const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
     const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
     const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
+    const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
 
     // just for testing
     // testChain();
@@ -137,14 +140,17 @@ export class Level2 extends ParentScene {
     this.agentGroup.add(agent1);
     this.agentGroup.add(agent2);
     this.agentGroup.add(agent3);
+    this.agentGroup.add(agent4);
 
     this.controllableCharacters.push(agent1);
     this.controllableCharacters.push(agent2);
     this.controllableCharacters.push(agent3);
+    this.controllableCharacters.push(agent4);
 
     this.agentList.set(agent1.getName(), agent1);
     this.agentList.set(agent2.getName(), agent2);
     this.agentList.set(agent3.getName(), agent3);
+    this.agentList.set(agent4.getName(), agent4);
     console.log('controled characters', this.controllableCharacters);
 
     //set the camera
@@ -166,6 +172,7 @@ export class Level2 extends ParentScene {
           if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
               zoneData.agentsInside.add((agent as unknown as Agent).getName());
               console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the area`, zoneData.zone);
+              console.log("parallel zones data, agents entered", this.parallelZones);
           }
       });
   });
@@ -491,7 +498,8 @@ return result;
             .setScrollFactor(0)
             .setDepth(1002);
 
-    this.debateStartBtn.on('pointerdown', () => {
+    this.debateStartBtn.on('pointerdown', async () => {
+      console.log("btn pre-start zones data", this.parallelZones);
        const agentsInfo = getAllAgents(this.parallelZones);
        console.log("agentsInfo", agentsInfo);
        
@@ -504,9 +512,16 @@ return result;
         console.log("agent1", agent1, agent1?.x, agent1?.y);
         console.log("agent2", agent2, agent2?.x, agent2?.y);
 
-        testChain(agent1, agent2, this, this.tilemap);
+        console.log("btn start zones data", this.parallelZones);
 
-        eventBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
+        const datamap = transformDataMap(this.parallelZones, this.controllableCharacters);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap);
+        console.log("langgraph from game", langgraph);
+        const llmOutput = await langgraph.invoke({input: testInput});
+        console.log("llmOutput", llmOutput);
+        // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
+
+        eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });
   } 
 
@@ -545,63 +560,28 @@ return result;
         250,
       )
     ) {
-      console.log('Key "1" pressed');
-      this.activateIndex = 0;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
-      console.log(
-        'switched utils',
-        this.playerControlledAgent.getPromptUtils(),
-      );
+      startControlDesignatedAgent(this, 0);
     } else if (
       this.input.keyboard!.checkDown(
         this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
         250,
       )
     ) {
-      console.log('Key "2" pressed');
-      this.activateIndex = 1;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      console.log(
-        'switched utils',
-        this.playerControlledAgent.getPromptUtils(),
-      );
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
+      startControlDesignatedAgent(this, 1);
     } else if (
       this.input.keyboard!.checkDown(
         this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
         250,
       )
     ) {
-      console.log('Key "3" pressed');
-      this.activateIndex = 2;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
-      console.log(
-        'switched utils',
-        this.playerControlledAgent.getPromptUtils(),
-      );
+      startControlDesignatedAgent(this, 2);
+    } else if(
+      this.input.keyboard!.checkDown(
+        this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR),
+        250,
+      )
+    ){
+      startControlDesignatedAgent(this, 3);
     }
 
     // controlAgentMovements(this.playerControlledAgent, this.cursors);
