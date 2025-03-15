@@ -179,12 +179,29 @@ function createOrUpdateGrid(tilemap: Phaser.Tilemaps.Tilemap, forceUpdate = fals
   return cachedGrid;
 }
 
-export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent: any, tilemap: Phaser.Tilemaps.Tilemap) {
+// this is the function to test if the player click on HUD
+
+export function isClickOnHUD(pointer: Phaser.Input.Pointer, hudElements: Phaser.GameObjects.GameObject[]): boolean {
+  return hudElements.some(hud => {
+    if (hud instanceof Phaser.GameObjects.Rectangle || hud instanceof Phaser.GameObjects.Text) {
+      const bounds = hud.getBounds();
+      return Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y);
+    }
+    return false;
+  });
+}
+
+export function controlAgentWithMouse(
+  scene: Phaser.Scene,
+  playerControlledAgent: any,
+  tilemap: Phaser.Tilemaps.Tilemap,
+  isClickOnHUD: (pointer: Phaser.Input.Pointer) => boolean
+) {
   const finder = new PF.AStarFinder();
 
   scene.input.off("pointerdown"); // Remove previously bound events first
   scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-
+    
     if(pointer.rightButtonDown()){
       return ;
     }
@@ -199,31 +216,36 @@ export function controlAgentWithMouse(scene: Phaser.Scene, playerControlledAgent
     const targetTileX = Math.floor(pointer.worldX / tilemap.tileWidth);
     const targetTileY = Math.floor(pointer.worldY / tilemap.tileHeight);
 
-    console.log("final destination", pointer.worldX, pointer.worldY)
-
     let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
 
-    if (path.length > 1) {
-      path.shift();
+    if (path.length > 1) path.shift();
+
+    // Each agent manages its own route line independently
+    if (playerControlledAgent.pathGraphics) {
+      playerControlledAgent.pathGraphics.clear();
+    } else {
+      playerControlledAgent.pathGraphics = scene.add.graphics();
     }
 
-    // Create a circle for the target position
-    createTargetCircle(scene, targetTileX, targetTileY, tilemap);
+    if (playerControlledAgent.targetCircle) {
+      playerControlledAgent.targetCircle.destroy();
+    }
 
-    // Drawing path dashed lines
-    drawDashedPath(scene, path, tilemap);
+    // Drawing agent-independent path lines and target points
+    createTargetCircle(scene, targetTileX, targetTileY, tilemap, playerControlledAgent);
+    drawDashedPath(scene, path, tilemap, playerControlledAgent);
 
-
-    // console.log("controlAgentWithMouse")
+    // moving agent
     moveAlongPath(scene, playerControlledAgent, path, tilemap);
   });
 
   scene.events.on("mapUpdated", () => {
-    // console.log("mapUpdated");
     scene.tweens.killTweensOf(playerControlledAgent);
     createOrUpdateGrid(tilemap, true);
   });
 }
+
+
 
 
 export async function autoControlAgent(
@@ -237,8 +259,9 @@ export async function autoControlAgent(
   return new Promise(async (resolve) => {
     const finder = new PF.AStarFinder();
 
+    // Stop the current animation
     if (scene.tweens.isTweening(playerControlledAgent)) {
-      scene.tweens.killTweensOf(playerControlledAgent); // 停止当前移动
+      scene.tweens.killTweensOf(playerControlledAgent);
     }
 
     const grid = createOrUpdateGrid(tilemap);
@@ -251,23 +274,31 @@ export async function autoControlAgent(
 
     let path = finder.findPath(agentTileX, agentTileY, targetTileX, targetTileY, grid.clone());
 
-    if (path.length > 1) {
-      path.shift();
+    if (path.length > 1) path.shift();
+
+    // Let each role manage the path independently
+    if (playerControlledAgent.pathGraphics) {
+      playerControlledAgent.pathGraphics.clear();
+    } else {
+      playerControlledAgent.pathGraphics = scene.add.graphics();
     }
 
-    createTargetCircle(scene, targetTileX, targetTileY, tilemap);
-    drawDashedPath(scene, path, tilemap);
+    if (playerControlledAgent.targetCircle) {
+      playerControlledAgent.targetCircle.destroy();
+    }
+
+    // Drawing character-independent path lines and target points
+    createTargetCircle(scene, targetTileX, targetTileY, tilemap, playerControlledAgent);
+    drawDashedPath(scene, path, tilemap, playerControlledAgent);
 
     console.log(`🚀 Moving agent to (${targetTileX}, ${targetTileY})`);
 
-    // **确保路径为空时也会 resolve**
     if (path.length === 0) {
       console.log("❌ No valid path, resolving immediately.");
       resolve();
       return;
     }
 
-    // **等待 `asyncMoveAlongPath` 完成**
     await asyncMoveAlongPath(scene, playerControlledAgent, path, tilemap);
     await popupEvent(scene, goX, goY, eventName);
 
@@ -275,6 +306,7 @@ export async function autoControlAgent(
     resolve(); 
   });
 }
+
 
 
 import Phaser from "phaser";
@@ -368,21 +400,27 @@ function asyncMoveAlongPath(
 
 
 // Creating a circle of target points
-function createTargetCircle(scene: Phaser.Scene, tileX: number, tileY: number, tilemap: Phaser.Tilemaps.Tilemap) {
-  if (targetCircle) {
-    targetCircle.destroy(); // Remove previous target circle
+function createTargetCircle(
+  scene: Phaser.Scene,
+  tileX: number,
+  tileY: number,
+  tilemap: Phaser.Tilemaps.Tilemap,
+  agent: any
+) {
+  if (agent.targetCircle) {
+    agent.targetCircle.destroy(); // Remove previous target point
   }
 
   const targetX = tileX * tilemap.tileWidth + tilemap.tileWidth / 2;
   const targetY = tileY * tilemap.tileHeight + tilemap.tileHeight / 2;
 
-  targetCircle = scene.add.graphics();
-  targetCircle.lineStyle(4, 0xff0000, 1);
-  targetCircle.strokeCircle(targetX, targetY, tilemap.tileWidth / 2);
+  agent.targetCircle = scene.add.graphics();
+  agent.targetCircle.lineStyle(4, 0xff0000, 1);
+  agent.targetCircle.strokeCircle(targetX, targetY, tilemap.tileWidth / 2);
 
-  // Add blinking animation
+  // Target point blinking animation
   scene.tweens.add({
-    targets: targetCircle,
+    targets: agent.targetCircle,
     alpha: 0,
     duration: 500,
     yoyo: true,
@@ -391,14 +429,19 @@ function createTargetCircle(scene: Phaser.Scene, tileX: number, tileY: number, t
 }
 
 // Drawing path dashed lines
-function drawDashedPath(scene: Phaser.Scene, path: number[][], tilemap: Phaser.Tilemaps.Tilemap) {
-  if (pathGraphics) {
-    pathGraphics.clear(); // Clear the last path
+function drawDashedPath(
+  scene: Phaser.Scene,
+  path: number[][],
+  tilemap: Phaser.Tilemaps.Tilemap,
+  agent: any
+) {
+  if (agent.pathGraphics) {
+    agent.pathGraphics.clear(); // Clear the last path
   } else {
-    pathGraphics = scene.add.graphics();
+    agent.pathGraphics = scene.add.graphics();
   }
 
-  pathGraphics.lineStyle(2, 0x00ff00, 1);
+  agent.pathGraphics.lineStyle(2, 0x00ff00, 1);
 
   for (let i = 0; i < path.length - 1; i++) {
     const x1 = path[i][0] * tilemap.tileWidth + tilemap.tileWidth / 2;
@@ -406,7 +449,7 @@ function drawDashedPath(scene: Phaser.Scene, path: number[][], tilemap: Phaser.T
     const x2 = path[i + 1][0] * tilemap.tileWidth + tilemap.tileWidth / 2;
     const y2 = path[i + 1][1] * tilemap.tileHeight + tilemap.tileHeight / 2;
 
-    drawDashedLine(pathGraphics, x1, y1, x2, y2, 10, 5); // 10px solid line + 5px spacing
+    drawDashedLine(agent.pathGraphics, x1, y1, x2, y2, 10, 5);
   }
 }
 
@@ -482,8 +525,33 @@ function moveAlongPath(scene: Phaser.Scene, agent: Phaser.GameObjects.Sprite, pa
     duration: 500,
     ease: "Linear",
     onComplete: () => {
-      drawDashedPath(scene, path, tilemap);
+      drawDashedPath(scene, path, tilemap, agent);
       moveAlongPath(scene, agent, path, tilemap);
     },
   });
+
+}
+
+/* Control Camera Movements */
+
+export function controlCameraMovements(scene: Phaser.Scene, cursors: any, speed: number = 5) {
+  const camera = scene.cameras.main;
+
+  // First check if WASD is pressed
+  if (cursors.w.isDown || cursors.a.isDown || cursors.s.isDown || cursors.d.isDown) {
+    // If the camera is following the character, unfollow
+    if ((scene as any).isCameraFollowing) {
+      (scene as any).isCameraFollowing = false;
+      camera.stopFollow();
+      // console.log("Camera is unlocked and free to move");
+    }
+  }
+
+  // WASD can only control the camera when the camera is not following the character
+  if (!(scene as any).isCameraFollowing) {
+    if (cursors.w.isDown) camera.scrollY -= speed;
+    if (cursors.s.isDown) camera.scrollY += speed;
+    if (cursors.a.isDown) camera.scrollX -= speed;
+    if (cursors.d.isDown) camera.scrollX += speed;
+  }
 }
