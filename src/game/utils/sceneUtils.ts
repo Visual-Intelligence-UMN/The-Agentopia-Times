@@ -141,6 +141,11 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     const objectsLayer = this.tilemap.getObjectLayer('Objects');
 
     const parallelZoneDataList = objectsLayer.objects.filter((obj:any) => obj.name === 'parallel');
+    const votingZoneDataList = [objectsLayer.objects.find((obj:any) => obj.name === 'voting')];
+
+
+
+    console.log('Voting Zone:', votingZoneDataList);
     
     this.parallelZones = []; 
 
@@ -164,8 +169,29 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
           name: parallelZoneData.name
         });
     });
+
+    votingZoneDataList.forEach((parallelZoneData:any) => {
+      const parallelZone = this.add.zone(
+          parallelZoneData.x + parallelZoneData.width / 2,
+          parallelZoneData.y + parallelZoneData.height / 2,
+          parallelZoneData.width,
+          parallelZoneData.height
+      );
+      
+      this.physics.world.enable(parallelZone);
+      parallelZone.body.setAllowGravity(false);
+      parallelZone.body.setImmovable(true);
+  
+      this.votingZones.push({
+        zone: parallelZone,
+        agentsInside: new Set() ,
+        name: parallelZoneData.name
+      });
+  });
     
     console.log('Parallel Zones:', this.parallelZones);
+
+    console.log('Voting Zones:', this.votingZones);
 
     
   

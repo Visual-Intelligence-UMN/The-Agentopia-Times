@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 
 import { key } from '../constants';
 import { Inventory } from './Player';
-import { GraphState, StateAnnotation } from '../../langgraph/langgraphUtils';
 
 enum Animation {
   Left = 'player_left',
@@ -30,7 +29,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private instruction: string = "";
 
   public assignToWorkplace: boolean = false;
-  private activationFunction: (state: typeof StateAnnotation.State) => typeof StateAnnotation.State = (state: typeof StateAnnotation.State) => {
+  private activationFunction: (state: any) => any = (state: any) => {
     console.log(`---Step for Agent: ${this.name}---`);
     return state;
 };
@@ -120,7 +119,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
         return this.activationFunction;
     }
 
-    public setActivationFunction(activationFunction: (state: typeof StateAnnotation.State) => typeof StateAnnotation.State) {
+    public setActivationFunction(activationFunction: (state: any)=>any) {
         this.activationFunction = activationFunction;
     }
 

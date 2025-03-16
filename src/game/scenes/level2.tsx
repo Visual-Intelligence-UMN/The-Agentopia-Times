@@ -22,6 +22,7 @@ import { testGraphChain } from '../../langgraph/testLanggraph';
 import { EventBus } from '../EventBus';
 import { constructLangGraph, transformDataMap } from '../../langgraph/langgraphUtils';
 import { testInput } from '../../langgraph/agents';
+import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -37,9 +38,12 @@ export class Level2 extends ParentScene {
   private isBirdMoving: boolean = false;
   private agentList: Map<string, Agent> = new Map();
   private parallelZones: Zone[] = [];
+  private votingZones: Zone[] = [];
   private isWorkflowAvailable: boolean = false;
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
   private debateStartLabel!: Phaser.GameObjects.Text;
+  private votingStartBtn!: Phaser.GameObjects.Rectangle;
+  private votingStartLabel!: Phaser.GameObjects.Text;
 
   constructor() {
     super("level2");
@@ -64,6 +68,10 @@ export class Level2 extends ParentScene {
 
     // register a global variable
     this.registry.set('isWorkflowRunning', false);
+    // register a global variable for pattern choosing
+    // currentPattern === "" -> no pattern is chosen
+    this.registry.set('currentPattern', "");
+
     console.log("isWorkflowRunning", this.registry.get('isWorkflowRunning'));
 
     this.tweens.add({
@@ -176,6 +184,17 @@ export class Level2 extends ParentScene {
           }
       });
   });
+
+  this.votingZones.forEach((zoneData) => {
+    this.physics.add.overlap(this.agentGroup, zoneData.zone, (zone, agent) => {
+      //console.log("param",agent,zone);
+        if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
+            zoneData.agentsInside.add((agent as unknown as Agent).getName());
+            console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the voting room`, zoneData.zone);
+            console.log("voting zones data, agents entered", this.votingZones);
+        }
+    });
+});
   
 
    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
@@ -467,10 +486,25 @@ return result;
 
           if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
               zoneData.agentsInside.delete((agent as Agent).getName());
-              console.log(`detection: Agent ${agent.getName() } exited area`, zoneData.zone);
+              console.log(`detection: Agent ${agent.getName() } exited parallel area`, zoneData.zone);
           }
       });
   });
+
+  this.votingZones.forEach((zoneData) => {
+    this.agentGroup.getChildren().forEach((agent:any) => {
+      // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
+        const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
+            agent.getBounds(),
+            zoneData.zone.getBounds()
+        );
+
+        if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
+            zoneData.agentsInside.delete((agent as Agent).getName());
+            console.log(`detection: Agent ${agent.getName() } exited voting area`, zoneData.zone);
+        }
+    });
+});
 
   if(
     (areAllZonesOccupied(this.parallelZones)
@@ -478,6 +512,7 @@ return result;
      && !this.registry.get('isWorkflowRunning')
     )
   ) {
+    this.registry.set('currentPattern', 'parallel');
     this.isWorkflowAvailable = true;
     console.log("All zones are occupied!");
     // create a start workflow button
@@ -525,13 +560,61 @@ return result;
     });
   } 
 
-  if(this.registry.get('isWorkflowRunning')==false&&!areAllZonesOccupied(this.parallelZones)){
+  
+
+  if(
+    areAllZonesOccupied(this.votingZones)
+    &&this.registry.get("currentPattern")===""
+    && !this.isWorkflowAvailable
+  ) {
+    this.registry.set("currentPattern", "voting");
+    this.isWorkflowAvailable = true;
+    console.log("voting is ready!");
+    this.votingStartBtn = this.add
+            .rectangle(50, 330, 50, 50, 0x000000)
+            .setScrollFactor(0)
+            .setDepth(1001)
+            .setAlpha(0.5)
+            .setStrokeStyle(2, 0xffffff)
+            .setInteractive();
+
+          this.votingStartLabel = this.add
+            .text(35, 320, 'Start Workflow', {
+              fontSize: '10px',
+              color: '#ffffff',
+              wordWrap: { width: 50, useAdvancedWrap: true },
+            })
+            .setScrollFactor(0)
+            .setDepth(1002);
+
+            this.votingStartBtn.on('pointerdown', async () => {
+              const allAgents = getAllAgents(this.votingZones);
+              console.log("all agents in voting zone", allAgents);
+              // getting the datamap
+              const datamap = transformDataMap(this.votingZones, this.controllableCharacters);
+              console.log("voting datamap", datamap);
+              // lauching langgraph
+              const agents = datamap[0].agents;
+              const votingGraph = constructVotingGraph(agents, this, this.tilemap, {x:520, y:120});
+              const finalDecision = votingGraph.invoke({topic: votingExample, votes: []});
+              console.log("finalDecision", finalDecision);
+            })
+  }
+
+
+  if(
+    this.registry.get('isWorkflowRunning')==false
+    &&!areAllZonesOccupied(this.parallelZones)
+    &&!areAllZonesOccupied(this.votingZones)
+  ){
+    this.registry.set('currentPattern', "");
     this.isWorkflowAvailable = false;
     if(this.debateStartBtn){
       this.debateStartBtn.destroy();
       this.debateStartLabel.destroy();
     }
   }
+
 
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];

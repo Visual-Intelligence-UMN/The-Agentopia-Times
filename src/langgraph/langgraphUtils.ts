@@ -4,16 +4,25 @@ import { Agent } from "openai/_shims/index.mjs";
 import { Zone } from "../game/scenes";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
 import { createJournalist, createWriter, journalist, StateAnnotation } from "./agents";
+import { ChatOpenAI } from "@langchain/openai";
 
 // TODO:
 // DONE: 1. using a global variable to store whether the workflow is start or not
 // DONE: 2. using that variable to determine when should we show up the Start Workflow btn
 // DONE: 3. using parallelZone to construct a more flexible data map represents the relationship between agents and locations
-// 4. write a tranformation function here to convert the data map into a langgraph Graph
+// DONE: 4. write a tranformation function here to convert the data map into a langgraph Graph
 
 interface subgraph{
     agents: Agent[],
     location: string
+}
+
+
+export function initializeLLM(){
+    return new ChatOpenAI({
+        apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+        modelName: "gpt-4o-mini",
+    });
 }
 
 // right now, we use a pre-defined action sequence to define characters' roles
