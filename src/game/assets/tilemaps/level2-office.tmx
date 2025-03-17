@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="8">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="9">
  <editorsettings>
   <export target="../../../../../../template-react-ts/src/assets/tilemaps/level2-office.json" format="json"/>
  </editorsettings>
@@ -351,5 +351,6 @@
   <object id="1" name="parallel" x="94.6667" y="50.3333" width="127.333" height="50"/>
   <object id="4" name="parallel" x="280.333" y="49" width="115.333" height="52.6667"/>
   <object id="7" name="voting" x="396.5" y="44.5" width="266.5" height="144.5"/>
+  <object id="8" name="chaining" x="104" y="44" width="284" height="145"/>
  </objectgroup>
 </map>

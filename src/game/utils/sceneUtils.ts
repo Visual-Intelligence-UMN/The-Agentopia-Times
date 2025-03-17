@@ -5,6 +5,7 @@ import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
 import * as PF from "pathfinding";
 import { Zone } from '../scenes';
+import { Agent } from '../sprites/Agent';
 
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
@@ -20,6 +21,62 @@ export function areAllZonesOccupied(zones: any) {
   return zones.every((zone:any) => zone.agentsInside.size > 0);
 }
 
+export function setZonesCollisionDetection(scene: any, zones: any, agents: any) {
+  zones.forEach((zoneData:any) => {
+        scene.physics.add.overlap(agents, zoneData.zone, (zone:any, agent:any) => {
+          //console.log("param",agent,zone);
+            if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
+                zoneData.agentsInside.add((agent as unknown as Agent).getName());
+                console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the area`, zoneData.zone);
+                console.log("zones data, agents entered", zones);
+            }
+        });
+    });
+}
+
+export function setZonesExitingDecoration(zones: any, agents: any) {
+  zones.forEach((zoneData:any) => {
+        agents.getChildren().forEach((agent:any) => {
+          // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
+            const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
+                agent.getBounds(),
+                zoneData.zone.getBounds()
+            );
+  
+            if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
+                zoneData.agentsInside.delete((agent as Agent).getName());
+                console.log(`detection: Agent ${agent.getName() } exited parallel area`, zoneData.zone);
+            }
+        });
+    });
+}
+
+export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
+  const zoneDataList = objectsLayer.objects.filter((obj:any) => obj.name === zoneName);
+
+  const zones:any[] = [];
+
+  zoneDataList.forEach((parallelZoneData:any) => {
+    const parallelZone = scene.add.zone(
+        parallelZoneData.x + parallelZoneData.width / 2,
+        parallelZoneData.y + parallelZoneData.height / 2,
+        parallelZoneData.width,
+        parallelZoneData.height
+    );
+    
+    scene.physics.world.enable(parallelZone);
+    parallelZone.body.setAllowGravity(false);
+    parallelZone.body.setImmovable(true);
+
+    zones.push({
+      zone: parallelZone,
+      agentsInside: new Set() ,
+      name: parallelZoneData.name
+    });
+});
+
+  return zones;
+}
 
 export function createItem(
   this: any,
@@ -140,67 +197,9 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
 
     const objectsLayer = this.tilemap.getObjectLayer('Objects');
 
-    const parallelZoneDataList = objectsLayer.objects.filter((obj:any) => obj.name === 'parallel');
-    const votingZoneDataList = [objectsLayer.objects.find((obj:any) => obj.name === 'voting')];
-
-
-
-    console.log('Voting Zone:', votingZoneDataList);
-    
-    this.parallelZones = []; 
-
-    console.log('Parallel Zone Data:', parallelZoneDataList);
-    
-    parallelZoneDataList.forEach((parallelZoneData:any) => {
-        const parallelZone = this.add.zone(
-            parallelZoneData.x + parallelZoneData.width / 2,
-            parallelZoneData.y + parallelZoneData.height / 2,
-            parallelZoneData.width,
-            parallelZoneData.height
-        );
-        
-        this.physics.world.enable(parallelZone);
-        parallelZone.body.setAllowGravity(false);
-        parallelZone.body.setImmovable(true);
-    
-        this.parallelZones.push({
-          zone: parallelZone,
-          agentsInside: new Set() ,
-          name: parallelZoneData.name
-        });
-    });
-
-    votingZoneDataList.forEach((parallelZoneData:any) => {
-      const parallelZone = this.add.zone(
-          parallelZoneData.x + parallelZoneData.width / 2,
-          parallelZoneData.y + parallelZoneData.height / 2,
-          parallelZoneData.width,
-          parallelZoneData.height
-      );
-      
-      this.physics.world.enable(parallelZone);
-      parallelZone.body.setAllowGravity(false);
-      parallelZone.body.setImmovable(true);
-  
-      this.votingZones.push({
-        zone: parallelZone,
-        agentsInside: new Set() ,
-        name: parallelZoneData.name
-      });
-  });
-    
-    console.log('Parallel Zones:', this.parallelZones);
-
-    console.log('Voting Zones:', this.votingZones);
-
-    
-  
-    
-
-    //console.log("Layers available:", this.tilemap.getLayerNames());
-
-    // this.cameras.main.setBounds(0, 0, this.tilemap.widthInPixels, this.tilemap.heightInPixels);
-
+    this.parallelZones = setupZones(this, objectsLayer, 'parallel');
+    this.votingZones = setupZones(this, objectsLayer, 'voting');
+    this.chainingZones = setupZones(this, objectsLayer, 'chaining');
 
     console.log("Tile properties:", this.worldLayer.layer.properties);
 

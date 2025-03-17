@@ -13,7 +13,7 @@ import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs, startControlDesignatedAgent } from '../utils/controlUtils';
 import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { addItem, areAllZonesOccupied, createItem, getAllAgents, setupScene } from '../utils/sceneUtils';
+import { addItem, areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, eventTargetBus, testChain, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
@@ -38,6 +38,7 @@ export class Level2 extends ParentScene {
   private isBirdMoving: boolean = false;
   private agentList: Map<string, Agent> = new Map();
   private parallelZones: Zone[] = [];
+  private chainingZones: Zone[] = [];
   private votingZones: Zone[] = [];
   private isWorkflowAvailable: boolean = false;
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
@@ -173,29 +174,9 @@ export class Level2 extends ParentScene {
       this,
     );
 
-    // collision logics
-    this.parallelZones.forEach((zoneData) => {
-      this.physics.add.overlap(this.agentGroup, zoneData.zone, (zone, agent) => {
-        //console.log("param",agent,zone);
-          if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
-              zoneData.agentsInside.add((agent as unknown as Agent).getName());
-              console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the area`, zoneData.zone);
-              console.log("parallel zones data, agents entered", this.parallelZones);
-          }
-      });
-  });
-
-  this.votingZones.forEach((zoneData) => {
-    this.physics.add.overlap(this.agentGroup, zoneData.zone, (zone, agent) => {
-      //console.log("param",agent,zone);
-        if (!zoneData.agentsInside.has((agent as unknown as Agent).getName())) {
-            zoneData.agentsInside.add((agent as unknown as Agent).getName());
-            console.log(`detection: Agent ${(agent as unknown as Agent).getName()} entered the voting room`, zoneData.zone);
-            console.log("voting zones data, agents entered", this.votingZones);
-        }
-    });
-});
-  
+    // collision logics  
+    setZonesCollisionDetection(this, this.parallelZones, this.agentGroup);
+    setZonesCollisionDetection(this, this.votingZones, this.agentGroup);
 
    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
@@ -475,36 +456,8 @@ return result;
 }
 
   update() {
-
-    this.parallelZones.forEach((zoneData) => {
-      this.agentGroup.getChildren().forEach((agent:any) => {
-        // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
-          const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
-              agent.getBounds(),
-              zoneData.zone.getBounds()
-          );
-
-          if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
-              zoneData.agentsInside.delete((agent as Agent).getName());
-              console.log(`detection: Agent ${agent.getName() } exited parallel area`, zoneData.zone);
-          }
-      });
-  });
-
-  this.votingZones.forEach((zoneData) => {
-    this.agentGroup.getChildren().forEach((agent:any) => {
-      // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
-        const isInside = Phaser.Geom.Intersects.RectangleToRectangle(
-            agent.getBounds(),
-            zoneData.zone.getBounds()
-        );
-
-        if (!isInside && zoneData.agentsInside.has((agent as Agent).getName())) {
-            zoneData.agentsInside.delete((agent as Agent).getName());
-            console.log(`detection: Agent ${agent.getName() } exited voting area`, zoneData.zone);
-        }
-    });
-});
+    setZonesExitingDecoration(this.parallelZones, this.agentGroup);
+    setZonesExitingDecoration(this.votingZones, this.agentGroup);
 
   if(
     (areAllZonesOccupied(this.parallelZones)
@@ -534,6 +487,7 @@ return result;
             .setDepth(1002);
 
     this.debateStartBtn.on('pointerdown', async () => {
+      this.registry.set('isWorkflowRunning', true);
       console.log("btn pre-start zones data", this.parallelZones);
        const agentsInfo = getAllAgents(this.parallelZones);
        console.log("agentsInfo", agentsInfo);
@@ -597,13 +551,14 @@ return result;
               const agents = datamap[0].agents;
               const votingGraph = constructVotingGraph(agents, this, this.tilemap, {x:520, y:120});
               const finalDecision = votingGraph.invoke({topic: votingExample, votes: []});
+              await this.registry.set("isWorkflowRunning", false);
               console.log("finalDecision", finalDecision);
             })
   }
 
 
   if(
-    this.registry.get('isWorkflowRunning')==false
+    this.registry.get('isWorkflowRunning')===false
     &&!areAllZonesOccupied(this.parallelZones)
     &&!areAllZonesOccupied(this.votingZones)
   ){
