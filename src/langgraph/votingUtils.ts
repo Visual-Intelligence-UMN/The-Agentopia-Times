@@ -58,8 +58,7 @@ export function constructVotingGraph(
     destination: any
 ) {
     const votingGraph = new StateGraph(VotingState);
-    
-    // 依次执行投票
+
     let previousNode = START;
     for (let i = 0; i < agents.length; i++) {
         const agentNode = agents[i].getName();
@@ -68,7 +67,6 @@ export function constructVotingGraph(
         previousNode = agentNode;
     }
 
-    // 投票结束后执行聚合
     votingGraph.addNode("aggregator", createAggregator() as any);
     votingGraph.addEdge(previousNode as any, "aggregator" as any);
     votingGraph.addEdge("aggregator" as any, END);

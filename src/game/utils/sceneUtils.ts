@@ -54,6 +54,8 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
 export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   const zoneDataList = objectsLayer.objects.filter((obj:any) => obj.name === zoneName);
 
+  console.log("zoneDataList", zoneDataList);
+
   const zones:any[] = [];
 
   zoneDataList.forEach((parallelZoneData:any) => {
@@ -74,6 +76,8 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
       name: parallelZoneData.name
     });
 });
+
+console.log("from setupZones", zones);
 
   return zones;
 }
@@ -200,6 +204,7 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.parallelZones = setupZones(this, objectsLayer, 'parallel');
     this.votingZones = setupZones(this, objectsLayer, 'voting');
     this.chainingZones = setupZones(this, objectsLayer, 'chaining');
+    this.routeZones = setupZones(this, objectsLayer, 'route');
 
     console.log("Tile properties:", this.worldLayer.layer.properties);
 

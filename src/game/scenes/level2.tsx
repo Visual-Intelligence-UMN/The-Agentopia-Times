@@ -37,10 +37,14 @@ export class Level2 extends ParentScene {
   private agentIndex: number = 0;
   private isBirdMoving: boolean = false;
   private agentList: Map<string, Agent> = new Map();
+  
   private parallelZones: Zone[] = [];
   private chainingZones: Zone[] = [];
   private votingZones: Zone[] = [];
+  private routeZones: Zone[] = [];
+
   private isWorkflowAvailable: boolean = false;
+
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
   private debateStartLabel!: Phaser.GameObjects.Text;
   private votingStartBtn!: Phaser.GameObjects.Rectangle;
@@ -177,6 +181,8 @@ export class Level2 extends ParentScene {
     // collision logics  
     setZonesCollisionDetection(this, this.parallelZones, this.agentGroup);
     setZonesCollisionDetection(this, this.votingZones, this.agentGroup);
+    setZonesCollisionDetection(this, this.chainingZones, this.agentGroup);
+    setZonesCollisionDetection(this, this.routeZones, this.agentGroup);
 
    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
@@ -458,6 +464,8 @@ return result;
   update() {
     setZonesExitingDecoration(this.parallelZones, this.agentGroup);
     setZonesExitingDecoration(this.votingZones, this.agentGroup);
+    setZonesExitingDecoration(this.chainingZones, this.agentGroup);
+    setZonesExitingDecoration(this.routeZones, this.agentGroup);
 
   if(
     (areAllZonesOccupied(this.parallelZones)
@@ -514,6 +522,19 @@ return result;
     });
   } 
 
+  if(
+    areAllZonesOccupied(this.routeZones)
+    && this.registry.get('currentPattern') === ""
+    && !this.isWorkflowAvailable
+    && this.routeZones[0].agentsInside.size === 3
+  ){
+    this.registry.set('currentPattern', 'route');
+    this.isWorkflowAvailable = true;
+    console.log("route is ready!");
+    
+    console.log("lauching route graph", this.routeZones);
+  }
+
   
 
   if(
@@ -561,6 +582,7 @@ return result;
     this.registry.get('isWorkflowRunning')===false
     &&!areAllZonesOccupied(this.parallelZones)
     &&!areAllZonesOccupied(this.votingZones)
+    &&!areAllZonesOccupied(this.routeZones)
   ){
     this.registry.set('currentPattern', "");
     this.isWorkflowAvailable = false;
