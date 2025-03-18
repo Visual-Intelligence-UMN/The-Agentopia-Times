@@ -8,7 +8,7 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentWithMouse, startControlDesignatedAgent } from '../utils/controlUtils';
+import { controlAgentWithMouse, startControlDesignatedAgent, controlCameraMovements, isClickOnHUD} from '../utils/controlUtils';
 import { addAgentPanelHUD, addRoomHiringMenuHUD} from '../utils/hudUtils';
 import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
@@ -49,6 +49,11 @@ export class Level2 extends ParentScene {
   private votingStartBtn!: Phaser.GameObjects.Rectangle;
   private votingStartLabel!: Phaser.GameObjects.Text;
 
+  private hudElements: Phaser.GameObjects.GameObject[] = []; // Store all HUD elements
+
+  private isCameraFollowing: boolean = false; // 默认自由移动
+
+
   constructor() {
     super("level2");
     this.sceneName = "Game: Level 2";
@@ -63,6 +68,9 @@ export class Level2 extends ParentScene {
   }
 
   create() {
+
+    // Initialize the HUD array
+    this.hudElements = [];
 
     setupScene.call(this, "office");
 
@@ -147,7 +155,15 @@ export class Level2 extends ParentScene {
     console.log('controled characters', this.controllableCharacters);
 
     //set the camera
+    this.isCameraFollowing = false;
+
     this.cameras.main.startFollow(this.controllableCharacters[0]);
+
+    // 1 second to unfollow the camera, allowing the player to move freely.
+    this.time.delayedCall(1, () => {
+      this.cameras.main.stopFollow();
+    }, [], this);
+
     this.controllableCharacters[0].changeNameTagColor('#ff0000');
 
     this.physics.add.overlap(
@@ -641,32 +657,100 @@ return result;
         250,
       )
     ) {
-      startControlDesignatedAgent(this, 0);
+      console.log('Key "1" pressed');
+      this.activateIndex = 0;
+      this.cameras.main.startFollow(
+        this.controllableCharacters[this.activateIndex],
+      );
+      this.playerControlledAgent =
+        this.controllableCharacters[this.activateIndex];
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor('#ffffff');
+      });
+      this.playerControlledAgent.changeNameTagColor('#ff0000');
+      console.log(
+        'switched utils',
+        this.playerControlledAgent.getPromptUtils(),
+      );
+
+      // Setting the camera to follow the character
+      this.cameras.main.startFollow(this.playerControlledAgent);
+      this.isCameraFollowing = true;  // Update camera status
+      console.log(`📷 Now follow the agent:${this.playerControlledAgent.getName()}`);
     } else if (
       this.input.keyboard!.checkDown(
         this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
         250,
       )
     ) {
-      startControlDesignatedAgent(this, 1);
+      console.log('Key "2" pressed');
+      this.activateIndex = 1;
+      this.cameras.main.startFollow(
+        this.controllableCharacters[this.activateIndex],
+      );
+      this.playerControlledAgent =
+        this.controllableCharacters[this.activateIndex];
+      console.log(
+        'switched utils',
+        this.playerControlledAgent.getPromptUtils(),
+      );
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor('#ffffff');
+      });
+      this.playerControlledAgent.changeNameTagColor('#ff0000');
+
+      // Setting the camera to follow the agent
+      this.cameras.main.startFollow(this.playerControlledAgent);
+      this.isCameraFollowing = true;  // Update camera status
+      // console.log(`📷 Now follow the agent: ${this.playerControlledAgent.getName()}`);
     } else if (
       this.input.keyboard!.checkDown(
         this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
         250,
       )
     ) {
-      startControlDesignatedAgent(this, 2);
-    } else if(
-      this.input.keyboard!.checkDown(
-        this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.FOUR),
-        250,
-      )
-    ){
-      startControlDesignatedAgent(this, 3);
+      console.log('Key "3" pressed');
+      this.activateIndex = 2;
+      this.cameras.main.startFollow(
+        this.controllableCharacters[this.activateIndex],
+      );
+      this.playerControlledAgent =
+        this.controllableCharacters[this.activateIndex];
+      this.controllableCharacters.forEach((agent: any) => {
+        agent.changeNameTagColor('#ffffff');
+      });
+      this.playerControlledAgent.changeNameTagColor('#ff0000');
+      console.log(
+        'switched utils',
+        this.playerControlledAgent.getPromptUtils(),
+      );
+
+      // Setting the camera to follow the agent
+      this.cameras.main.startFollow(this.playerControlledAgent);
+      this.isCameraFollowing = true;  // Update camera status
+      // console.log(`📷 Now follow the agent: ${this.playerControlledAgent.getName()}`);
     }
 
+    /* Control Aengent */
+
     // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
+    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+      (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    );
+
+
+    /* Control Camera by WASD */
+
+    const cursors = this.input!.keyboard!.addKeys({
+      w: Phaser.Input.Keyboard.KeyCodes.W,
+      a: Phaser.Input.Keyboard.KeyCodes.A,
+      s: Phaser.Input.Keyboard.KeyCodes.S,
+      d: Phaser.Input.Keyboard.KeyCodes.D,
+    });
+
+    // Getting Camera Behavior Right
+    controlCameraMovements(this, cursors, 10);
+
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {
       console.log('overlapstart', agent, item);
     });

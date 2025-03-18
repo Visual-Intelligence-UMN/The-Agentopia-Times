@@ -25,6 +25,9 @@ export function addButtonHUD(
   .setScrollFactor(0)
   .setDepth(1000);
 
+  // Adding a HUD to an array
+  this.hudElements.push(button, buttonText);
+
   return button;
 }
 
@@ -56,6 +59,11 @@ export function addAgentPanelHUD(
   frame.setDepth(998);
   frame.setAlpha(0.5);
 
+  // Add all elements of the entire HUD panel to the array
+  if (this.hudElements) {
+    this.hudElements.push(frame, this.hudText);
+  }
+
   let popupRect: Phaser.GameObjects.Rectangle | null = null;
   let popupText: Phaser.GameObjects.Text | null = null;
   for (let i = 0; i < 3; i++) {
@@ -71,6 +79,11 @@ export function addAgentPanelHUD(
     rect.setDepth(999);
     rect.setAlpha(0.5);
     rect.setInteractive({ useHandCursor: true });
+
+    // Add to HUD array
+    if (this.hudElements) {
+      this.hudElements.push(rect);
+    }
 
     rect.on('pointerover', (pointer: Phaser.Input.Pointer) => {
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
@@ -134,6 +147,12 @@ export function addRoomHiringMenuHUD(this: any) {
       .setDepth(1000);
     buttonGroup.add(btn);
     buttonGroup.add(btnLabel);
+
+    // Adding HUD elements to an array
+    if (this.hudElements) {
+      this.hudElements.push(btn, btnLabel);
+    }
+
     this.agentControlButtonLabels.push(btnLabel);
     btn.on('pointerdown', () => {
       // get the corresponding room boundary
