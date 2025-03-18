@@ -39,13 +39,19 @@ export function createVoter(
     };
 }
 
-export function createAggregator() {
+export function createAggregator(scene: any, agents: any[], tilemap: any, finalDestination: any) {
     return async function aggregator(state: typeof VotingState.State) {
         console.log("aggregator state: ", state.votes);
         let votes = state.votes;
         let llmInput = votes.join("; ");
         const llm = initializeLLM();
         const decision = await llm.invoke(`aggregate vote: ${llmInput}; return the final result from this voting as the decision`);
+
+        let originalAgent1X = agents[0].x;
+        let originalAgent1Y = agents[0].y;
+
+        await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
+        await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
         EventBus.emit("final-report", { report: decision.content });
         return { ...state, decision: decision.content };
     };
@@ -55,7 +61,8 @@ export function constructVotingGraph(
     agents: Agent[],
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    finalDestination: any
 ) {
     const votingGraph = new StateGraph(VotingState);
 
@@ -67,7 +74,7 @@ export function constructVotingGraph(
         previousNode = agentNode;
     }
 
-    votingGraph.addNode("aggregator", createAggregator() as any);
+    votingGraph.addNode("aggregator", createAggregator(scene, agents, tilemap, finalDestination) as any);
     votingGraph.addEdge(previousNode as any, "aggregator" as any);
     votingGraph.addEdge("aggregator" as any, END);
 

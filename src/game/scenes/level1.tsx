@@ -10,7 +10,7 @@ import { fetchChatCompletion } from '../server/server';
 import { controlAgentMovements, initKeyboardInputs, controlAgentWithMouse } from '../utils/controlUtils';
 import { setupKeyListeners } from '../utils/controlUtils';
 import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
+import { addAgentPanelHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
 import { createItem } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
@@ -140,7 +140,7 @@ export class Level1 extends ParentScene {
     this.agentControlButtons = this.add.group();
     this.agentControlButtonLabels = [];
 
-    addAgentSelectionMenuHUD.call(this);
+    // maddAgentSelectionMenuHUD.call(this);
     this.overlappedItems = new Set();
     let overlappedItems = new Set();
     let isDebate = false;

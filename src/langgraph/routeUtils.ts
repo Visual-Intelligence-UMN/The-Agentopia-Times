@@ -43,7 +43,7 @@ export function createLeaf(
 
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
-        await autoControlAgent(scene, agent, tilemap, 240, 290, "Send report to final location"); //ERROR
+        await autoControlAgent(scene, agent, tilemap, 910, 130, "Send report to final location"); //ERROR
 
         const llm = initializeLLM();
         const result = await llm.invoke(

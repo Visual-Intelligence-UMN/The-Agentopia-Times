@@ -1,3 +1,5 @@
+import { Agent } from "../sprites/Agent";
+
 export function addButtonHUD(
   this: any, 
   x: number, 
@@ -111,8 +113,10 @@ export function addAgentPanelHUD(
   }
 }
 
-export function addAgentSelectionMenuHUD(this: any) {
-  for (let i = 0; i < this.controllableCharacters.length; i++) {
+export function addRoomHiringMenuHUD(this: any) {
+  const rooms = ['validation', 'voting', 'routing'];
+  const zones = [this.parallelZones, this.votingZones, this.routeZones];
+  for (let i = 0; i < rooms.length; i++) {
     let buttonGroup = this.add.group();
     const btn = this.add
       .rectangle(425 + i * 60, 540, 50, 50, 0x000000)
@@ -122,7 +126,7 @@ export function addAgentSelectionMenuHUD(this: any) {
       .setStrokeStyle(2, 0xffffff)
       .setInteractive();
     const btnLabel = this.add
-      .text(425 + i * 60 - 15, 535, this.controllableCharacters[i].getName(), {
+      .text(425 + i * 60 - 15, 535, rooms[i], {
         fontSize: '10px',
         color: '#ffffff',
       })
@@ -132,25 +136,76 @@ export function addAgentSelectionMenuHUD(this: any) {
     buttonGroup.add(btnLabel);
     this.agentControlButtonLabels.push(btnLabel);
     btn.on('pointerdown', () => {
-      this.activateIndex = i;
-      this.cameras.main.startFollow(
-        this.controllableCharacters[this.activateIndex],
-      );
-      this.playerControlledAgent =
-        this.controllableCharacters[this.activateIndex];
-      this.controllableCharacters.forEach((agent: any) => {
-        agent.changeNameTagColor('#ffffff');
-      });
-      this.agentControlButtonLabels.forEach((btnLabel: any) => {
-        btnLabel.setColor('#ffffff');
-      });
-      btnLabel.setColor('#ff0000');
-      this.playerControlledAgent.changeNameTagColor('#ff0000');
+      // get the corresponding room boundary
+      let bounds: any = {};
+      if(i!=0){
+        console.log('room:', rooms[i], 'zone:', zones);
+        const bounds = getZoneBounds(zones[i][0].zone);
+        console.log('bounds:', bounds);
+        const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(this.controllableCharacters, bounds);
+
+        const agent = new Agent(this, agentX, agentY, 'player', 'misa-front', 'Agent '+this.controllableCharacters.length);
+        this.agentGroup.add(agent);
+        this.controllableCharacters.push(agent);
+        this.agentList.set(agent.getName(), agent);
+      } else {
+        if (zones[i][0].agentsInside.size===0){
+          console.log('room:', rooms[i], 'zone:', zones);
+          bounds = getZoneBounds(zones[i][0].zone);
+
+        } else if(zones[i][1].agentsInside.size===0){
+          console.log('room:', rooms[i], 'zone:', zones);
+          bounds = getZoneBounds(zones[i][1].zone);
+        }
+        const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(this.controllableCharacters, bounds);
+
+        const agent = new Agent(this, agentX, agentY, 'player', 'misa-front', 'Agent '+this.controllableCharacters.length);
+        this.agentGroup.add(agent);
+        this.controllableCharacters.push(agent);
+        this.agentList.set(agent.getName(), agent);
+
+      }
     });
   }
 
   this.agentControlButtonLabels[0].setColor('#ff0000');
 }
+
+function generateNonCollidingAgentPosition(existingAgents:any, bounds:any, agentRadius = 20, maxAttempts = 50) {
+  let isColliding;
+  let attempts = 0;
+  let agentX: number;
+  let agentY: number;
+
+  do {
+      agentX = bounds.topLeft.x + Math.random() * bounds.width;
+      agentY = bounds.topLeft.y + Math.random() * bounds.height;
+
+      isColliding = existingAgents.some((agent: any) => {
+          const dx = agent.x - agentX;
+          const dy = agent.y - agentY;
+          return Math.sqrt(dx * dx + dy * dy) < agentRadius * 2; // 计算两者间距
+      });
+
+      attempts++;
+  } while (isColliding && attempts < maxAttempts);
+
+  if (attempts >= maxAttempts) {
+      console.warn("Failed to place agent without collision after max attempts.");
+  }
+
+  return { x: agentX, y: agentY };
+}
+
+const getZoneBounds = (zone: any) => {
+  return {
+      topLeft: { x: zone.x - zone._displayOriginX, y: zone.y - zone._displayOriginY },
+      bottomRight: { x: (zone.x - zone._displayOriginX) + zone.width, y: (zone.y - zone._displayOriginY) + zone.height },
+      width: zone.width,
+      height: zone.height
+  };
+};
+
 
 export function addSceneNameHUD(this: any){
   // add scene's name to the HUD 

@@ -204,7 +204,7 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.parallelZones = setupZones(this, objectsLayer, 'parallel');
     this.votingZones = setupZones(this, objectsLayer, 'voting');
     this.chainingZones = setupZones(this, objectsLayer, 'chaining');
-    this.routeZones = setupZones(this, objectsLayer, 'route');
+    this.routeZones = setupZones(this, objectsLayer, 'routing');
 
     console.log("Tile properties:", this.worldLayer.layer.properties);
 

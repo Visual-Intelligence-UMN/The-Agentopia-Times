@@ -76,6 +76,7 @@ export function constructLangGraph(
     transformDataMap:subgraph[],
     scene: any,
     tilemap: any,
+    destination: any
 ){
     const langgraph = new StateGraph(StateAnnotation);
     const agentNames: string[] = [];
@@ -86,7 +87,7 @@ export function constructLangGraph(
             const agent = subgraph.agents[j];
             // langgraph.addNode(agent.getName(), agent.activate());
             if(i===0 && j===0)langgraph.addNode(agent.getName(), createJournalist(agent, transformDataMap[1].agents[0], scene, tilemap));
-            if(i===1 && j===0)langgraph.addNode(agent.getName(), createWriter(agent, scene, tilemap));
+            if(i===1 && j===0)langgraph.addNode(agent.getName(), createWriter(agent, scene, tilemap, destination));
             // else langgraph.addNode(agent.getName(), agent.activate());
             console.log("add a node", agent.getName(), agent.activate());
             agentNames.push(agent.getName());

@@ -58,6 +58,7 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
+    destination: any
 ){ 
     return async function writer(state: typeof StateAnnotation.State){
         console.log("writer state: ", state.formattedText);
@@ -67,7 +68,7 @@ export function createWriter(
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;
-        await autoControlAgent(scene, agent, tilemap, 240, 290, "Send Report to Final Location");
+        await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
         // agent return to original location
 

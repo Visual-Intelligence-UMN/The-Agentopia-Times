@@ -9,7 +9,7 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { controlAgentWithMouse, startControlDesignatedAgent } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD} from '../utils/hudUtils';
+import { addAgentPanelHUD, addRoomHiringMenuHUD} from '../utils/hudUtils';
 import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
@@ -176,7 +176,7 @@ export class Level2 extends ParentScene {
     this.agentControlButtons = this.add.group();
     this.agentControlButtonLabels = [];
 
-    addAgentSelectionMenuHUD.call(this);
+    addRoomHiringMenuHUD.call(this);
     this.overlappedItems = new Set();
     let overlappedItems = new Set();
     let isDebate = false;
@@ -492,101 +492,111 @@ return result;
         console.log("btn start zones data", this.parallelZones);
 
         const datamap = transformDataMap(this.parallelZones, this.controllableCharacters);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap);
+        const datamap2 = transformDataMap(this.votingZones, this.controllableCharacters);
+        const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
+
+        
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:910, y:130});
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:datamap3[0].agents[2].x, y:datamap3[0].agents[2].y});
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:datamap2[0].agents[0].x, y:datamap2[0].agents[0].y});
+
         console.log("langgraph from game", langgraph);
         const llmOutput = await langgraph.invoke({input: testInput});
-        console.log("llmOutput", llmOutput);
+        const finalDecision = await votingGraph.invoke({topic: votingExample, votes: []});
+        const finalDecision2 = await routingGraph.invoke({input: testInput});
+
+        console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
         // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
 
         eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });
   } 
 
-  if(
-    areAllZonesOccupied(this.routeZones)
-    && this.registry.get('currentPattern') === ""
-    && !this.isWorkflowAvailable
-    && this.routeZones[0].agentsInside.size === 3
-  ){
-    this.registry.set('currentPattern', 'route');
-    this.isWorkflowAvailable = true;
-    console.log("route is ready!");
+  // if(
+  //   areAllZonesOccupied(this.routeZones)
+  //   && this.registry.get('currentPattern') === ""
+  //   && !this.isWorkflowAvailable
+  //   && this.routeZones[0].agentsInside.size === 3
+  // ){
+  //   this.registry.set('currentPattern', 'route');
+  //   this.isWorkflowAvailable = true;
+  //   console.log("route is ready!");
     
-    console.log("lauching route graph", this.routeZones);
+  //   console.log("lauching route graph", this.routeZones);
 
-    this.routeStartBtn = this.add
-            .rectangle(50, 330, 50, 50, 0x000000)
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setAlpha(0.5)
-            .setStrokeStyle(2, 0xffffff)
-            .setInteractive();
+  //   this.routeStartBtn = this.add
+  //           .rectangle(50, 330, 50, 50, 0x000000)
+  //           .setScrollFactor(0)
+  //           .setDepth(1001)
+  //           .setAlpha(0.5)
+  //           .setStrokeStyle(2, 0xffffff)
+  //           .setInteractive();
 
-          this.routeStartLabel = this.add
-            .text(35, 320, 'Start Route', {
-              fontSize: '10px',
-              color: '#ffffff',
-              wordWrap: { width: 50, useAdvancedWrap: true },
-            })
-            .setScrollFactor(0)
-            .setDepth(1002);
+  //         this.routeStartLabel = this.add
+  //           .text(35, 320, 'Start Route', {
+  //             fontSize: '10px',
+  //             color: '#ffffff',
+  //             wordWrap: { width: 50, useAdvancedWrap: true },
+  //           })
+  //           .setScrollFactor(0)
+  //           .setDepth(1002);
 
-            this.routeStartBtn.on('pointerdown', async () => {
-              const allAgents = getAllAgents(this.routeZones);
-              console.log("all agents in route zone", allAgents);
-              // getting the datamap
-              const datamap = transformDataMap(this.routeZones, this.controllableCharacters);
-              console.log("route datamap", datamap);
-              // lauching langgraph
-              const agents = datamap[0].agents;
-              const routeGraph = constructRouteGraph(agents, this, this.tilemap, {x:240, y:290});
-              const finalDecision = routeGraph.invoke({input: testInput});
-              await this.registry.set("isWorkflowRunning", false);
-              console.log("finalDecision", finalDecision);
-            })
-  }
+  //           this.routeStartBtn.on('pointerdown', async () => {
+  //             const allAgents = getAllAgents(this.routeZones);
+  //             console.log("all agents in route zone", allAgents);
+  //             // getting the datamap
+  //             const datamap = transformDataMap(this.routeZones, this.controllableCharacters);
+  //             console.log("route datamap", datamap);
+  //             // lauching langgraph
+  //             const agents = datamap[0].agents;
+  //             const routeGraph = constructRouteGraph(agents, this, this.tilemap, {x:240, y:290});
+  //             const finalDecision = routeGraph.invoke({input: testInput});
+  //             await this.registry.set("isWorkflowRunning", false);
+  //             console.log("finalDecision", finalDecision);
+  //           })
+  // }
 
   
 
-  if(
-    areAllZonesOccupied(this.votingZones)
-    &&this.registry.get("currentPattern")===""
-    && !this.isWorkflowAvailable
-  ) {
-    this.registry.set("currentPattern", "voting");
-    this.isWorkflowAvailable = true;
-    console.log("voting is ready!");
-    this.votingStartBtn = this.add
-            .rectangle(50, 330, 50, 50, 0x000000)
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setAlpha(0.5)
-            .setStrokeStyle(2, 0xffffff)
-            .setInteractive();
+  // if(
+  //   areAllZonesOccupied(this.votingZones)
+  //   &&this.registry.get("currentPattern")===""
+  //   && !this.isWorkflowAvailable
+  // ) {
+  //   this.registry.set("currentPattern", "voting");
+  //   this.isWorkflowAvailable = true;
+  //   console.log("voting is ready!");
+  //   this.votingStartBtn = this.add
+  //           .rectangle(50, 330, 50, 50, 0x000000)
+  //           .setScrollFactor(0)
+  //           .setDepth(1001)
+  //           .setAlpha(0.5)
+  //           .setStrokeStyle(2, 0xffffff)
+  //           .setInteractive();
 
-          this.votingStartLabel = this.add
-            .text(35, 320, 'Start Workflow', {
-              fontSize: '10px',
-              color: '#ffffff',
-              wordWrap: { width: 50, useAdvancedWrap: true },
-            })
-            .setScrollFactor(0)
-            .setDepth(1002);
+  //         this.votingStartLabel = this.add
+  //           .text(35, 320, 'Start Voting', {
+  //             fontSize: '10px',
+  //             color: '#ffffff',
+  //             wordWrap: { width: 50, useAdvancedWrap: true },
+  //           })
+  //           .setScrollFactor(0)
+  //           .setDepth(1002);
 
-            this.votingStartBtn.on('pointerdown', async () => {
-              const allAgents = getAllAgents(this.votingZones);
-              console.log("all agents in voting zone", allAgents);
-              // getting the datamap
-              const datamap = transformDataMap(this.votingZones, this.controllableCharacters);
-              console.log("voting datamap", datamap);
-              // lauching langgraph
-              const agents = datamap[0].agents;
-              const votingGraph = constructVotingGraph(agents, this, this.tilemap, {x:520, y:120});
-              const finalDecision = votingGraph.invoke({topic: votingExample, votes: []});
-              await this.registry.set("isWorkflowRunning", false);
-              console.log("finalDecision", finalDecision);
-            })
-  }
+  //           this.votingStartBtn.on('pointerdown', async () => {
+  //             const allAgents = getAllAgents(this.votingZones);
+  //             console.log("all agents in voting zone", allAgents);
+  //             // getting the datamap
+  //             const datamap = transformDataMap(this.votingZones, this.controllableCharacters);
+  //             console.log("voting datamap", datamap);
+  //             // lauching langgraph
+  //             const agents = datamap[0].agents;
+  //             const votingGraph = constructVotingGraph(agents, this, this.tilemap, {x:520, y:120});
+  //             const finalDecision = votingGraph.invoke({topic: votingExample, votes: []});
+  //             await this.registry.set("isWorkflowRunning", false);
+  //             console.log("finalDecision", finalDecision);
+  //           })
+  // }
 
 
   if(
