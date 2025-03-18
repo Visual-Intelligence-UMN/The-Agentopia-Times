@@ -1,28 +1,23 @@
 import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
+import { Typewriter } from '../components';
 import {
-  Depth,
   key,
-  TilemapLayer,
-  TILESET_NAME,
 } from '../constants';
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentMovements, controlAgentWithMouse, initKeyboardInputs, startControlDesignatedAgent } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { addItem, areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
+import { controlAgentWithMouse, startControlDesignatedAgent } from '../utils/controlUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD} from '../utils/hudUtils';
+import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
-import { evaluateCustomerSupportResponse, eventTargetBus, testChain, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
-import { customerServicePersona } from '../server/prompts';
-import { testGraphChain } from '../../langgraph/testLanggraph';
-import { EventBus } from '../EventBus';
+import { evaluateCustomerSupportResponse, eventTargetBus, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 import { constructLangGraph, transformDataMap } from '../../langgraph/langgraphUtils';
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
+import { constructRouteGraph } from '../../langgraph/routeUtils';
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -33,9 +28,6 @@ export interface Zone {
 export class Level2 extends ParentScene {
 
   private parrellePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private bird!: Phaser.Physics.Arcade.Sprite;
-  private agentIndex: number = 0;
-  private isBirdMoving: boolean = false;
   private agentList: Map<string, Agent> = new Map();
   
   private parallelZones: Zone[] = [];
@@ -45,8 +37,15 @@ export class Level2 extends ParentScene {
 
   private isWorkflowAvailable: boolean = false;
 
+  private startWorkflowBtn!: Phaser.GameObjects.Rectangle;
+  private startWorkflowLabel!: Phaser.GameObjects.Text;
+
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
   private debateStartLabel!: Phaser.GameObjects.Text;
+
+  private routeStartBtn!: Phaser.GameObjects.Rectangle;
+  private routeStartLabel!: Phaser.GameObjects.Text;
+
   private votingStartBtn!: Phaser.GameObjects.Rectangle;
   private votingStartLabel!: Phaser.GameObjects.Text;
 
@@ -62,10 +61,6 @@ export class Level2 extends ParentScene {
       }
     });
   }
-
-  // private testEventEmitter() {
-  //   console.log("testEventEmitter");
-  // }
 
   create() {
 
@@ -88,18 +83,6 @@ export class Level2 extends ParentScene {
       repeat: -1, 
     });
 
-    // this.anims.create({
-    //   key: "bird",
-    //   frames: this.anims.generateFrameNumbers("bird", { start: 0, end: 1 }),
-    //   frameRate: 10,
-    //   repeat: -1,
-    // });
-
-    // const bird = this.physics.add.sprite(500, 1000, "bird");
-    // bird.play("bird");
-
-    //this.bird = bird;
-
     createItem.call(this, this.itemGroup, 400, 1000, 'logo');
     createItem.call(this, this.deductiveItem, 500, 1100, 'logo');
     createItem.call(this, this.debatePositionGroup, 700, 900, 'logo');
@@ -108,9 +91,6 @@ export class Level2 extends ParentScene {
   this.physics.world.on('overlapend', (player: any, item: any) => {
       this.onOverlapEnd(player, item);
   });
-
-  
-  // this.callGraph();
 
     this.parrellePositionGroup = this.physics.add.staticGroup();
 
@@ -533,6 +513,37 @@ return result;
     console.log("route is ready!");
     
     console.log("lauching route graph", this.routeZones);
+
+    this.routeStartBtn = this.add
+            .rectangle(50, 330, 50, 50, 0x000000)
+            .setScrollFactor(0)
+            .setDepth(1001)
+            .setAlpha(0.5)
+            .setStrokeStyle(2, 0xffffff)
+            .setInteractive();
+
+          this.routeStartLabel = this.add
+            .text(35, 320, 'Start Route', {
+              fontSize: '10px',
+              color: '#ffffff',
+              wordWrap: { width: 50, useAdvancedWrap: true },
+            })
+            .setScrollFactor(0)
+            .setDepth(1002);
+
+            this.routeStartBtn.on('pointerdown', async () => {
+              const allAgents = getAllAgents(this.routeZones);
+              console.log("all agents in route zone", allAgents);
+              // getting the datamap
+              const datamap = transformDataMap(this.routeZones, this.controllableCharacters);
+              console.log("route datamap", datamap);
+              // lauching langgraph
+              const agents = datamap[0].agents;
+              const routeGraph = constructRouteGraph(agents, this, this.tilemap, {x:240, y:290});
+              const finalDecision = routeGraph.invoke({input: testInput});
+              await this.registry.set("isWorkflowRunning", false);
+              console.log("finalDecision", finalDecision);
+            })
   }
 
   
@@ -657,6 +668,12 @@ return result;
     } else if(this.cursors.nine.isDown) {
       this.scene.start('Main');
     }
+  }
+
+  private updateWorkflowButtonEvent(eventName: string, newEvent: any){
+    this.startWorkflowBtn.off("pointerdown");
+    this.startWorkflowBtn.on("pointerdown", newEvent);
+    this.startWorkflowLabel.setText(eventName);
   }
 
 }

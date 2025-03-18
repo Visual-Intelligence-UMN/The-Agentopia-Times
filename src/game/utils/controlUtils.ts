@@ -269,10 +269,11 @@ export async function autoControlAgent(
     eventName: string = "none",
 ): Promise<void> {
     return new Promise(async (resolve) => {
+        console.log("go destination", goX, goY)
         const finder = new PF.AStarFinder();
 
         if (scene.tweens.isTweening(playerControlledAgent)) {
-            scene.tweens.killTweensOf(playerControlledAgent); // 停止当前移动
+            scene.tweens.killTweensOf(playerControlledAgent); 
         }
 
         const grid = createOrUpdateGrid(tilemap);
@@ -284,6 +285,8 @@ export async function autoControlAgent(
         );
         const targetTileX = Math.floor(goX / tilemap.tileWidth);
         const targetTileY = Math.floor(goY / tilemap.tileHeight);
+
+        console.log("go target pos", agentTileX, agentTileY, targetTileX, targetTileY)
 
         let path = finder.findPath(
             agentTileX,
@@ -302,14 +305,13 @@ export async function autoControlAgent(
 
         console.log(`🚀 Moving agent to (${targetTileX}, ${targetTileY})`);
 
-        // **确保路径为空时也会 resolve**
+
         if (path.length === 0) {
             console.log("❌ No valid path, resolving immediately.");
             resolve();
             return;
         }
 
-        // **等待 `asyncMoveAlongPath` 完成**
         await asyncMoveAlongPath(scene, playerControlledAgent, path, tilemap);
         await popupEvent(scene, goX, goY, eventName);
 

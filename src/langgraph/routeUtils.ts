@@ -3,6 +3,7 @@ import {z} from "zod";
 import { initializeLLM } from "./langgraphUtils";
 import { autoControlAgent } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
+import { EventBus } from "../game/EventBus";
 
 const RouteAnnotation = Annotation.Root({
     input: Annotation<string>,
@@ -41,12 +42,17 @@ export function createLeaf(
         const originalAgentY = agent.y;
 
         // move the agent to the destination
-        await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Moved to decision agent");
+        console.log("destination from leaf: ", destination);
+        await autoControlAgent(scene, agent, tilemap, 240, 290, "Send report to final location"); //ERROR
 
         const llm = initializeLLM();
         const result = await llm.invoke(
             [{ role: "system", content: systemPrompt }, { role: "user", content: state.input }]
         );
+
+        console.log("leaf result: ", result.content);
+
+        EventBus.emit("final-report", { report: result.content });
 
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
@@ -56,20 +62,38 @@ export function createLeaf(
 }
 
 
-export function createRouter(){
+// we also need input locations for agents on the branches
+export function createRouter(scene: any, tilemap: any, routeAgent: Agent, agentsOnBranches: any[]){
     return async function router(state: typeof RouteAnnotation.State) {
         const llm = initializeLLM();
         const routeLLM = llm.withStructuredOutput(routeSchema);
+
+        const originalAgentX = routeAgent.x;
+        const originalAgentY = routeAgent.y;
+
         const decision = await routeLLM.invoke([
             {
               role: "system",
-              content: "Route the input to story, joke, or poem based on the user's request."
+              content: "Route the input to weather-reporter or social-reporter based on the user's request."
             },
             {
               role: "user",
               content: state.input
             },
           ]);
+
+          console.log("router decision: ", decision.step);
+
+          // find agent on the branch
+            const agent = agentsOnBranches.find((agent) => agent.branchName === decision.step);
+
+        // send the data to the next agent
+        await autoControlAgent(scene, routeAgent, tilemap, agent.agent.x, agent.agent.y, "Send report to final location");
+
+        
+        // agent back to original location
+        await autoControlAgent(scene, routeAgent, tilemap, originalAgentX, originalAgentY, "Returned");
+
         
           return { decision: decision.step };        
     };
@@ -77,10 +101,10 @@ export function createRouter(){
 
 export function routeDecision(state: typeof RouteAnnotation.State){
     if (state.decision === "weather-reporter"){
-        return "";
+        return "weather-reporter";
     }
     else if (state.decision === "social-reporter"){
-        return "";
+        return "social-reporter";
     }
 }
 
@@ -93,17 +117,25 @@ export function constructRouteGraph(
     const routeGraph = new StateGraph(RouteAnnotation);
 
     let startNode = START;
+
+    let remainAgents: any[] = [];
     
     // add nodes
     for (let i = 0; i < agents.length; i++){
-        if(i < 2)routeGraph.addNode(sampleSystemPrompts[i].role, createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt));
+        if(i < 2){
+            routeGraph.addNode(
+                sampleSystemPrompts[i].role, 
+                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt)
+            );
+            remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
+        }
         // else {
         //     const agentNode = agents[i].getName();
         //     routeGraph.addNode(agentNode, createLeaf(agents[i], scene, tilemap, destination));
         // }
     }
 
-    routeGraph.addNode("router", createRouter() as any);
+    routeGraph.addNode("router", createRouter(scene, tilemap, agents[2], remainAgents) as any);
     routeGraph.addEdge(startNode as any, "router" as any);
     
     // add conditional edge
@@ -115,8 +147,8 @@ export function constructRouteGraph(
         );
 
     // add edges
-    for(let i = 0; i < agents.length; i++){
-        routeGraph.addEdge(agents[i].getName(), END);
+    for(let i = 0; i < sampleSystemPrompts.length; i++){
+        routeGraph.addEdge(sampleSystemPrompts[i].role as any, END);
     }
 
     return routeGraph.compile();
