@@ -296,7 +296,7 @@ export class Level1 extends ParentScene {
     }
     
     // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
+    // controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap);
 
 
     this.agentGroup.on('overlapstart', (agent: any, item: any) => {

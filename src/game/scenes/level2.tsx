@@ -733,10 +733,10 @@ return result;
 
     /* Control Aengent */
 
-    // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
-      (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
-    );
+    // // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    // controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+    //   (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    // );
 
 
     /* Control Camera by WASD */
