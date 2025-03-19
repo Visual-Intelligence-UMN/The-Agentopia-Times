@@ -59,28 +59,39 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   const zones:any[] = [];
 
   zoneDataList.forEach((parallelZoneData:any) => {
-    const parallelZone = scene.add.zone(
-        parallelZoneData.x + parallelZoneData.width / 2,
-        parallelZoneData.y + parallelZoneData.height / 2,
-        parallelZoneData.width,
-        parallelZoneData.height
-    );
-    
+    const centerX = parallelZoneData.x + parallelZoneData.width / 2;
+    const centerY = parallelZoneData.y + parallelZoneData.height / 2;
+
+    const parallelZone = scene.add.zone(centerX, centerY, parallelZoneData.width, parallelZoneData.height);
     scene.physics.world.enable(parallelZone);
     parallelZone.body.setAllowGravity(false);
     parallelZone.body.setImmovable(true);
 
+    const background = scene.add.rectangle(centerX, centerY + 20, 40, 12.5, 0x000000, 0.5)
+      .setOrigin(0.5).setDepth(1000);
+
+    const statusText = scene.add.text(centerX, centerY + 20, "idle", {
+        fontSize: "7px",
+        color: "#ffffff",
+        fontFamily: "Arial",
+        align: "center"
+    }).setOrigin(0.5).setDepth(1001);
+
     zones.push({
       zone: parallelZone,
-      agentsInside: new Set() ,
-      name: parallelZoneData.name
+      agentsInside: new Set(),
+      name: parallelZoneData.name,
+      ui: {
+        background,
+        text: statusText
+      }
     });
-});
+  });
 
-console.log("from setupZones", zones);
-
+  console.log("from setupZones", zones);
   return zones;
 }
+
 
 export function createItem(
   this: any,

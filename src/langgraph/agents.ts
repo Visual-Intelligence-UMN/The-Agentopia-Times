@@ -21,6 +21,28 @@ export const StateAnnotation = Annotation.Root({
   input: Annotation<string>,
   formattedText: Annotation<string>,
   finalOutput: Annotation<string>,
+//   conditionalDecision: Annotation<string>,
+//   topic: Annotation<string>,
+//   votes: Annotation<string[]>({
+//     default: () => [],
+//     reducer: (x, y) => x.concat(y),
+//     }),
+//     votingDecision: Annotation<string>,
+});
+
+export const GeneralStateAnnotation = Annotation.Root({
+    chainingInput: Annotation<string>,
+    chainingFormattedText: Annotation<string>,
+    chainingFinalOutput: Annotation<string>,
+    votingTopic: Annotation<string>,
+    votingVotes: Annotation<string[]>({
+        default: () => [],
+        reducer: (x, y) => x.concat(y),
+    }),
+    votingDecision: Annotation<string>,
+    routeInput: Annotation<string>,
+    routeDecision: Annotation<string>,
+    routeOutput: Annotation<string>,
 });
 
 export async function journalist(state: typeof StateAnnotation.State){

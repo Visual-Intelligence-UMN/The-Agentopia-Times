@@ -190,20 +190,20 @@ export function addRoomHiringMenuHUD(this: any) {
   this.agentControlButtonLabels[0].setColor('#ff0000');
 }
 
-function generateNonCollidingAgentPosition(existingAgents:any, bounds:any, agentRadius = 20, maxAttempts = 50) {
+function generateNonCollidingAgentPosition(existingAgents: any, bounds: any, agentRadius = 20, margin = 10, maxAttempts = 50) {
   let isColliding;
   let attempts = 0;
   let agentX: number;
   let agentY: number;
 
   do {
-      agentX = bounds.topLeft.x + Math.random() * bounds.width;
-      agentY = bounds.topLeft.y + Math.random() * bounds.height;
+      agentX = bounds.topLeft.x + margin + Math.random() * (bounds.width - 2 * margin);
+      agentY = bounds.topLeft.y + margin + Math.random() * (bounds.height - 2 * margin);
 
       isColliding = existingAgents.some((agent: any) => {
           const dx = agent.x - agentX;
           const dy = agent.y - agentY;
-          return Math.sqrt(dx * dx + dy * dy) < agentRadius * 2; // 计算两者间距
+          return Math.sqrt(dx * dx + dy * dy) < agentRadius * 2; 
       });
 
       attempts++;
@@ -215,6 +215,7 @@ function generateNonCollidingAgentPosition(existingAgents:any, bounds:any, agent
 
   return { x: agentX, y: agentY };
 }
+
 
 const getZoneBounds = (zone: any) => {
   return {
