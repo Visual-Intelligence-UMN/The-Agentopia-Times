@@ -369,50 +369,46 @@ export async function popupEvent(
     });
 }
 
-function asyncMoveAlongPath(
+async function asyncMoveAlongPath(
     scene: Phaser.Scene,
     agent: Phaser.GameObjects.Sprite,
     path: number[][],
     tilemap: Phaser.Tilemaps.Tilemap,
 ): Promise<void> {
     return new Promise((resolve) => {
+        // Manually declaring additional properties of an agent
+        const agentWithGraphics = agent as any;
+
         if (!path || path.length === 0) {
             console.log("✅ Path complete, stopping animation!");
 
-            if (targetCircle) {
-                targetCircle.destroy();
+            // Clear the target point
+            if (agentWithGraphics.targetCircle) {
+                agentWithGraphics.targetCircle.destroy();
+                agentWithGraphics.targetCircle = null;
             }
 
-            agent.anims.stop(); // **确保动画停止**
-            resolve(); // **完成移动**
+            // Clear Path
+            if (agentWithGraphics.pathGraphics) {
+                agentWithGraphics.pathGraphics.clear();
+            }
+
+            agent.anims.stop();
+            resolve();
             return;
         }
 
         const nextPoint = path.shift();
-        const targetX =
-            nextPoint![0] * tilemap.tileWidth + tilemap.tileWidth / 2;
-        const targetY =
-            nextPoint![1] * tilemap.tileHeight + tilemap.tileHeight / 2;
+        const targetX = nextPoint![0] * tilemap.tileWidth + tilemap.tileWidth / 2;
+        const targetY = nextPoint![1] * tilemap.tileHeight + tilemap.tileHeight / 2;
 
         const dx = targetX - agent.x;
         const dy = targetY - agent.y;
 
         if (Math.abs(dx) > Math.abs(dy)) {
-            if (dx > 0) {
-                agent.anims.play(Animation.Right, true);
-                agent.setTexture(key.atlas.player, "misa-right");
-            } else {
-                agent.anims.play(Animation.Left, true);
-                agent.setTexture(key.atlas.player, "misa-left");
-            }
+            agent.anims.play(dx > 0 ? Animation.Right : Animation.Left, true);
         } else {
-            if (dy > 0) {
-                agent.anims.play(Animation.Down, true);
-                agent.setTexture(key.atlas.player, "misa-front");
-            } else {
-                agent.anims.play(Animation.Up, true);
-                agent.setTexture(key.atlas.player, "misa-back");
-            }
+            agent.anims.play(dy > 0 ? Animation.Down : Animation.Up, true);
         }
 
         scene.tweens.add({
@@ -422,65 +418,86 @@ function asyncMoveAlongPath(
             duration: 500,
             ease: "Linear",
             onComplete: async () => {
+                // Update paths to ensure dotted lines are dynamically shortened
+                drawDashedPath(scene, path, tilemap, agent);
+
                 if (path.length === 0) {
-                    console.log(
-                        "✅ Final destination reached, stopping animation!",
-                    );
-                    agent.anims.stop(); // **确保最后一个点停止动画**
+                    console.log("✅ Final destination reached!");
+
+                    // Clear the target point
+                    if (agentWithGraphics.targetCircle) {
+                        agentWithGraphics.targetCircle.destroy();
+                        agentWithGraphics.targetCircle = null;
+                    }
+
+                    // Clear Path
+                    if (agentWithGraphics.pathGraphics) {
+                        agentWithGraphics.pathGraphics.clear();
+                    }
+
+                    agent.anims.stop();
                     resolve();
                     return;
                 }
 
                 await asyncMoveAlongPath(scene, agent, path, tilemap);
-                resolve(); // **递归结束后 `resolve()`**
+                resolve();
             },
         });
     });
 }
 
+
 // Creating a circle of target points
 function createTargetCircle(
-  scene: Phaser.Scene,
-  tileX: number,
-  tileY: number,
-  tilemap: Phaser.Tilemaps.Tilemap,
-  agent: any
+    scene: Phaser.Scene,
+    tileX: number,
+    tileY: number,
+    tilemap: Phaser.Tilemaps.Tilemap,
+    agent: Phaser.GameObjects.Sprite
 ) {
-  if (agent.targetCircle) {
-    agent.targetCircle.destroy(); // Remove previous target point
-  }
+    // Manually declaring additional properties of an agent
+    const agentWithGraphics = agent as any;
+
+    if (agentWithGraphics.targetCircle) {
+        agentWithGraphics.targetCircle.destroy();
+    }
 
     const targetX = tileX * tilemap.tileWidth + tilemap.tileWidth / 2;
     const targetY = tileY * tilemap.tileHeight + tilemap.tileHeight / 2;
 
-  agent.targetCircle = scene.add.graphics();
-  agent.targetCircle.lineStyle(4, 0xff0000, 1);
-  agent.targetCircle.strokeCircle(targetX, targetY, tilemap.tileWidth / 2);
+    // Creating a new target point
+    agentWithGraphics.targetCircle = scene.add.graphics();
+    agentWithGraphics.targetCircle.lineStyle(4, 0xff0000, 1);
+    agentWithGraphics.targetCircle.strokeCircle(targetX, targetY, tilemap.tileWidth / 2);
 
-  // Target point blinking animation
-  scene.tweens.add({
-    targets: agent.targetCircle,
-    alpha: 0,
-    duration: 500,
-    yoyo: true,
-    repeat: -1,
-  });
+    // Target point blinking effect
+    scene.tweens.add({
+        targets: agentWithGraphics.targetCircle,
+        alpha: 0,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+    });
 }
 
 // Drawing path dashed lines
 function drawDashedPath(
-  scene: Phaser.Scene,
-  path: number[][],
-  tilemap: Phaser.Tilemaps.Tilemap,
-  agent: any
+    scene: Phaser.Scene,
+    path: number[][],
+    tilemap: Phaser.Tilemaps.Tilemap,
+    agent: Phaser.GameObjects.Sprite
 ) {
-  if (agent.pathGraphics) {
-    agent.pathGraphics.clear(); // Clear the last path
-  } else {
-    agent.pathGraphics = scene.add.graphics();
-  }
+    // Manually declaring additional properties of an agent
+    const agentWithGraphics = agent as any;
 
-  agent.pathGraphics.lineStyle(2, 0x00ff00, 1);
+    if (agentWithGraphics.pathGraphics) {
+        agentWithGraphics.pathGraphics.clear();
+    } else {
+        agentWithGraphics.pathGraphics = scene.add.graphics();
+    }
+
+    agentWithGraphics.pathGraphics.lineStyle(2, 0x00ff00, 1); // green dotted line
 
     for (let i = 0; i < path.length - 1; i++) {
         const x1 = path[i][0] * tilemap.tileWidth + tilemap.tileWidth / 2;
@@ -488,8 +505,8 @@ function drawDashedPath(
         const x2 = path[i + 1][0] * tilemap.tileWidth + tilemap.tileWidth / 2;
         const y2 = path[i + 1][1] * tilemap.tileHeight + tilemap.tileHeight / 2;
 
-    drawDashedLine(agent.pathGraphics, x1, y1, x2, y2, 10, 5);
-  }
+        drawDashedLine(agentWithGraphics.pathGraphics, x1, y1, x2, y2, 10, 5);
+    }
 }
 
 // Drawing single-segment dotted lines
