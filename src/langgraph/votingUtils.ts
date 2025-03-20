@@ -1,25 +1,34 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
 import { autoControlAgent } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
-import { initializeLLM } from "./langgraphUtils";
+import { initializeLLM } from "./chainingUtils";
 import { EventBus } from "../game/EventBus";
+import { GeneralStateAnnotation } from "./agents";
+import { updateStateIcons } from "../game/utils/sceneUtils";
 
-export const VotingState = Annotation.Root({
-    topic: Annotation<string>,
-    votes: Annotation<string[]>({
-        default: () => [],
-        reducer: (x, y) => x.concat(y),
-    }),
-    decision: Annotation<string>,
-});
+// export const VotingState = Annotation.Root({
+//     topic: Annotation<string>,
+//     votes: Annotation<string[]>({
+//         default: () => [],
+//         reducer: (x, y) => x.concat(y),
+//     }),
+//     decision: Annotation<string>,
+// });
 
 export function createVoter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    zones: any,
+    index: number
 ) {
-    return async function voter(state: typeof VotingState.State) {
+    return async function voter(state: typeof GeneralStateAnnotation.State) {
+
+        if(index === 0){
+            await updateStateIcons(zones, "work");
+        }
+
         console.log("voter state: ", state);
 
         const originalAgent1X = agent.x;
@@ -29,31 +38,45 @@ export function createVoter(
 
         const llm = initializeLLM();
 
-        const decision = await llm.invoke(`Vote for ${state.topic}, select only one option as your final decision`);
+        const decision = await llm.invoke(`Vote for ${state.votingTopic}, select only one option as your final decision`);
 
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Seat");
 
         console.log(`Agent ${agent.getName()} voted: ${decision.content}`);
 
-        return { ...state, votes: state.votes.concat(`${agent.getName()}: ${decision.content}`) };
+        return { ...state, votingVotes: state.votingVotes.concat(`${agent.getName()}: ${decision.content}`) };
     };
 }
 
-export function createAggregator(scene: any, agents: any[], tilemap: any, finalDestination: any) {
-    return async function aggregator(state: typeof VotingState.State) {
-        console.log("aggregator state: ", state.votes);
-        let votes = state.votes;
+export function createAggregator(
+    scene: any, 
+    agents: any[], 
+    tilemap: any, 
+    finalDestination: any,
+    zones: any
+) {
+    return async function aggregator(state: typeof GeneralStateAnnotation.State) {
+        console.log("aggregator state: ", state.votingVotes);
+        let votes = state.votingVotes;
         let llmInput = votes.join("; ");
         const llm = initializeLLM();
+
+        await updateStateIcons(zones, "work");
+
         const decision = await llm.invoke(`aggregate vote: ${llmInput}; return the final result from this voting as the decision`);
 
         let originalAgent1X = agents[0].x;
         let originalAgent1Y = agents[0].y;
 
+        await updateStateIcons(zones, "mail");
+
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
-        EventBus.emit("final-report", { report: decision.content });
-        return { ...state, decision: decision.content };
+        EventBus.emit("final-report", { report: decision.content, department: "voting" });
+        
+        await updateStateIcons(zones, "idle");
+        
+        return { ...state, votingDecision: decision.content };
     };
 }
 
@@ -62,19 +85,20 @@ export function constructVotingGraph(
     scene: any,
     tilemap: any,
     destination: any,
-    finalDestination: any
+    finalDestination: any,
+    zones: any
 ) {
-    const votingGraph = new StateGraph(VotingState);
+    const votingGraph = new StateGraph(GeneralStateAnnotation);
 
     let previousNode = START;
     for (let i = 0; i < agents.length; i++) {
         const agentNode = agents[i].getName();
-        votingGraph.addNode(agentNode, createVoter(agents[i], scene, tilemap, destination));
+        votingGraph.addNode(agentNode, createVoter(agents[i], scene, tilemap, destination, zones, i));
         votingGraph.addEdge(previousNode as any, agentNode);
         previousNode = agentNode;
     }
 
-    votingGraph.addNode("aggregator", createAggregator(scene, agents, tilemap, finalDestination) as any);
+    votingGraph.addNode("aggregator", createAggregator(scene, agents, tilemap, finalDestination, zones) as any);
     votingGraph.addEdge(previousNode as any, "aggregator" as any);
     votingGraph.addEdge("aggregator" as any, END);
 

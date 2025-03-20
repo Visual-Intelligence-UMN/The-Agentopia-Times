@@ -134,7 +134,7 @@ export class Level1 extends ParentScene {
     const spacing = 20;
     const startX = 75;
     const startY = 520;
-    addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+    // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
     // add controls UI
     this.agentControlButtons = this.add.group();

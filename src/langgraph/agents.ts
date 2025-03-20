@@ -3,6 +3,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { state } from "../game/state";
 import { EventBus } from "../game/EventBus";
 import { autoControlAgent } from "../game/utils/controlUtils";
+import { updateStateIcons } from "../game/utils/sceneUtils";
 
 const journalistPrompt = [
     "Extract the key information from the input and format it clearly and concisely."
@@ -17,23 +18,10 @@ const llm = new ChatOpenAI({
     modelName: "gpt-4o-mini",
 });
 
-export const StateAnnotation = Annotation.Root({
-  input: Annotation<string>,
-  formattedText: Annotation<string>,
-  finalOutput: Annotation<string>,
-//   conditionalDecision: Annotation<string>,
-//   topic: Annotation<string>,
-//   votes: Annotation<string[]>({
-//     default: () => [],
-//     reducer: (x, y) => x.concat(y),
-//     }),
-//     votingDecision: Annotation<string>,
-});
-
 export const GeneralStateAnnotation = Annotation.Root({
-    chainingInput: Annotation<string>,
-    chainingFormattedText: Annotation<string>,
-    chainingFinalOutput: Annotation<string>,
+    chainInput: Annotation<string>,
+    chainFormattedText: Annotation<string>,
+    chainOutput: Annotation<string>,
     votingTopic: Annotation<string>,
     votingVotes: Annotation<string[]>({
         default: () => [],
@@ -45,33 +33,32 @@ export const GeneralStateAnnotation = Annotation.Root({
     routeOutput: Annotation<string>,
 });
 
-export async function journalist(state: typeof StateAnnotation.State){
-    console.log("journalist state: ", state.input);
-    const msg = await llm.invoke(journalistPrompt[0] + state.input);
-    console.log("journalist msg: ", msg.content);
-    // send the data to next agent
-
-    // agent back to original location
-    
-    return { formattedText: msg.content };
-}
-
 export function createJournalist(
     agent: any,
     destination: any,
     scene: any,
     tilemap: any,
+    zones: any
 ) {
-    return async function journalist(state: typeof StateAnnotation.State) {
-        console.log("journalist state:", state.input);
+    return async function journalist(state: typeof GeneralStateAnnotation.State) {
+        console.log("journalist state:", state.chainInput);
 
-        const msg = await llm.invoke(journalistPrompt[0] + state.input);
+        await updateStateIcons(zones, "work", 0);
+        await updateStateIcons(scene.chainingZones, "work");
+
+        const msg = await llm.invoke(journalistPrompt[0] + state.chainInput);
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
+
+        await updateStateIcons(zones, "mail", 0);
+
         await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Send Message");
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
-        return { formattedText: msg.content };
+
+        await updateStateIcons(zones, "idle", 0);
+
+        return { chainFormattedText: msg.content };
     };
 }
 
@@ -80,21 +67,32 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    zones: any
 ){ 
-    return async function writer(state: typeof StateAnnotation.State){
-        console.log("writer state: ", state.formattedText);
-        const msg = await llm.invoke(writerPrompt[0] + state.formattedText);
+    return async function writer(state: typeof GeneralStateAnnotation.State){
+        console.log("writer state: ", state.chainFormattedText);
+
+        await updateStateIcons(zones, "work", 1);
+
+        const msg = await llm.invoke(writerPrompt[0] + state.chainFormattedText);
         console.log("writer msg: ", msg.content);
-        EventBus.emit("final-report", { report: msg.content });
+        EventBus.emit("final-report", { report: msg.content, department: "chaining" });
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;
+
+        await updateStateIcons(zones, "mail", 1);
+        await updateStateIcons(scene.chainingZones, "mail");
+
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
         // agent return to original location
 
-        return { finalOutput: msg.content };
+        await updateStateIcons(scene.chainingZones, "idle");
+        await updateStateIcons(zones, "idle", 1);
+
+        return { chainFinalOutput: msg.content };
     }
 }
 

@@ -14,7 +14,7 @@ import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesColl
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, eventTargetBus, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
-import { constructLangGraph, transformDataMap } from '../../langgraph/langgraphUtils';
+import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUtils';
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
@@ -130,7 +130,7 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
 
-    const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
+    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
     // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
     // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
     // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
@@ -138,33 +138,33 @@ export class Level2 extends ParentScene {
     // just for testing
     // testChain();
 
-    this.agentGroup.add(agent1);
+    // this.agentGroup.add(agent1);
     // this.agentGroup.add(agent2);
     // this.agentGroup.add(agent3);
     // this.agentGroup.add(agent4);
 
-    this.controllableCharacters.push(agent1);
+    // this.controllableCharacters.push(agent1);
     // this.controllableCharacters.push(agent2);
     // this.controllableCharacters.push(agent3);
     // this.controllableCharacters.push(agent4);
 
-    this.agentList.set(agent1.getName(), agent1);
+    // this.agentList.set(agent1.getName(), agent1);
     // this.agentList.set(agent2.getName(), agent2);
     // this.agentList.set(agent3.getName(), agent3);
     // this.agentList.set(agent4.getName(), agent4);
-    console.log('controled characters', this.controllableCharacters);
+    // console.log('controled characters', this.controllableCharacters);
 
     //set the camera
     this.isCameraFollowing = false;
 
-    this.cameras.main.startFollow(this.controllableCharacters[0]);
+    // this.cameras.main.startFollow(this.controllableCharacters[0]);
 
     // 1 second to unfollow the camera, allowing the player to move freely.
     this.time.delayedCall(1, () => {
       this.cameras.main.stopFollow();
     }, [], this);
 
-    this.controllableCharacters[0].changeNameTagColor('#ff0000');
+   //  this.controllableCharacters[0].changeNameTagColor('#ff0000');
 
     this.physics.add.overlap(
       this.agentGroup,
@@ -186,7 +186,7 @@ export class Level2 extends ParentScene {
     const spacing = 20;
     const startX = 75;
     const startY = 520;
-    addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+    // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
     // add controls UI
     this.agentControlButtons = this.add.group();
@@ -512,14 +512,14 @@ return result;
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
         
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:910, y:130});
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:datamap3[0].agents[2].x, y:datamap3[0].agents[2].y});
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:datamap2[0].agents[0].x, y:datamap2[0].agents[0].y});
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:910, y:130}, this.routeZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:datamap3[0].agents[2].x, y:datamap3[0].agents[2].y}, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:datamap2[0].agents[0].x, y:datamap2[0].agents[0].y}, this.parallelZones);
 
         console.log("langgraph from game", langgraph);
-        const llmOutput = await langgraph.invoke({input: testInput});
-        const finalDecision = await votingGraph.invoke({topic: votingExample, votes: []});
-        const finalDecision2 = await routingGraph.invoke({input: testInput});
+        const llmOutput = await langgraph.invoke({chainInput: testInput});
+        const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
+        const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
 
         console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
         // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
@@ -633,23 +633,23 @@ return result;
     this.playerControlledAgent =
       this.controllableCharacters[this.activateIndex];
 
-    for (let i = 0; i < 3; i++) {
-      if (i < this.playerControlledAgent.getPromptUtils().length) {
-        this.promptTexts[i].setText(
-          this.playerControlledAgent.getPromptUtils()[i],
-        );
-      } else {
-        this.promptTexts[i].setText('empty');
-      }
-    }
+    // for (let i = 0; i < 3; i++) {
+    //   if (i < this.playerControlledAgent.getPromptUtils().length) {
+    //     this.promptTexts[i].setText(
+    //       this.playerControlledAgent.getPromptUtils()[i],
+    //     );
+    //   } else {
+    //     this.promptTexts[i].setText('empty');
+    //   }
+    // }
 
     this.controllableCharacters.forEach((agent: any) => {
       agent.update();
     });
 
-    this.hudText.setText(
-      `${this.controllableCharacters[this.activateIndex].getName()}(Player-controlled) `,
-    );
+    // this.hudText.setText(
+    //   `${this.controllableCharacters[this.activateIndex].getName()}(Player-controlled) `,
+    // );
 
     if (
       this.input.keyboard!.checkDown(

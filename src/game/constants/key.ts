@@ -11,6 +11,10 @@ const image = {
   coinIcon: 'coinIcon',
   office: 'office',
   room_builder_office: 'room_builder_office',
+  mail: 'mail',
+  idle: 'idle',
+  work: 'work',
+  report: 'report',
 } as const;
 
 const scene = {

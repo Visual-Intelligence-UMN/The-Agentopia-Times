@@ -1,15 +1,17 @@
 import { StateGraph, Annotation, START, END } from "@langchain/langgraph/web";
-import {z} from "zod";
-import { initializeLLM } from "./langgraphUtils";
+import { z } from "zod";
+import { initializeLLM } from "./chainingUtils";
 import { autoControlAgent } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { EventBus } from "../game/EventBus";
+import { GeneralStateAnnotation } from "./agents";
+import { updateStateIcons } from "../game/utils/sceneUtils";
 
-const RouteAnnotation = Annotation.Root({
-    input: Annotation<string>,
-    decision: Annotation<string>,
-    output: Annotation<string>,
-});
+// const RouteAnnotation = Annotation.Root({
+//     input: Annotation<string>,
+//     decision: Annotation<string>,
+//     output: Annotation<string>,
+// });
 
 const routeSchema = z.object({
     step: z.enum(["weather-reporter", "social-reporter"]).describe(
@@ -34,42 +36,57 @@ export function createLeaf(
     scene: any,
     tilemap: any,
     destination: any,
-    systemPrompt: string = ""
+    systemPrompt: string = "",
+    zones: any
 ){
-    return async function leaf(state: typeof RouteAnnotation.State) {
+    return async function leaf(state: typeof GeneralStateAnnotation.State) {
         // store the original position
         const originalAgentX = agent.x;
         const originalAgentY = agent.y;
 
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
-        await autoControlAgent(scene, agent, tilemap, 910, 130, "Send report to final location"); //ERROR
+        
 
         const llm = initializeLLM();
         const result = await llm.invoke(
-            [{ role: "system", content: systemPrompt }, { role: "user", content: state.input }]
+            [{ role: "system", content: systemPrompt }, { role: "user", content: state.routeInput }]
         );
 
         console.log("leaf result: ", result.content);
 
-        EventBus.emit("final-report", { report: result.content });
+        EventBus.emit("final-report", { report: result.content, department: "routing" });
+
+        await updateStateIcons(zones, "mail");
+
+        await autoControlAgent(scene, agent, tilemap, 910, 130, "Send report to final location"); //ERROR
 
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
 
-        return { output: result.content };
+        await updateStateIcons(zones, "idle");
+
+        return { routeOutput: result.content };
     };
 }
 
 
 // we also need input locations for agents on the branches
-export function createRouter(scene: any, tilemap: any, routeAgent: Agent, agentsOnBranches: any[]){
-    return async function router(state: typeof RouteAnnotation.State) {
+export function createRouter(
+    scene: any, 
+    tilemap: any, 
+    routeAgent: Agent, 
+    agentsOnBranches: any[],
+    zones: any
+){
+    return async function router(state: typeof GeneralStateAnnotation.State) {
         const llm = initializeLLM();
         const routeLLM = llm.withStructuredOutput(routeSchema);
 
         const originalAgentX = routeAgent.x;
         const originalAgentY = routeAgent.y;
+
+        await updateStateIcons(zones, "work");
 
         const decision = await routeLLM.invoke([
             {
@@ -78,7 +95,7 @@ export function createRouter(scene: any, tilemap: any, routeAgent: Agent, agents
             },
             {
               role: "user",
-              content: state.input
+              content: state.routeInput
             },
           ]);
 
@@ -95,15 +112,15 @@ export function createRouter(scene: any, tilemap: any, routeAgent: Agent, agents
         await autoControlAgent(scene, routeAgent, tilemap, originalAgentX, originalAgentY, "Returned");
 
         
-          return { decision: decision.step };        
+          return { routeDecision: decision.step };        
     };
 }
 
-export function routeDecision(state: typeof RouteAnnotation.State){
-    if (state.decision === "weather-reporter"){
+export function routeDecision(state: typeof GeneralStateAnnotation.State){
+    if (state.routeDecision === "weather-reporter"){
         return "weather-reporter";
     }
-    else if (state.decision === "social-reporter"){
+    else if (state.routeDecision === "social-reporter"){
         return "social-reporter";
     }
 }
@@ -112,9 +129,10 @@ export function constructRouteGraph(
     agents: Agent[],
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    zones: any
 ){
-    const routeGraph = new StateGraph(RouteAnnotation);
+    const routeGraph = new StateGraph(GeneralStateAnnotation);
 
     let startNode = START;
 
@@ -125,7 +143,7 @@ export function constructRouteGraph(
         if(i < 2){
             routeGraph.addNode(
                 sampleSystemPrompts[i].role, 
-                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt)
+                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt, zones)
             );
             remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
         }
@@ -135,7 +153,7 @@ export function constructRouteGraph(
         // }
     }
 
-    routeGraph.addNode("router", createRouter(scene, tilemap, agents[2], remainAgents) as any);
+    routeGraph.addNode("router", createRouter(scene, tilemap, agents[2], remainAgents, zones) as any);
     routeGraph.addEdge(startNode as any, "router" as any);
     
     // add conditional edge

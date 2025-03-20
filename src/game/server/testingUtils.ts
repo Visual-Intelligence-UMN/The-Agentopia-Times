@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 import { autoControlAgent } from '../utils/controlUtils';
 import { EventBus } from '../EventBus';
 import { Zone } from '../scenes';
-import { transformDataMap } from '../../langgraph/langgraphUtils';
+import { transformDataMap } from '../../langgraph/chainingUtils';
 
 export const eventTargetBus = new EventTarget();
 

@@ -22,14 +22,22 @@ export class Boot extends Scene {
       frameHeight: 16,
     });
 
+
     
     this.load.image(key.image.tuxemon, assets.tilesets.tuxemon);
     this.load.image(key.image.office, assets.tilesets.office);
     this.load.image(key.image.room_builder_office, assets.tilesets.room_builder_office);
     this.load.image(key.image.coinIcon, assets.sprites.coinIcon);
     this.load.image(key.image.logo, assets.sprites.logo);
+    this.load.image(key.image.mail, assets.sprites.mail);
+    this.load.image(key.image.idle, assets.sprites.idle);
+    this.load.image(key.image.work, assets.sprites.work);
+    this.load.image(key.image.report, assets.sprites.report);
+    
+
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);
     this.load.tilemapTiledJSON(key.tilemap.office, assets.tilemaps.office);
+
     this.load.atlas(key.atlas.player, assets.atlas.image, assets.atlas.data);
 
     // remove it during deployment

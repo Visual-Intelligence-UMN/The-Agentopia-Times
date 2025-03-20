@@ -6,6 +6,8 @@ import { TilemapDebug, Typewriter } from '../components';
 import * as PF from "pathfinding";
 import { Zone } from '../scenes';
 import { Agent } from '../sprites/Agent';
+import { report } from '../assets/sprites';
+import { EventBus } from '../EventBus';
 
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
@@ -77,13 +79,29 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
         align: "center"
     }).setOrigin(0.5).setDepth(1001);
 
+    let reportBtn = null;
+
+    if(parallelZoneData.name != "parallel"){
+    reportBtn = scene.add.image(centerX + 35, centerY+20, "report")
+      .setDepth(1002).setInteractive();
+    
+    reportBtn.on("pointerdown", () => {
+      EventBus.emit("open-report", { department: parallelZoneData.name });
+      console.log("report button clicked", parallelZoneData.name);
+    });
+  }
+
+  const stateIcon = scene.add.image(centerX - 35, centerY + 20, "idle").setDepth(1001).setScale(1);
+
     zones.push({
       zone: parallelZone,
       agentsInside: new Set(),
       name: parallelZoneData.name,
       ui: {
         background,
-        text: statusText
+        text: statusText,
+        reportBtn: reportBtn? reportBtn : null,
+        stateIcon: stateIcon
       }
     });
   });
@@ -92,6 +110,20 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   return zones;
 }
 
+
+export async function updateStateIcons(zones:any, textureKey:string, index:null|number = null) {
+  if (index !== null) {
+      if (zones[index] && zones[index].ui && zones[index].ui.stateIcon) {
+          zones[index].ui.stateIcon.setTexture(textureKey);
+      }
+  } else {
+      zones.forEach((zone:any) => {
+          if (zone.ui && zone.ui.stateIcon) {
+              zone.ui.stateIcon.setTexture(textureKey);
+          }
+      });
+  }
+}
 
 export function createItem(
   this: any,

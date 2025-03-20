@@ -3,7 +3,7 @@
 import { Agent } from "openai/_shims/index.mjs";
 import { Zone } from "../game/scenes";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
-import { createJournalist, createWriter, journalist, StateAnnotation } from "./agents";
+import { createJournalist, createWriter, GeneralStateAnnotation, journalist, StateAnnotation } from "./agents";
 import { ChatOpenAI } from "@langchain/openai";
 
 // TODO:
@@ -76,9 +76,10 @@ export function constructLangGraph(
     transformDataMap:subgraph[],
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    zones: any
 ){
-    const langgraph = new StateGraph(StateAnnotation);
+    const langgraph = new StateGraph(GeneralStateAnnotation);
     const agentNames: string[] = [];
     // add nodes into graph
     for(let i = 0; i < transformDataMap.length; i++){
@@ -86,8 +87,18 @@ export function constructLangGraph(
         for(let j = 0; j < subgraph.agents.length; j++){
             const agent = subgraph.agents[j];
             // langgraph.addNode(agent.getName(), agent.activate());
-            if(i===0 && j===0)langgraph.addNode(agent.getName(), createJournalist(agent, transformDataMap[1].agents[0], scene, tilemap));
-            if(i===1 && j===0)langgraph.addNode(agent.getName(), createWriter(agent, scene, tilemap, destination));
+            if(i===0 && j===0){
+                langgraph.addNode(
+                    agent.getName(), 
+                    createJournalist(agent, transformDataMap[1].agents[0], scene, tilemap, zones)
+                );
+            }
+            if(i===1 && j===0){
+                langgraph.addNode(
+                    agent.getName(), 
+                    createWriter(agent, scene, tilemap, destination, zones)
+                );
+            }
             // else langgraph.addNode(agent.getName(), agent.activate());
             console.log("add a node", agent.getName(), agent.activate());
             agentNames.push(agent.getName());
