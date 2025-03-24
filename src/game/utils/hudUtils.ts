@@ -31,100 +31,100 @@ export function addButtonHUD(
   return button;
 }
 
-// export function addAgentPanelHUD(
-//   this: any,
-//   startX: number,
-//   startY: number,
-//   squareSize: number,
-//   spacing: number,
-// ) {
-//   this.hudText = this.add.text(
-//     50,
-//     450,
-//     `${this.controllableCharacters[this.activateIndex].getName()} (Player-controlled) `,
-//     {
-//       fontSize: '18px',
-//       color: '#ffffff',
-//       backgroundColor: '#000000',
-//       padding: { x: 10, y: 5 },
-//     },
-//   );
+export function addAgentPanelHUD(
+  this: any,
+  startX: number,
+  startY: number,
+  squareSize: number,
+  spacing: number,
+) {
+  this.hudText = this.add.text(
+    50,
+    450,
+    `Agent (Player-controlled) `,
+    {
+      fontSize: '18px',
+      color: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 10, y: 5 },
+    },
+  );
 
-//   this.hudText.setScrollFactor(0);
-//   this.hudText.setDepth(999);
+  this.hudText.setScrollFactor(0);
+  this.hudText.setDepth(999);
 
-//   const frame = this.add.rectangle(200, 500, 350, 125, 0x000000);
-//   frame.setStrokeStyle(2, 0xffffff);
-//   frame.setScrollFactor(0);
-//   frame.setDepth(998);
-//   frame.setAlpha(0.5);
+  const frame = this.add.rectangle(200, 500, 350, 125, 0x000000);
+  frame.setStrokeStyle(2, 0xffffff);
+  frame.setScrollFactor(0);
+  frame.setDepth(998);
+  frame.setAlpha(0.5);
 
-//   // Add all elements of the entire HUD panel to the array
-//   if (this.hudElements) {
-//     this.hudElements.push(frame, this.hudText);
-//   }
+  // Add all elements of the entire HUD panel to the array
+  if (this.hudElements) {
+    this.hudElements.push(frame, this.hudText);
+  }
 
-//   let popupRect: Phaser.GameObjects.Rectangle | null = null;
-//   let popupText: Phaser.GameObjects.Text | null = null;
-//   for (let i = 0; i < 3; i++) {
-//     const rect = this.add.rectangle(
-//       startX + i * (squareSize + spacing),
-//       startY,
-//       squareSize,
-//       squareSize,
-//       0x000000,
-//     );
-//     rect.setStrokeStyle(2, 0xffffff);
-//     rect.setScrollFactor(0);
-//     rect.setDepth(999);
-//     rect.setAlpha(0.5);
-//     rect.setInteractive({ useHandCursor: true });
+  let popupRect: Phaser.GameObjects.Rectangle | null = null;
+  let popupText: Phaser.GameObjects.Text | null = null;
+  for (let i = 0; i < 3; i++) {
+    const rect = this.add.rectangle(
+      startX + i * (squareSize + spacing),
+      startY,
+      squareSize,
+      squareSize,
+      0x000000,
+    );
+    rect.setStrokeStyle(2, 0xffffff);
+    rect.setScrollFactor(0);
+    rect.setDepth(999);
+    rect.setAlpha(0.5);
+    rect.setInteractive({ useHandCursor: true });
 
-//     // Add to HUD array
-//     if (this.hudElements) {
-//       this.hudElements.push(rect);
-//     }
+    // Add to HUD array
+    if (this.hudElements) {
+      this.hudElements.push(rect);
+    }
 
-//     rect.on('pointerover', (pointer: Phaser.Input.Pointer) => {
-//       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    rect.on('pointerover', (pointer: Phaser.Input.Pointer) => {
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
 
-//       console.log('pointerover', worldPoint.x, worldPoint.y);
-//       if (!popupRect) {
-//         popupRect = this.add
-//           .rectangle(worldPoint.x + 20, worldPoint.y + 20, 150, 80, 0x000000)
-//           .setDepth(1000)
-//           .setStrokeStyle(2, 0xffffff);
+      console.log('pointerover', worldPoint.x, worldPoint.y);
+      if (!popupRect) {
+        popupRect = this.add
+          .rectangle(worldPoint.x + 20, worldPoint.y + 20, 150, 80, 0x000000)
+          .setDepth(1000)
+          .setStrokeStyle(2, 0xffffff);
 
-//         console.log('popupRect add', popupRect);
+        console.log('popupRect add', popupRect);
 
-//         //TODO: make prompt utility more explicitly
+        //TODO: make prompt utility more explicitly
 
-//         let textLabel = 'empty';
-//         if (this.playerControlledAgent.getPromptUtils().length > i) {
-//           textLabel = this.playerControlledAgent.getPromptUtils()[i];
-//         }
+        let textLabel = 'empty';
+        // if (this.playerControlledAgent.getPromptUtils().length > i) {
+        //   textLabel = this.playerControlledAgent.getPromptUtils()[i];
+        // }
 
-//         popupText = this.add
-//           .text(worldPoint.x - 35, worldPoint.y, textLabel, {
-//             fontSize: '10px',
-//             color: '#ffffff',
-//             wordWrap: { width: 150, useAdvancedWrap: true },
-//           })
-//           .setDepth(1001);
-//       }
-//     });
+        popupText = this.add
+          .text(worldPoint.x - 35, worldPoint.y, textLabel, {
+            fontSize: '10px',
+            color: '#ffffff',
+            wordWrap: { width: 150, useAdvancedWrap: true },
+          })
+          .setDepth(1001);
+      }
+    });
 
-//     rect.on('pointerout', () => {
-//       console.log('pointerout');
-//       if (popupRect) {
-//         popupRect.destroy();
-//         popupText?.destroy();
-//         popupRect = null;
-//         console.log('popupRect remove', popupRect);
-//       }
-//     });
-//   }
-// }
+    rect.on('pointerout', () => {
+      console.log('pointerout');
+      if (popupRect) {
+        popupRect.destroy();
+        popupText?.destroy();
+        popupRect = null;
+        console.log('popupRect remove', popupRect);
+      }
+    });
+  }
+}
 
 export function addRoomHiringMenuHUD(this: any) {
   const rooms = ['validation', 'voting', 'routing'];
@@ -190,7 +190,7 @@ export function addRoomHiringMenuHUD(this: any) {
   this.agentControlButtonLabels[0].setColor('#ff0000');
 }
 
-function generateNonCollidingAgentPosition(existingAgents: any, bounds: any, agentRadius = 20, margin = 10, maxAttempts = 50) {
+export function generateNonCollidingAgentPosition(existingAgents: any, bounds: any, agentRadius = 20, margin = 10, maxAttempts = 50) {
   let isColliding;
   let attempts = 0;
   let agentX: number;
@@ -217,7 +217,7 @@ function generateNonCollidingAgentPosition(existingAgents: any, bounds: any, age
 }
 
 
-const getZoneBounds = (zone: any) => {
+export const getZoneBounds = (zone: any) => {
   return {
       topLeft: { x: zone.x - zone._displayOriginX, y: zone.y - zone._displayOriginY },
       bottomRight: { x: (zone.x - zone._displayOriginX) + zone.width, y: (zone.y - zone._displayOriginY) + zone.height },

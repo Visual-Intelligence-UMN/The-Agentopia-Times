@@ -94,6 +94,7 @@ export function constructLangGraph(
                 );
             }
             if(i===1 && j===0){
+                console.log("create agent", agent)
                 langgraph.addNode(
                     agent.getName(), 
                     createWriter(agent, scene, tilemap, destination, zones)

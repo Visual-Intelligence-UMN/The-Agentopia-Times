@@ -1,8 +1,15 @@
+// TODO: adding new report interactions
+// TODO: animating the report icon
+// DONE: hiring UI for each room
+// TODO: unifying the backend of langgraph
+// TODO: adding task assignment interaction
+// TOOD: adding a single-agent pattern for each room
+
 import { Annotation } from "@langchain/langgraph/web";
 import { ChatOpenAI } from "@langchain/openai";
 import { state } from "../game/state";
 import { EventBus } from "../game/EventBus";
-import { autoControlAgent } from "../game/utils/controlUtils";
+import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 
 const journalistPrompt = [
@@ -33,6 +40,22 @@ export const GeneralStateAnnotation = Annotation.Root({
     routeOutput: Annotation<string>,
 });
 
+
+export async function createReport(scene: any, zoneName: string, x: number, y: number) {
+
+    const reportBtn = scene.add.image(x, y, "report")
+        .setDepth(1002).setInteractive();
+    
+    reportBtn.on("pointerdown", () => {
+        EventBus.emit("open-report", { department: zoneName });
+    console.log("report button clicked", zoneName);
+        });
+
+
+    return reportBtn;
+
+} 
+
 export function createJournalist(
     agent: any,
     destination: any,
@@ -43,6 +66,7 @@ export function createJournalist(
     return async function journalist(state: typeof GeneralStateAnnotation.State) {
         console.log("journalist state:", state.chainInput);
 
+        
         await updateStateIcons(zones, "work", 0);
         await updateStateIcons(scene.chainingZones, "work");
 
@@ -84,9 +108,14 @@ export function createWriter(
 
         await updateStateIcons(zones, "mail", 1);
         await updateStateIcons(scene.chainingZones, "mail");
-
+        
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
+        await createReport(scene, "chaining", destination.x, destination.y);
+        const report = await createReport(scene, "voting", destination.x, destination.y);
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
+        await console.log("report in agent", report);
+        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
+        await transmitReport(scene, report, 522, 130);
         // agent return to original location
 
         await updateStateIcons(scene.chainingZones, "idle");

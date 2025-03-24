@@ -1,9 +1,9 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
-import { autoControlAgent } from "../game/utils/controlUtils";
+import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { initializeLLM } from "./chainingUtils";
 import { EventBus } from "../game/EventBus";
-import { GeneralStateAnnotation } from "./agents";
+import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 
 export const VotingState = Annotation.Root({
@@ -83,8 +83,8 @@ export function createAggregator(
         const decision = await llm.invoke(`aggregate vote: ${llmInput}; return the final result from this voting as the decision`);
         console.log("[Debug] Received final decision from LLM.");
 
-        let originalAgent1X = agents[0].x;
-        let originalAgent1Y = agents[0].y;
+        let originalAgent1X = agents[agents.length-1].x;
+        let originalAgent1Y = agents[agents.length-1].y;
 
         await updateStateIcons(zones, "mail");
 
@@ -92,9 +92,14 @@ export function createAggregator(
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         console.log("[Debug] Decision sent to final location.");
 
+        const report = await createReport(scene, "voting", 522, 130);
+
         console.log("[Debug] Returning to office...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
         console.log("[Debug] Returned to office.");
+
+        // await autoControlAgent(scene, report, tilemap, 765, 265, "Send Report to Next Department");
+        await transmitReport(scene, report, finalDestination.x, finalDestination.y);
 
         EventBus.emit("final-report", { report: decision.content, department: "voting" });
         console.log("[Debug] Final report emitted.");

@@ -33,6 +33,7 @@ export class Boot extends Scene {
     this.load.image(key.image.idle, assets.sprites.idle);
     this.load.image(key.image.work, assets.sprites.work);
     this.load.image(key.image.report, assets.sprites.report);
+    this.load.image(key.image.hiring, assets.sprites.hiring);
     
 
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);
