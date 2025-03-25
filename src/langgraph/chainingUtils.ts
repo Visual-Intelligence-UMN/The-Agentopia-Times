@@ -14,7 +14,8 @@ import { ChatOpenAI } from "@langchain/openai";
 
 interface subgraph{
     agents: Agent[],
-    location: string
+    location: string,
+    task: string
 }
 
 
@@ -37,7 +38,8 @@ export function transformDataMap(zones: Zone[], agents: Agent[]){
     for(let i = 0; i < zones.length; i++){
         let subgraph:subgraph = {
             agents: [],
-            location: zones[i].name
+            location: zones[i].name,
+            task: zones[i].task
         };
         const zone = zones[i];
         const insideAgents = Array.from(zone.agentsInside);

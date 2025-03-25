@@ -9,7 +9,7 @@ import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
 import { controlAgentWithMouse, startControlDesignatedAgent, controlCameraMovements, isClickOnHUD} from '../utils/controlUtils';
-import { addAgentPanelHUD, addRoomHiringMenuHUD} from '../utils/hudUtils';
+import { addAgentPanelHUD, addRoomHiringMenuHUD, addTaskAssignmentHUD} from '../utils/hudUtils';
 import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
@@ -35,6 +35,8 @@ export class Level2 extends ParentScene {
   private votingZones: Zone[] = [];
   private routeZones: Zone[] = [];
 
+  private zones: any[] = [];
+
   private isWorkflowAvailable: boolean = false;
 
   private startWorkflowBtn!: Phaser.GameObjects.Rectangle;
@@ -42,6 +44,10 @@ export class Level2 extends ParentScene {
 
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
   private debateStartLabel!: Phaser.GameObjects.Text;
+
+  private roomStatusTexts: Phaser.GameObjects.Text[] = [];
+
+  private zoneBackgrounds: Phaser.GameObjects.Rectangle[] = [];
 
   private reportBtn!: Phaser.GameObjects.Image;
 
@@ -176,7 +182,7 @@ export class Level2 extends ParentScene {
     this.agentControlButtons = this.add.group();
     this.agentControlButtonLabels = [];
 
-    addRoomHiringMenuHUD.call(this);
+    addTaskAssignmentHUD.call(this);
     this.overlappedItems = new Set();
     let overlappedItems = new Set();
     let isDebate = false;
