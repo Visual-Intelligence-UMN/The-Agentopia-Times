@@ -8,7 +8,7 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentWithMouse, startControlDesignatedAgent, controlCameraMovements, isClickOnHUD} from '../utils/controlUtils';
+import { controlAgentWithMouse, startControlDesignatedAgent, controlCameraMovements, isClickOnHUD,createOrUpdateGrid} from '../utils/controlUtils';
 import { addAgentPanelHUD, addRoomHiringMenuHUD} from '../utils/hudUtils';
 import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
@@ -18,6 +18,10 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
+
+import { createBuildRoomButton } from '../utils/buildingUtils';
+
+
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -52,6 +56,9 @@ export class Level2 extends ParentScene {
   private hudElements: Phaser.GameObjects.GameObject[] = []; // Store all HUD elements
 
   private isCameraFollowing: boolean = false; // 默认自由移动
+
+  private debugGraphics!: Phaser.GameObjects.Graphics;
+
 
 
   constructor() {
@@ -130,7 +137,7 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
 
-    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
+    const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
     // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
     // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
     // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
@@ -138,17 +145,17 @@ export class Level2 extends ParentScene {
     // just for testing
     // testChain();
 
-    // this.agentGroup.add(agent1);
+    this.agentGroup.add(agent1);
     // this.agentGroup.add(agent2);
     // this.agentGroup.add(agent3);
     // this.agentGroup.add(agent4);
 
-    // this.controllableCharacters.push(agent1);
+    this.controllableCharacters.push(agent1);
     // this.controllableCharacters.push(agent2);
     // this.controllableCharacters.push(agent3);
     // this.controllableCharacters.push(agent4);
 
-    // this.agentList.set(agent1.getName(), agent1);
+    this.agentList.set(agent1.getName(), agent1);
     // this.agentList.set(agent2.getName(), agent2);
     // this.agentList.set(agent3.getName(), agent3);
     // this.agentList.set(agent4.getName(), agent4);
@@ -387,6 +394,19 @@ export class Level2 extends ParentScene {
 
       overlappedItems.delete(item);
     });
+
+createBuildRoomButton(this);
+
+this.worldLayer.setCollisionByProperty({ collides: true });
+
+this.debugGraphics = this.add.graphics().setAlpha(0.7);
+this.worldLayer.renderDebug(this.debugGraphics, {
+  tileColor: null,
+  collidingTileColor: new Phaser.Display.Color(255, 0, 0, 255),
+  faceColor: new Phaser.Display.Color(0, 255, 0, 255)
+});
+
+
 
     state.isTypewriting = true;
     // render(
@@ -733,10 +753,10 @@ return result;
 
     /* Control Aengent */
 
-    // // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    // controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
-    //   (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
-    // );
+    // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+      (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    );
 
 
     /* Control Camera by WASD */
