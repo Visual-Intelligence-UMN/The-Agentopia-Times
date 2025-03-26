@@ -1,51 +1,66 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
-import { autoControlAgent } from "../game/utils/controlUtils";
+import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { initializeLLM } from "./chainingUtils";
 import { EventBus } from "../game/EventBus";
-import { GeneralStateAnnotation } from "./agents";
+import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 
-// export const VotingState = Annotation.Root({
-//     topic: Annotation<string>,
-//     votes: Annotation<string[]>({
-//         default: () => [],
-//         reducer: (x, y) => x.concat(y),
-//     }),
-//     decision: Annotation<string>,
-// });
+export const VotingState = Annotation.Root({
+    topic: Annotation<string>,
+    votes: Annotation<string[]>({
+        default: () => [],
+        reducer: (x, y) => x.concat(y),
+    }),
+    decision: Annotation<string>,
+});
 
-export function createVoter(
-    agent: any,
+export async function parallelVotingExecutor(
+    agents: any[],
     scene: any,
     tilemap: any,
     destination: any,
     zones: any,
-    index: number
+    votingTopic: string
 ) {
-    return async function voter(state: typeof GeneralStateAnnotation.State) {
+    console.log("[Debug] Starting parallelVotingExecutor...");
+    const originalPositions = agents.map(agent => ({ x: agent.x, y: agent.y }));
+    await updateStateIcons(zones, "work");
 
-        if(index === 0){
-            await updateStateIcons(zones, "work");
-        }
+    const llm = initializeLLM();
 
-        console.log("voter state: ", state);
+    // Create a process for each agent:
+    const voteTasks = agents.map(async (agent, index) => {
+        console.log(`[Debug] Starting voting process for agent: ${agent.getName()}...`);
 
-        const originalAgent1X = agent.x;
-        const originalAgent1Y = agent.y;
+        // 1. Move to the voting position
+        console.log(`[Debug] Agent ${agent.getName()} is moving to voting location...`);
+        await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Go vote");
+        console.log(`[Debug] Agent ${agent.getName()} has reached the voting location.`);
 
-        await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Voted");
+        // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
+        console.log(`[Debug] Agent ${agent.getName()} is submitting vote to LLM...`);
+        const llmPromise = llm.invoke(
+            `Vote for: ${votingTopic}. Please select only one option as your final decision.`
+        );
+        console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
+        const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");
 
-        const llm = initializeLLM();
+        // Wait for LLM result & return actions to complete.
+        const [decision] = await Promise.all([llmPromise, returnPromise]);
+        console.log(`[Debug] Agent ${agent.getName()} has completed voting and returned to seat.`);
 
-        const decision = await llm.invoke(`Vote for ${state.votingTopic}, select only one option as your final decision`);
+        // 3. Return of voting results
+        console.log(`[Debug] Agent ${agent.getName()} vote result: ${decision.content}`);
+        return `${agent.getName()}: ${decision.content}`;
+    });
 
-        await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Seat");
+    // Wait for all agents to complete the process
+    // console.log("[Debug] Waiting for all agents to complete voting...");
+    const votes = await Promise.all(voteTasks);
+    // console.log("[Debug] All agents have completed voting.");
 
-        console.log(`Agent ${agent.getName()} voted: ${decision.content}`);
-
-        return { ...state, votingVotes: state.votingVotes.concat(`${agent.getName()}: ${decision.content}`) };
-    };
+    return votes;
 }
 
 export function createAggregator(
@@ -56,6 +71,7 @@ export function createAggregator(
     zones: any
 ) {
     return async function aggregator(state: typeof GeneralStateAnnotation.State) {
+        console.log("[Debug] Starting aggregator...");
         console.log("aggregator state: ", state.votingVotes);
         let votes = state.votingVotes;
         let llmInput = votes.join("; ");
@@ -63,19 +79,34 @@ export function createAggregator(
 
         await updateStateIcons(zones, "work");
 
+        console.log("[Debug] Submitting aggregated votes to LLM...");
         const decision = await llm.invoke(`aggregate vote: ${llmInput}; return the final result from this voting as the decision`);
+        console.log("[Debug] Received final decision from LLM.");
 
-        let originalAgent1X = agents[0].x;
-        let originalAgent1Y = agents[0].y;
+        let originalAgent1X = agents[agents.length-1].x;
+        let originalAgent1Y = agents[agents.length-1].y;
 
         await updateStateIcons(zones, "mail");
 
+        console.log("[Debug] Sending decision to final location...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
+        console.log("[Debug] Decision sent to final location.");
+
+        const report = await createReport(scene, "voting", 522, 130);
+
+        console.log("[Debug] Returning to office...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
+        console.log("[Debug] Returned to office.");
+
+        // await autoControlAgent(scene, report, tilemap, 765, 265, "Send Report to Next Department");
+        await transmitReport(scene, report, finalDestination.x, finalDestination.y);
+
         EventBus.emit("final-report", { report: decision.content, department: "voting" });
-        
+        console.log("[Debug] Final report emitted.");
+
         await updateStateIcons(zones, "idle");
-        
+        console.log("[Debug] Aggregator completed.");
+
         return { ...state, votingDecision: decision.content };
     };
 }
@@ -88,20 +119,47 @@ export function constructVotingGraph(
     finalDestination: any,
     zones: any
 ) {
-    const votingGraph = new StateGraph(GeneralStateAnnotation);
+    console.log("[Debug] Starting to construct voting graph...");
+    const votingGraph = new StateGraph(GeneralStateAnnotation as any);
 
-    let previousNode = START;
-    for (let i = 0; i < agents.length; i++) {
-        const agentNode = agents[i].getName();
-        votingGraph.addNode(agentNode, createVoter(agents[i], scene, tilemap, destination, zones, i));
-        votingGraph.addEdge(previousNode as any, agentNode);
-        previousNode = agentNode;
-    }
+    votingGraph.addNode(
+        "votingPhase",
+        async (state: any) => {
+            console.log("[Debug] Starting voting phase...");
+            const votes = await parallelVotingExecutor(
+                agents,
+                scene,
+                tilemap,
+                destination,
+                zones,
+                state.votingTopic
+            );
+            console.log("[Debug] Voting phase completed.");
+            return { ...state, votingVotes: votes };
+        }
+    );
 
-    votingGraph.addNode("aggregator", createAggregator(scene, agents, tilemap, finalDestination, zones) as any);
-    votingGraph.addEdge(previousNode as any, "aggregator" as any);
-    votingGraph.addEdge("aggregator" as any, END);
+    votingGraph.addNode(
+        "aggregator",
+        async (state: any) => {
+            console.log("[Debug] Starting aggregator phase...");
+            const decision = await createAggregator(
+                scene,
+                agents,
+                tilemap,
+                finalDestination,
+                zones
+            )(state);
+            console.log("[Debug] Aggregator phase completed.");
+            return { ...state, votingDecision: decision.votingDecision };
+        }
+    );
 
+    votingGraph.addEdge(START as any, "votingPhase" as any);
+    votingGraph.addEdge("votingPhase" as any, "aggregator" as any);
+    votingGraph.addEdge("aggregator" as any, END as any);
+
+    console.log("[Debug] Voting graph constructed and compiled.");
     return votingGraph.compile();
 }
 

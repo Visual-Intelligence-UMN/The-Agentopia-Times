@@ -47,6 +47,8 @@ export class Level2 extends ParentScene {
   private debateStartBtn!: Phaser.GameObjects.Rectangle;
   private debateStartLabel!: Phaser.GameObjects.Text;
 
+  private reportBtn!: Phaser.GameObjects.Image;
+
   private routeStartBtn!: Phaser.GameObjects.Rectangle;
   private routeStartLabel!: Phaser.GameObjects.Text;
 
@@ -55,7 +57,7 @@ export class Level2 extends ParentScene {
 
   private hudElements: Phaser.GameObjects.GameObject[] = []; // Store all HUD elements
 
-  private isCameraFollowing: boolean = false; // 默认自由移动
+  private isCameraFollowing: boolean = false; 
 
   private debugGraphics!: Phaser.GameObjects.Graphics;
 
@@ -75,6 +77,13 @@ export class Level2 extends ParentScene {
   }
 
   create() {
+
+    // for testing
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.leftButtonDown()) {
+            console.log(`Mouse clicked at: x=${pointer.worldX}, y=${pointer.worldY}`);
+        }
+    });
 
     // Initialize the HUD array
     this.hudElements = [];
@@ -137,7 +146,7 @@ export class Level2 extends ParentScene {
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
 
-    const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
+    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
     // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
     // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
     // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
@@ -145,17 +154,17 @@ export class Level2 extends ParentScene {
     // just for testing
     // testChain();
 
-    this.agentGroup.add(agent1);
+    // this.agentGroup.add(agent1);
     // this.agentGroup.add(agent2);
     // this.agentGroup.add(agent3);
     // this.agentGroup.add(agent4);
 
-    this.controllableCharacters.push(agent1);
+    // this.controllableCharacters.push(agent1);
     // this.controllableCharacters.push(agent2);
     // this.controllableCharacters.push(agent3);
     // this.controllableCharacters.push(agent4);
 
-    this.agentList.set(agent1.getName(), agent1);
+    // this.agentList.set(agent1.getName(), agent1);
     // this.agentList.set(agent2.getName(), agent2);
     // this.agentList.set(agent3.getName(), agent3);
     // this.agentList.set(agent4.getName(), agent4);
@@ -193,7 +202,7 @@ export class Level2 extends ParentScene {
     const spacing = 20;
     const startX = 75;
     const startY = 520;
-    // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+    addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
     // add controls UI
     this.agentControlButtons = this.add.group();
@@ -395,16 +404,16 @@ export class Level2 extends ParentScene {
       overlappedItems.delete(item);
     });
 
-createBuildRoomButton(this);
+// createBuildRoomButton(this);
 
-this.worldLayer.setCollisionByProperty({ collides: true });
+// this.worldLayer.setCollisionByProperty({ collides: true });
 
-this.debugGraphics = this.add.graphics().setAlpha(0.7);
-this.worldLayer.renderDebug(this.debugGraphics, {
-  tileColor: null,
-  collidingTileColor: new Phaser.Display.Color(255, 0, 0, 255),
-  faceColor: new Phaser.Display.Color(0, 255, 0, 255)
-});
+// this.debugGraphics = this.add.graphics().setAlpha(0.7);
+// this.worldLayer.renderDebug(this.debugGraphics, {
+//   tileColor: null,
+//   collidingTileColor: new Phaser.Display.Color(255, 0, 0, 255),
+//   faceColor: new Phaser.Display.Color(0, 255, 0, 255)
+// });
 
 
 
@@ -532,107 +541,26 @@ return result;
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
         
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:910, y:130}, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:datamap3[0].agents[2].x, y:datamap3[0].agents[2].y}, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:datamap2[0].agents[0].x, y:datamap2[0].agents[0].y}, this.parallelZones);
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:130}, this.routeZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:767, y:130}, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:239, y:150}, this.parallelZones);
 
         console.log("langgraph from game", langgraph);
         const llmOutput = await langgraph.invoke({chainInput: testInput});
         const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
         const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
 
-        console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
+        console.log("llmOutput", llmOutput);
+        console.log("finalDecision", finalDecision);
+        console.log("finalDecision2", finalDecision2);
+
+        // console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
         // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
+
 
         eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });
   } 
-
-  // if(
-  //   areAllZonesOccupied(this.routeZones)
-  //   && this.registry.get('currentPattern') === ""
-  //   && !this.isWorkflowAvailable
-  //   && this.routeZones[0].agentsInside.size === 3
-  // ){
-  //   this.registry.set('currentPattern', 'route');
-  //   this.isWorkflowAvailable = true;
-  //   console.log("route is ready!");
-    
-  //   console.log("lauching route graph", this.routeZones);
-
-  //   this.routeStartBtn = this.add
-  //           .rectangle(50, 330, 50, 50, 0x000000)
-  //           .setScrollFactor(0)
-  //           .setDepth(1001)
-  //           .setAlpha(0.5)
-  //           .setStrokeStyle(2, 0xffffff)
-  //           .setInteractive();
-
-  //         this.routeStartLabel = this.add
-  //           .text(35, 320, 'Start Route', {
-  //             fontSize: '10px',
-  //             color: '#ffffff',
-  //             wordWrap: { width: 50, useAdvancedWrap: true },
-  //           })
-  //           .setScrollFactor(0)
-  //           .setDepth(1002);
-
-  //           this.routeStartBtn.on('pointerdown', async () => {
-  //             const allAgents = getAllAgents(this.routeZones);
-  //             console.log("all agents in route zone", allAgents);
-  //             // getting the datamap
-  //             const datamap = transformDataMap(this.routeZones, this.controllableCharacters);
-  //             console.log("route datamap", datamap);
-  //             // lauching langgraph
-  //             const agents = datamap[0].agents;
-  //             const routeGraph = constructRouteGraph(agents, this, this.tilemap, {x:240, y:290});
-  //             const finalDecision = routeGraph.invoke({input: testInput});
-  //             await this.registry.set("isWorkflowRunning", false);
-  //             console.log("finalDecision", finalDecision);
-  //           })
-  // }
-
-  
-
-  // if(
-  //   areAllZonesOccupied(this.votingZones)
-  //   &&this.registry.get("currentPattern")===""
-  //   && !this.isWorkflowAvailable
-  // ) {
-  //   this.registry.set("currentPattern", "voting");
-  //   this.isWorkflowAvailable = true;
-  //   console.log("voting is ready!");
-  //   this.votingStartBtn = this.add
-  //           .rectangle(50, 330, 50, 50, 0x000000)
-  //           .setScrollFactor(0)
-  //           .setDepth(1001)
-  //           .setAlpha(0.5)
-  //           .setStrokeStyle(2, 0xffffff)
-  //           .setInteractive();
-
-  //         this.votingStartLabel = this.add
-  //           .text(35, 320, 'Start Voting', {
-  //             fontSize: '10px',
-  //             color: '#ffffff',
-  //             wordWrap: { width: 50, useAdvancedWrap: true },
-  //           })
-  //           .setScrollFactor(0)
-  //           .setDepth(1002);
-
-  //           this.votingStartBtn.on('pointerdown', async () => {
-  //             const allAgents = getAllAgents(this.votingZones);
-  //             console.log("all agents in voting zone", allAgents);
-  //             // getting the datamap
-  //             const datamap = transformDataMap(this.votingZones, this.controllableCharacters);
-  //             console.log("voting datamap", datamap);
-  //             // lauching langgraph
-  //             const agents = datamap[0].agents;
-  //             const votingGraph = constructVotingGraph(agents, this, this.tilemap, {x:520, y:120});
-  //             const finalDecision = votingGraph.invoke({topic: votingExample, votes: []});
-  //             await this.registry.set("isWorkflowRunning", false);
-  //             console.log("finalDecision", finalDecision);
-  //           })
-  // }
 
 
   if(
@@ -754,9 +682,9 @@ return result;
     /* Control Aengent */
 
     // controlAgentMovements(this.playerControlledAgent, this.cursors);
-    controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
-      (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
-    );
+    // controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+    //   (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    // );
 
 
     /* Control Camera by WASD */

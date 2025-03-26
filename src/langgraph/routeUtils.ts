@@ -1,10 +1,10 @@
 import { StateGraph, Annotation, START, END } from "@langchain/langgraph/web";
 import { z } from "zod";
 import { initializeLLM } from "./chainingUtils";
-import { autoControlAgent } from "../game/utils/controlUtils";
+import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { EventBus } from "../game/EventBus";
-import { GeneralStateAnnotation } from "./agents";
+import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 
 // const RouteAnnotation = Annotation.Root({
@@ -59,8 +59,11 @@ export function createLeaf(
 
         await updateStateIcons(zones, "mail");
 
-        await autoControlAgent(scene, agent, tilemap, 910, 130, "Send report to final location"); //ERROR
-
+        await autoControlAgent(scene, agent, tilemap, 767, 130, "Send report to final location"); //ERROR
+        // create the report from routing graph
+        const report = await createReport(scene, "routing", 767, 130);
+        // transmit the report to the final location
+        await transmitReport(scene, report, destination.x, destination.y);
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
 

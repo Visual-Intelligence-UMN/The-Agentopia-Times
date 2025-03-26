@@ -15,6 +15,7 @@ const image = {
   idle: 'idle',
   work: 'work',
   report: 'report',
+  hiring: "hiring",
 } as const;
 
 const scene = {

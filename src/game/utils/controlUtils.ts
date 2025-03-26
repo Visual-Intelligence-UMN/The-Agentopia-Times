@@ -268,6 +268,28 @@ export function controlAgentWithMouse(
   });
 }
 
+export async function transmitReport(
+    scene: any,
+    report: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image,
+    x: number,
+    y: number,
+    duration: number = 3000
+): Promise<void> {
+    return new Promise(async (resolve) => {
+        report.scene.tweens.add({
+            targets: report,
+            x: x,
+            y: y,
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => {
+                resolve();
+            }
+        });
+
+        await popupEvent(scene, x, y, "Send Report to Next Department");
+    });
+}
 
 
 
@@ -405,10 +427,12 @@ async function asyncMoveAlongPath(
         const dx = targetX - agent.x;
         const dy = targetY - agent.y;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
+        if (agent.anims) {
+            if (Math.abs(dx) > Math.abs(dy)) {
             agent.anims.play(dx > 0 ? Animation.Right : Animation.Left, true);
-        } else {
+            } else {
             agent.anims.play(dy > 0 ? Animation.Down : Animation.Up, true);
+            }
         }
 
         scene.tweens.add({
@@ -435,7 +459,7 @@ async function asyncMoveAlongPath(
                         agentWithGraphics.pathGraphics.clear();
                     }
 
-                    agent.anims.stop();
+                    if(agent.anims)agent.anims.stop();
                     resolve();
                     return;
                 }

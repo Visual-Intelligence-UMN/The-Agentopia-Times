@@ -1,7 +1,7 @@
 import { render } from 'phaser-jsx';
 import { Depth, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
-import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from './hudUtils';
+import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD, generateNonCollidingAgentPosition, getZoneBounds } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
 import * as PF from "pathfinding";
 import { Zone } from '../scenes';
@@ -79,19 +79,45 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
         align: "center"
     }).setOrigin(0.5).setDepth(1001);
 
-    let reportBtn = null;
+    // let reportBtn = null;
 
-    if(parallelZoneData.name != "parallel"){
-    reportBtn = scene.add.image(centerX + 35, centerY+20, "report")
+    console.log("parallelZoneData data structure", parallelZoneData);
+
+    if(parallelZoneData.name !== "chaining"){
+    const hiringBtn = scene.add.image(centerX - 35, centerY+20, "hiring")
       .setDepth(1002).setInteractive();
-    
-    reportBtn.on("pointerdown", () => {
-      EventBus.emit("open-report", { department: parallelZoneData.name });
-      console.log("report button clicked", parallelZoneData.name);
-    });
-  }
 
-  const stateIcon = scene.add.image(centerX - 35, centerY + 20, "idle").setDepth(1001).setScale(1);
+      // const rooms = ['validation', 'voting', 'routing'];
+      // const zones = [this.parallelZones, this.votingZones, this.routeZones];
+
+      hiringBtn.on("pointerdown", () => {
+        const bounds = getZoneBounds(parallelZone);
+      
+        const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(scene.controllableCharacters, bounds);
+      
+        const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
+        
+        scene.agentGroup.add(agent);
+        scene.controllableCharacters.push(agent);
+        scene.agentList.set(agent.getName(), agent);
+      
+        zones.forEach(zone => {
+          if (zone.zone === parallelZone) {
+            zone.agentsInside.add(agent);
+          }
+        });
+      
+        console.log("New agent added at", agentX, agentY);
+      });
+      
+    }
+    // scene.reportBtn.on("pointerdown", () => {
+    //   EventBus.emit("open-report", { department: parallelZoneData.name });
+    //   console.log("report button clicked", parallelZoneData.name);
+    // });
+  //}
+
+  const stateIcon = scene.add.image(centerX + 35, centerY + 20, "idle").setDepth(1001).setScale(1);
 
     zones.push({
       zone: parallelZone,
@@ -100,7 +126,8 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
       ui: {
         background,
         text: statusText,
-        reportBtn: reportBtn? reportBtn : null,
+
+        // reportBtn: reportBtn? reportBtn : null,
         stateIcon: stateIcon
       }
     });
