@@ -71,11 +71,11 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     parallelZone.body.setAllowGravity(false);
     parallelZone.body.setImmovable(true);
 
-    const background = scene.add.rectangle(centerX, centerY + 20, 40, 12.5, 0x000000, 0.5)
+    const background = scene.add.rectangle(centerX, centerY + 20, 50, 15, 0x000000, 0.5)
       .setOrigin(0.5).setDepth(1000);
 
     const statusText = scene.add.text(centerX, centerY + 20, "idle", {
-      fontSize: "7px",
+      fontSize: "10px",
       color: "#ffffff",
       fontFamily: "Arial",
       align: "center"

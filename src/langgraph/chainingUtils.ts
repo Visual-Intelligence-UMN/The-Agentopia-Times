@@ -92,14 +92,28 @@ export function constructLangGraph(
             if(i===0 && j===0){
                 langgraph.addNode(
                     agent.getName(), 
-                    createJournalist(agent, transformDataMap[1].agents[0], scene, tilemap, zones)
+                    createJournalist(
+                        agent, 
+                        transformDataMap[1].agents[0], 
+                        scene, 
+                        tilemap, 
+                        zones, 
+                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                    )
                 );
             }
             if(i===1 && j===0){
                 console.log("create agent", agent)
                 langgraph.addNode(
                     agent.getName(), 
-                    createWriter(agent, scene, tilemap, destination, zones)
+                    createWriter(
+                        agent, 
+                        scene, 
+                        tilemap, 
+                        destination, 
+                        zones, 
+                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                    )
                 );
             }
             // else langgraph.addNode(agent.getName(), agent.activate());

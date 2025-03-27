@@ -11,7 +11,9 @@ import { state } from "../game/state";
 import { EventBus } from "../game/EventBus";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
+import OpenAI from "openai";
 
+export const openai = new OpenAI({apiKey: import.meta.env.VITE_OPENAI_API_KEY});
 const journalistPrompt = [
     "Extract the key information from the input and format it clearly and concisely."
 ];
@@ -19,6 +21,14 @@ const journalistPrompt = [
 const writerPrompt = [
     "Using the structured information provided, write a short news article of 3-5 sentences, ensuring clarity and brevity."
 ];
+
+export const promptTable = {
+    extraction: "Extract the key information from the input and format it clearly and concisely.",
+    summary: "Using the structured information provided, write a short news article of 3-5 sentences, ensuring clarity and brevity.",
+    analysis: "Analyze the information provided and write a detailed news article of 5-7 sentences, ensuring clarity and coherence.",
+    validation: "Validate the information provided and write a comprehensive news article of 7-10 sentences, ensuring clarity and coherence.",
+    voting: "Vote for the best options based on the information provided.",
+};
 
 const llm = new ChatOpenAI({
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -41,7 +51,12 @@ export const GeneralStateAnnotation = Annotation.Root({
 });
 
 
-export async function createReport(scene: any, zoneName: string, x: number, y: number) {
+export async function createReport(
+    scene: any, 
+    zoneName: string, 
+    x: number, 
+    y: number,
+) {
 
     const reportBtn = scene.add.image(x, y, "report")
         .setDepth(1002).setInteractive();
@@ -61,7 +76,8 @@ export function createJournalist(
     destination: any,
     scene: any,
     tilemap: any,
-    zones: any
+    zones: any,
+    task: keyof typeof promptTable
 ) {
     return async function journalist(state: typeof GeneralStateAnnotation.State) {
         console.log("journalist state:", state.chainInput);
@@ -70,7 +86,7 @@ export function createJournalist(
         await updateStateIcons(zones, "work", 0);
         await updateStateIcons(scene.chainingZones, "work");
 
-        const msg = await llm.invoke(journalistPrompt[0] + state.chainInput);
+        const msg = await llm.invoke(promptTable[task] + state.chainInput);
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
@@ -92,14 +108,15 @@ export function createWriter(
     scene: any,
     tilemap: any,
     destination: any,
-    zones: any
+    zones: any,
+    task: keyof typeof promptTable
 ){ 
     return async function writer(state: typeof GeneralStateAnnotation.State){
         console.log("writer state: ", state.chainFormattedText);
 
         await updateStateIcons(zones, "work", 1);
 
-        const msg = await llm.invoke(writerPrompt[0] + state.chainFormattedText);
+        const msg = await llm.invoke(promptTable[task] + state.chainFormattedText);
         console.log("writer msg: ", msg.content);
         EventBus.emit("final-report", { report: msg.content, department: "chaining" });
         // send the final report to final location
@@ -129,10 +146,7 @@ export function createWriter(
 
 export const testInput = `
 Breaking News: Company XYZ's Q3 Report Released
-
 In its latest earnings report for Q3, Company XYZ announced a significant increase in customer satisfaction, reaching 92 points, a noticeable improvement from last quarter. The company also reported a strong annual revenue growth of 45%, exceeding market expectations. 
-
 Additionally, the company's market share has expanded to 23% in its primary sector. A key highlight includes a decline in customer churn from 8% to 5%, reflecting improved customer retention strategies. The cost of acquiring a new user has dropped to $43, while the product adoption rate now stands at 78%. 
-
 Internal performance indicators also show improvements: employee satisfaction has climbed to 87 points, and the company's operating margin reached 34%, marking a significant milestone in financial performance.
 `;

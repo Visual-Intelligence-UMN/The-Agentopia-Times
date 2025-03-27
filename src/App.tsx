@@ -3,6 +3,7 @@ import { PhaserGame } from './game/PhaserGame';
 import { EventBus } from './game/EventBus';
 import DraggableWindow from './components/DraggableWindow';
 import { testGraphChain } from './langgraph/testLanggraph';
+import {marked} from 'marked';
 
 export interface Report{
     report: string,
@@ -15,6 +16,7 @@ function App()
     const [report, setReport] = useState<Report[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [currentReport, setCurrentReport] = useState("");
+    const [htmlReport, setHtmlReport] = useState<any>("");
 
     useEffect(()=>{
         const handleReportReceiving = (data: { report: string, department: string }) => {
@@ -43,8 +45,13 @@ function App()
             const index = report.findIndex((r) => r.department === data.department);
             if(index !== -1){
                 setCurrentReport(report[index].report);
+
+                const compiledHTML = marked(report[index].report);
+                setHtmlReport(compiledHTML);
+
                 if(!isOpen)setIsOpen(true);
             }
+            // embedding the markdown into the draggable window
         }
 
         EventBus.on("final-report", handleReportReceiving);
@@ -60,7 +67,7 @@ function App()
         <div id="app">
             {/* <button onClick={callGraph}>Test LangGraph</button> */}
             <PhaserGame />
-            {isOpen && <DraggableWindow title="Final Report" context={currentReport} onClose={() => {setIsOpen(false)}} />}
+            {isOpen && <DraggableWindow title="Final Report" context={htmlReport} onClose={() => {setIsOpen(false)}} />}
         </div>
     )
 }

@@ -14,8 +14,8 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({ onClose, title, conte
                     <span>{title}</span>
                     <button onClick={onClose}>✖</button>
                 </div>
-                <div className="window-content"  style={{ color: "black" }}>
-                    <p>{context}</p>
+                <div className="window-content"  style={{ color: "black" }} dangerouslySetInnerHTML={{ __html: context }}>
+                    {/* <p>{context}</p> */}
                 </div>
             </div>
         </Draggable>

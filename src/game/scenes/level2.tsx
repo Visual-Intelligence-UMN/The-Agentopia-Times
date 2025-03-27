@@ -18,6 +18,7 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
+import { generateImage } from '../../langgraph/dalleUtils';
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -86,6 +87,8 @@ export class Level2 extends ParentScene {
 
     // Initialize the HUD array
     this.hudElements = [];
+
+    
 
     setupScene.call(this, "office");
 
@@ -505,6 +508,8 @@ return result;
         const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:130}, this.routeZones);
         const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:767, y:130}, this.votingZones);
         const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:239, y:150}, this.parallelZones);
+
+        await generateImage("generate a cute girl");
 
         console.log("langgraph from game", langgraph);
         const llmOutput = await langgraph.invoke({chainInput: testInput});

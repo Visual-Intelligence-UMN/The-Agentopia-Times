@@ -6,15 +6,6 @@ import { EventBus } from "../game/EventBus";
 import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 
-export const VotingState = Annotation.Root({
-    topic: Annotation<string>,
-    votes: Annotation<string[]>({
-        default: () => [],
-        reducer: (x, y) => x.concat(y),
-    }),
-    decision: Annotation<string>,
-});
-
 export async function parallelVotingExecutor(
     agents: any[],
     scene: any,
