@@ -18,8 +18,9 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
-
 import { createBuildRoomButton } from '../utils/buildingUtils';
+
+// import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
 
 
 
@@ -405,6 +406,7 @@ export class Level2 extends ParentScene {
     });
 
 // createBuildRoomButton(this);
+// createGenerateVisualizationButton(this);
 
 // this.worldLayer.setCollisionByProperty({ collides: true });
 

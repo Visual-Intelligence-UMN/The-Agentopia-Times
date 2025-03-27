@@ -5,12 +5,15 @@
 // TODO: adding task assignment interaction
 // TOOD: adding a single-agent pattern for each room
 
+import React from 'react';
 import { Annotation } from "@langchain/langgraph/web";
 import { ChatOpenAI } from "@langchain/openai";
 import { state } from "../game/state";
 import { EventBus } from "../game/EventBus";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
+import { generateChartImage } from "./visualizationGenerate";
+
 
 const journalistPrompt = [
     "Extract the key information from the input and format it clearly and concisely."
@@ -101,7 +104,21 @@ export function createWriter(
 
         const msg = await llm.invoke(writerPrompt[0] + state.chainFormattedText);
         console.log("writer msg: ", msg.content);
-        EventBus.emit("final-report", { report: msg.content, department: "chaining" });
+        
+
+        const generateChartImageReturn = await generateChartImage();
+        
+        // Create report content, placing text and PNG images into arrays
+        const reportContent = [
+            msg.content,
+
+        ];
+
+        EventBus.emit("final-report", { report: reportContent, department: "chaining" });
+
+        // msg.content.push("src\langgraph\kingstontechnology.svg");
+
+        // EventBus.emit("final-report", { report: msg.content, department: "chaining" });
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;

@@ -3,7 +3,7 @@ import Draggable from "react-draggable";
 interface DraggableWindowProps {
     onClose: () => void;
     title: string;
-    context: string;
+    context: React.ReactNode; // 修改为 React.ReactNode 类型
 }
 
 const DraggableWindow: React.FC<DraggableWindowProps> = ({ onClose, title, context }) => {
@@ -14,8 +14,8 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({ onClose, title, conte
                     <span>{title}</span>
                     <button onClick={onClose}>✖</button>
                 </div>
-                <div className="window-content"  style={{ color: "black" }}>
-                    <p>{context}</p>
+                <div className="window-content" style={{ color: "black" }}>
+                    {context} {/* 这里会渲染传递进来的内容 */}
                 </div>
             </div>
         </Draggable>
