@@ -5,6 +5,7 @@
 // TODO: adding task assignment interaction
 // TOOD: adding a single-agent pattern for each room
 
+import React from 'react';
 import { Annotation } from "@langchain/langgraph/web";
 import { ChatOpenAI } from "@langchain/openai";
 import { state } from "../game/state";
@@ -13,7 +14,8 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 
-export const openai = new OpenAI({apiKey: import.meta.env.VITE_OPENAI_API_KEY});
+// export const openai = new OpenAI({apiKey: import.meta.env.VITE_OPENAI_API_KEY});
+
 const journalistPrompt = [
     "Extract the key information from the input and format it clearly and concisely."
 ];

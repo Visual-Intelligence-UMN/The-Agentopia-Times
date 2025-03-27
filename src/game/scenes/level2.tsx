@@ -18,7 +18,12 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
-import { generateImage } from '../../langgraph/dalleUtils';
+import { createBuildRoomButton } from '../utils/buildingUtils';
+import { generateChartImage } from '../../langgraph/visualizationGenerate';
+
+// import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
+
+
 
 export interface Zone {
   zone: Phaser.GameObjects.Zone;
@@ -61,6 +66,9 @@ export class Level2 extends ParentScene {
   private hudElements: Phaser.GameObjects.GameObject[] = []; // Store all HUD elements
 
   private isCameraFollowing: boolean = false; 
+
+  private debugGraphics!: Phaser.GameObjects.Graphics;
+
 
 
   constructor() {
@@ -147,6 +155,31 @@ export class Level2 extends ParentScene {
 
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
+
+    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
+    // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
+    // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
+    // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
+
+    // just for testing
+    // testChain();
+
+    // this.agentGroup.add(agent1);
+    // this.agentGroup.add(agent2);
+    // this.agentGroup.add(agent3);
+    // this.agentGroup.add(agent4);
+
+    // this.controllableCharacters.push(agent1);
+    // this.controllableCharacters.push(agent2);
+    // this.controllableCharacters.push(agent3);
+    // this.controllableCharacters.push(agent4);
+
+    // this.agentList.set(agent1.getName(), agent1);
+    // this.agentList.set(agent2.getName(), agent2);
+    // this.agentList.set(agent3.getName(), agent3);
+    // this.agentList.set(agent4.getName(), agent4);
+    // console.log('controled characters', this.controllableCharacters);
+
     //set the camera
     this.isCameraFollowing = false;
 
@@ -381,6 +414,20 @@ export class Level2 extends ParentScene {
       overlappedItems.delete(item);
     });
 
+// createBuildRoomButton(this);
+// createGenerateVisualizationButton(this);
+
+// this.worldLayer.setCollisionByProperty({ collides: true });
+
+// this.debugGraphics = this.add.graphics().setAlpha(0.7);
+// this.worldLayer.renderDebug(this.debugGraphics, {
+//   tileColor: null,
+//   collidingTileColor: new Phaser.Display.Color(255, 0, 0, 255),
+//   faceColor: new Phaser.Display.Color(0, 255, 0, 255)
+// });
+
+
+
     state.isTypewriting = true;
     // render(
     //   <Typewriter
@@ -509,15 +556,22 @@ return result;
         const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:767, y:130}, this.votingZones);
         const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:239, y:150}, this.parallelZones);
 
-        await generateImage("generate a cute girl");
+        // await generateImage("generate a cute girl");
+        const imageGenerated = await generateChartImage();
+        console.log("imageGenerated", imageGenerated);
 
         console.log("langgraph from game", langgraph);
         const llmOutput = await langgraph.invoke({chainInput: testInput});
         const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
         const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
 
-        console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
+        console.log("llmOutput", llmOutput);
+        console.log("finalDecision", finalDecision);
+        console.log("finalDecision2", finalDecision2);
+
+        // console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
         // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
+
 
         eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });
@@ -639,6 +693,13 @@ return result;
       this.isCameraFollowing = true;  // Update camera status
       // console.log(`📷 Now follow the agent: ${this.playerControlledAgent.getName()}`);
     }
+
+    /* Control Aengent */
+
+    // controlAgentMovements(this.playerControlledAgent, this.cursors);
+    // controlAgentWithMouse(this, this.playerControlledAgent, this.tilemap, 
+    //   (pointer) => isClickOnHUD(pointer, this.hudElements) // Pass in the HUD array
+    // );
 
 
     /* Control Camera by WASD */

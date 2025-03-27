@@ -192,7 +192,7 @@ let cachedGrid: PF.Grid | null = null;
 let pathGraphics: Phaser.GameObjects.Graphics | null = null;
 let targetCircle: Phaser.GameObjects.Graphics | null = null;
 
-function createOrUpdateGrid(
+export function createOrUpdateGrid(
     tilemap: Phaser.Tilemaps.Tilemap,
     forceUpdate = false,
 ) {
