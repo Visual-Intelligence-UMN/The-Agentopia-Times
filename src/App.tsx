@@ -4,6 +4,8 @@ import { EventBus } from './game/EventBus';
 import DraggableWindow from './components/DraggableWindow';
 import { testGraphChain } from './langgraph/testLanggraph';
 import {marked} from 'marked';
+import { generateChartImage, testD3Compiling } from './langgraph/visualizationGenerate';
+import { TEST_D3_SCRIPT } from './langgraph/const';
 
 export interface Report{
     report: string,
@@ -17,8 +19,15 @@ function App()
     const [isOpen, setIsOpen] = useState(false);
     const [currentReport, setCurrentReport] = useState("");
     const [htmlReport, setHtmlReport] = useState<any>("");
+    const [d3Code, setD3Code] = useState("");
 
-    useEffect(()=>{
+    useEffect(() => {
+        const initializeD3Code = async () => {
+            const generatedCode = await generateChartImage();
+            setD3Code(typeof generatedCode === 'string' ? generatedCode : JSON.stringify(generatedCode));
+        };
+
+        initializeD3Code();
         const handleReportReceiving = (data: { report: string, department: string }) => {
             console.log("report", data);
             const curReport:Report = {
@@ -50,16 +59,26 @@ function App()
                 setHtmlReport(compiledHTML);
 
                 if(!isOpen)setIsOpen(true);
+
+                // testD3Compiling(TEST_D3_SCRIPT);
             }
             // embedding the markdown into the draggable window
         }
 
+        const handleD3CodeChange = (data: {d3Code: string}) => {
+            setD3Code(data.d3Code);
+        }
+
         EventBus.on("final-report", handleReportReceiving);
         EventBus.on("open-report", handleReportOpen);
+        EventBus.on("d3-code", handleD3CodeChange);
+
+       // setD3Code(await generateChartImage());
 
         return () => {
             EventBus.off("final-report", handleReportReceiving);
             EventBus.off("open-report", handleReportOpen);
+            EventBus.off("d3-code", handleD3CodeChange);
         };
     },[]);
 
@@ -67,7 +86,14 @@ function App()
         <div id="app">
             {/* <button onClick={callGraph}>Test LangGraph</button> */}
             <PhaserGame />
-            {isOpen && <DraggableWindow title="Final Report" context={htmlReport} onClose={() => {setIsOpen(false)}} />}
+            {isOpen && 
+                <DraggableWindow 
+                    title="Final Report" 
+                    context={htmlReport} 
+                    onClose={() => {setIsOpen(false)}} 
+                    jsCodes={d3Code}
+                />
+            }
         </div>
     )
 }

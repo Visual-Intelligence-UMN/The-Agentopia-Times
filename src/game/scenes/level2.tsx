@@ -557,8 +557,10 @@ return result;
         const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:239, y:150}, this.parallelZones);
 
         // await generateImage("generate a cute girl");
-        const imageGenerated = await generateChartImage();
-        console.log("imageGenerated", imageGenerated);
+        // const imageGenerated = await generateChartImage();
+        // console.log("imageGenerated", imageGenerated);
+
+        
 
         console.log("langgraph from game", langgraph);
         const llmOutput = await langgraph.invoke({chainInput: testInput});

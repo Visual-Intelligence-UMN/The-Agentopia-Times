@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { initializeLLM } from "./chainingUtils";
+import * as d3 from 'd3';
 
 // Declare d3 as a property on globalThis.
 declare global {
@@ -8,7 +9,7 @@ declare global {
   }
 }
 
-export async function generateChartImage(): Promise<void> {
+export async function generateChartImage(){
     console.log("generateVisualization");
 
     const data = [10, 20, 30, 40, 50];
@@ -16,7 +17,20 @@ export async function generateChartImage(): Promise<void> {
 
     const llm = initializeLLM();
     const result = await llm.invoke([
-      { role: "system", content: "Generate only the JavaScript code for a simple D3.js bar chart, based on the following description:" },
+      { role: "system", content: `
+          Generate only the JavaScript code for a simple D3.js bar chart, 
+          Your code should start like this(PARAMETER: means you can change the number on that line): 
+          const width = 400; // PARAMETER: you can change the width
+          const height = 200; // PARAMETER: you can change the height
+
+          console.log("test-d3", d3.select('#test-d3'));
+
+          const svg = d3.select('#test-d3').append('svg')
+            .attr('width', width)
+            .attr('height', height);
+          based on the following description:
+        ` 
+      },
       { role: "user", content: promptForLLM }
     ]);
 
@@ -26,55 +40,12 @@ export async function generateChartImage(): Promise<void> {
 
     d3Code = cleanUpD3Code(d3Code);
     
-    ensureD3Loaded().then(() => {
-      return executeD3Code(d3Code);
-    });
+    return d3Code;
 }
 
 function cleanUpD3Code(code: any) {
     // For example, remove tags like "```javascript" and "```".
     return code.replace(/```javascript|```/g, "").trim();
-}
-
-// Make sure D3.js is loaded.
-function ensureD3Loaded() {
-  return new Promise<void>((resolve, reject) => {
-    if (window.d3) {
-      resolve();
-    } else {
-      const script = document.createElement('script');
-      script.src = "https://d3js.org/d3.v7.min.js";
-      script.onload = () => resolve();
-      script.onerror = (e) => reject(e);
-      document.head.appendChild(script);
-    }
-  });
-}
-
-function executeD3Code(d3Code: any) {
-    let code: string;
-
-    // If d3Code is not a string, try to extract the string from the object
-    if (typeof d3Code === 'object' && d3Code.content) {
-        code = d3Code.content;
-    } else {
-        code = d3Code;
-    }
-
-    console.log("Executing D3.js code:", code);
-
-    const chartContainer = document.createElement('div');
-    chartContainer.id = 'chart-container';
-    document.body.appendChild(chartContainer);
-
-    const script = document.createElement('script');
-    script.textContent = code;
-    document.body.appendChild(script);
-
-
-    createCanvasPreview();
-
-
 }
 
 // Use canvas to display the chart image on the console.
@@ -115,3 +86,23 @@ function createCanvasPreview() {
         }
     }, 500);
 }
+
+
+export function compileJSCode(script: string){
+
+  script = cleanUpD3Code(script);
+
+  try{
+    const test_div = d3.select("#test-d3");
+
+    test_div.selectAll("*").remove();
+
+    eval(script);
+
+
+  } catch (e) {
+    console.log("Error in testD3Comping function", e);
+  }
+}
+
+
