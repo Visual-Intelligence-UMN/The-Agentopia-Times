@@ -14,7 +14,13 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 
-// export const openai = new OpenAI({apiKey: import.meta.env.VITE_OPENAI_API_KEY});
+import { generateImage } from "./dalleUtils";
+
+
+export const openai = new OpenAI({
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
+});
 
 const journalistPrompt = [
     "Extract the key information from the input and format it clearly and concisely."
@@ -120,7 +126,21 @@ export function createWriter(
 
         const msg = await llm.invoke(promptTable[task] + state.chainFormattedText);
         console.log("writer msg: ", msg.content);
-        EventBus.emit("final-report", { report: msg.content, department: "chaining" });
+
+        const URL = await generateImage("please give me an image of a man");
+        console.log("URL", URL)
+
+        // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
+
+        const reportMessage = `${msg.content}
+            \n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
+            \n\n**Conclusion:**
+            \n\nThis image complements the textual output and helps visualize the content more effectively.
+            \n\nBy integrating both textual and visual information, we are able to provide a more comprehensive and intuitive understanding of the subject matter. The generated image not only supports the descriptive elements provided earlier, but also adds clarity and engagement for users who benefit from visual representation. Such multimodal outputs enhance interpretability, especially in contexts that require abstract reasoning, conceptual associations, or aesthetic appreciation.
+            \n\nMoreover, incorporating images generated dynamically through language model prompts opens up new possibilities for creative storytelling, education, simulation, and even product prototyping. In this case, the image acts as an extension of the language output—bridging the gap between imagination and representation. This seamless chaining of models demonstrates the growing power of composable AI workflows, enabling richer, more expressive applications than ever before.
+        `;
+
+        EventBus.emit("final-report", { report: reportMessage, department: "chaining" });
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;

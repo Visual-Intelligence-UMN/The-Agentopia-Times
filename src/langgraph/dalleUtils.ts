@@ -1,15 +1,14 @@
-// import {openai} from "./agents";
+import {openai} from "./agents";
     
-// export async function generateImage(prompt: string){
+export async function generateImage(prompt: string){
     
-//     const response = await openai.images.generate({
-//         model: "dall-e-3",
-//         prompt: prompt,
-//         n: 1,
-//         size: "256x256",
-//     });
+    const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+    });
 
-//     console.log(response.data[0].url);
-//     return response.data[0].url;
-// }
-
+    console.log(response.data[0].url);
+    return response.data[0].url;
+}
