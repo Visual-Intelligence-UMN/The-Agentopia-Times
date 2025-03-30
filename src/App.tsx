@@ -22,12 +22,12 @@ function App()
     const [d3Code, setD3Code] = useState("");
 
     useEffect(() => {
-        const initializeD3Code = async () => {
-            const generatedCode = await generateChartImage();
-            setD3Code(typeof generatedCode === 'string' ? generatedCode : JSON.stringify(generatedCode));
-        };
+        // const initializeD3Code = async () => {
+        //     const generatedCode = await generateChartImage();
+        //     setD3Code(typeof generatedCode === 'string' ? generatedCode : JSON.stringify(generatedCode));
+        // };
 
-        initializeD3Code();
+        // initializeD3Code();
         const handleReportReceiving = (data: { report: string, department: string }) => {
             console.log("report", data);
             const curReport:Report = {
@@ -66,7 +66,7 @@ function App()
         }
 
         const handleD3CodeChange = (data: {d3Code: string}) => {
-            setD3Code(data.d3Code);
+            setD3Code(typeof data.d3Code === 'string' ? data.d3Code : JSON.stringify(data.d3Code));
         }
 
         EventBus.on("final-report", handleReportReceiving);

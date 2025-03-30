@@ -22,3 +22,11 @@ svg.selectAll('rect')
   .attr('fill', 'yellow');
 
 `
+export const TEST_D3_PROMPT = `
+Generate a piece of your D3 code. 
+
+
+`
+
+
+

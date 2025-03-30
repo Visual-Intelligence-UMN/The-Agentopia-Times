@@ -8,8 +8,8 @@ import {
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentWithMouse, startControlDesignatedAgent, controlCameraMovements, isClickOnHUD} from '../utils/controlUtils';
-import { addAgentPanelHUD, addRoomHiringMenuHUD, addTaskAssignmentHUD} from '../utils/hudUtils';
+import { controlCameraMovements } from '../utils/controlUtils';
+import { addAgentPanelHUD, addTaskAssignmentHUD} from '../utils/hudUtils';
 import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesCollisionDetection, setZonesExitingDecoration } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
@@ -18,8 +18,6 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
-import { createBuildRoomButton } from '../utils/buildingUtils';
-import { generateChartImage } from '../../langgraph/visualizationGenerate';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
 
@@ -553,23 +551,28 @@ return result;
 
         
         const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:130}, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 520, y: 120}, {x:767, y:130}, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:239, y:150}, this.parallelZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 250, y: 150}, {x:520, y:120}, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:120}, this.parallelZones);
 
         // await generateImage("generate a cute girl");
         // const imageGenerated = await generateChartImage();
         // console.log("imageGenerated", imageGenerated);
 
-        
+
 
         console.log("langgraph from game", langgraph);
-        const llmOutput = await langgraph.invoke({chainInput: testInput});
-        const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
-        const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
+        // const llmOutput = await langgraph.invoke({chainInput: testInput});
+        // const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
+        // const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
 
-        console.log("llmOutput", llmOutput);
-        console.log("finalDecision", finalDecision);
-        console.log("finalDecision2", finalDecision2);
+        const firstOutput = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
+        const secondOutput = await langgraph.invoke({votingToChaining: firstOutput.votingToChaining, chainFormattedText: firstOutput.votingToChaining});
+        const finalOutput = await routingGraph.invoke({chainingToRouting: secondOutput.chainingToRouting, votingToChaining: firstOutput.votingToChaining});
+
+
+        console.log("first output", firstOutput);
+        console.log("finalDecision", secondOutput);
+        console.log("finalDecision2", finalOutput);
 
         // console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
         // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
