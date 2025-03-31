@@ -127,18 +127,43 @@ export function createWriter(
         const msg = await llm.invoke(promptTable[task] + state.chainFormattedText);
         console.log("writer msg: ", msg.content);
 
-        const URL = await generateImage("please give me an image of a man");
+        const URL = await generateImage("please give me an image of a company meeting with the boss and employers");
         console.log("URL", URL)
 
         // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
 
-        const reportMessage = `${msg.content}
-            \n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-            \n\n**Conclusion:**
-            \n\nThis image complements the textual output and helps visualize the content more effectively.
-            \n\nBy integrating both textual and visual information, we are able to provide a more comprehensive and intuitive understanding of the subject matter. The generated image not only supports the descriptive elements provided earlier, but also adds clarity and engagement for users who benefit from visual representation. Such multimodal outputs enhance interpretability, especially in contexts that require abstract reasoning, conceptual associations, or aesthetic appreciation.
-            \n\nMoreover, incorporating images generated dynamically through language model prompts opens up new possibilities for creative storytelling, education, simulation, and even product prototyping. In this case, the image acts as an extension of the language output—bridging the gap between imagination and representation. This seamless chaining of models demonstrates the growing power of composable AI workflows, enabling richer, more expressive applications than ever before.
+        const reportMessage = `# This is the titile
+        \n\n\n\n${msg.content}
+        \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
+        \n\n## Visual Representation
+        \n\nThis image visually represents the core concept discussed above, bringing clarity to the complex data. It highlights key trends and relationships, giving the viewer an immediate understanding of the subject matter.
+        
+        \n\nThe above graph is designed to enhance comprehension, showing not just raw data but the story behind it. As with all visual tools, this graph serves as a bridge between data and human understanding, ensuring a deeper connection with the material.
+    
+        \n\n<div id="testdiv1" style="
+                width: 100%; /* 确保容器宽度自适应 */
+                height: auto;
+                display: flex;
+                justify-content: center; /* 水平居中 */
+                align-items: center; /* 垂直居中 */
+                margin-top: 20px;">
+            <p>Below, you'll see an interactive bar chart that dynamically adjusts based on the data visualized. The chart provides insight into the trends and distributions in a more detailed and engaging way. The chart is created using D3.js, and you can interact with it to see how values vary across categories.</p>
+        </div>
+        <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
+        \n\n## Conclusion
+        \n\nThis image complements the textual output and helps visualize the content more effectively.
+        \n\nBy integrating both textual and visual information, we are able to provide a more comprehensive and intuitive understanding of the subject matter. The generated image not only supports the descriptive elements provided earlier, but also adds clarity and engagement for users who benefit from visual representation. Such multimodal outputs enhance interpretability, especially in contexts that require abstract reasoning, conceptual associations, or aesthetic appreciation.
+        
+        \n\nMoreover, incorporating images generated dynamically through language model prompts opens up new possibilities for creative storytelling, education, simulation, and even product prototyping. In this case, the image acts as an extension of the language output—bridging the gap between imagination and representation. This seamless chaining of models demonstrates the growing power of composable AI workflows, enabling richer, more expressive applications than ever before.
+        \n\n<div id="testdiv2" style="
+            width: 100%; /* 确保容器宽度自适应 */
+            height: auto;
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            margin-top: 20px;">
         `;
+    
 
         EventBus.emit("final-report", { report: reportMessage, department: "chaining" });
         // send the final report to final location

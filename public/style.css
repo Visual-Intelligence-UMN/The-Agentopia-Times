@@ -52,13 +52,14 @@ body {
     top: 20%;
     left: 50%;
     transform: translate(-50%, 0);
-    width: 300px;
+    width: 800px;
     background: white;
     border: 1px solid #ccc;
     box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     z-index: 1000;
-    color: black; /* ✅ 确保所有文本默认是黑色 */
+    color: black;
+    box-sizing: border-box;
 }
 
 .window-header {
@@ -69,6 +70,7 @@ body {
     display: flex;
     justify-content: space-between;
     user-select: none;
+    box-sizing: border-box;
 }
 
 .window-header button {
@@ -79,8 +81,10 @@ body {
 }
 
 .window-content {
-    padding: 15px;
-    max-height: 200px;
+    padding: 30px;
+    max-height: 500px;
     overflow-y: auto;
-    color: black; /* ✅ 让文本变黑 */
+    color: black;
+    box-sizing: border-box;
 }
+
