@@ -13,22 +13,21 @@ import { EventBus } from "../game/EventBus";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
+import * as fs from "fs";
 
 import { generateImage } from "./dalleUtils";
+import { generateChartImage } from './visualizationGenerate';
+
+
+const ucbPath: string = "./data/simulated_ucb.csv"
+const covidPath: string = "./data/simulated_covid.csv"
+const newPath = ""
 
 
 export const openai = new OpenAI({
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
     dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
 });
-
-const journalistPrompt = [
-    "Extract the key information from the input and format it clearly and concisely."
-];
-
-const writerPrompt = [
-    "Using the structured information provided, write a short news article of 3-5 sentences, ensuring clarity and brevity."
-];
 
 export const promptTable = {
     extraction: "Extract the key information from the input and format it clearly and concisely.",
@@ -44,16 +43,19 @@ const llm = new ChatOpenAI({
 });
 
 export const GeneralStateAnnotation = Annotation.Root({
-    chainInput: Annotation<string>,
-    chainFormattedText: Annotation<string>,
-    chainOutput: Annotation<string>,
+    data: Annotation<string>, 
     votingTopic: Annotation<string>,
     votingVotes: Annotation<string[]>({
         default: () => [],
         reducer: (x, y) => x.concat(y),
     }),
-    votingDecision: Annotation<string>,
-    routeInput: Annotation<string>,
+    votingToChaining: Annotation<string>, 
+    // votingDecision: Annotation<string>,
+    // chainInput: Annotation<string>,
+    chainFormattedText: Annotation<string>,
+    // chainOutput: Annotation<string>,
+    // routeInput: Annotation<string>,
+    chainingToRouting: Annotation<string>,
     routeDecision: Annotation<string>,
     routeOutput: Annotation<string>,
 });
@@ -88,16 +90,48 @@ export function createJournalist(
     task: keyof typeof promptTable
 ) {
     return async function journalist(state: typeof GeneralStateAnnotation.State) {
-        console.log("journalist state:", state.chainInput);
+        console.log("journalist state:", state.votingToChaining);
 
+        let datasetPath = covidPath;
+
+        if(!state.votingToChaining) {
+            if(state.votingToChaining.includes("UCB")){
+                datasetPath = ucbPath;
+            }
+        }
+
+        //const csvRaw = require(datasetPath);
+        // const parsedData = csvRaw.split("\n").map(row => row.split(","));
+        const res = await fetch(datasetPath);
+        const csvRaw = await res.text();
+        console.log("csvRaw", csvRaw);
         
         await updateStateIcons(zones, "work", 0);
         await updateStateIcons(scene.chainingZones, "work");
 
-        const msg = await llm.invoke(promptTable[task] + state.chainInput);
+        // const msg = await llm.invoke(promptTable[task] + state.votingToChaining);
+        // const msg = await llm.invoke("analyze the given dataset, and provide some insights and conclusions based on the data. The dataset is as follows:\n\n"
+        //      + csvRaw + 
+        //      "\n\nPlease provide a detailed analysis of the dataset, including any trends, patterns, or anomalies you observe."
+        // );
+
+        const msg = await llm.invoke(
+            "analyze the given dataset...\n\n" + 
+            csvRaw + 
+            "\n\n" +
+            BIAS_DETECTION_PROMPT +
+            "\nFormat your response with:\n" +
+            "## Findings\n## Limitations\n## Bias Check"
+        );
+
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
+
+        // testing for LLM signaling for visualization creation
+        // const visCode = await generateChartImage(csvRaw);
+        // console.log("visCode", visCode);
+        // EventBus.emit("d3-code", { d3Code: visCode });
 
         await updateStateIcons(zones, "mail", 0);
 
@@ -124,44 +158,30 @@ export function createWriter(
 
         await updateStateIcons(zones, "work", 1);
 
-        const msg = await llm.invoke(promptTable[task] + state.chainFormattedText);
+        
+        // const msg = await llm.invoke("you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)" + state.chainFormattedText);
+        const msg = await llm.invoke(
+            "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+            state.chainFormattedText +
+            "\n\n" +
+            BIAS_DETECTION_PROMPT +
+            "\nIn your article:\n" +
+            "- Highlight demographic balances\n" +
+            "- Use 'may suggest' instead of 'proves'\n" +
+            "- Note sample size limitations"
+          );
+        
+        
         console.log("writer msg: ", msg.content);
 
-        const URL = await generateImage("please give me an image of a company meeting with the boss and employers");
+        const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${msg.content}`);
         console.log("URL", URL)
 
-        // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
+        // // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
 
-        const reportMessage = `# This is the titile
-        \n\n\n\n${msg.content}
+        const reportMessage = `
+        \n\n${msg.content}
         \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        \n\n## Visual Representation
-        \n\nThis image visually represents the core concept discussed above, bringing clarity to the complex data. It highlights key trends and relationships, giving the viewer an immediate understanding of the subject matter.
-        
-        \n\nThe above graph is designed to enhance comprehension, showing not just raw data but the story behind it. As with all visual tools, this graph serves as a bridge between data and human understanding, ensuring a deeper connection with the material.
-    
-        \n\n<div id="testdiv1" style="
-                width: 100%; /* 确保容器宽度自适应 */
-                height: auto;
-                display: flex;
-                justify-content: center; /* 水平居中 */
-                align-items: center; /* 垂直居中 */
-                margin-top: 20px;">
-            <p>Below, you'll see an interactive bar chart that dynamically adjusts based on the data visualized. The chart provides insight into the trends and distributions in a more detailed and engaging way. The chart is created using D3.js, and you can interact with it to see how values vary across categories.</p>
-        </div>
-        <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        \n\n## Conclusion
-        \n\nThis image complements the textual output and helps visualize the content more effectively.
-        \n\nBy integrating both textual and visual information, we are able to provide a more comprehensive and intuitive understanding of the subject matter. The generated image not only supports the descriptive elements provided earlier, but also adds clarity and engagement for users who benefit from visual representation. Such multimodal outputs enhance interpretability, especially in contexts that require abstract reasoning, conceptual associations, or aesthetic appreciation.
-        
-        \n\nMoreover, incorporating images generated dynamically through language model prompts opens up new possibilities for creative storytelling, education, simulation, and even product prototyping. In this case, the image acts as an extension of the language output—bridging the gap between imagination and representation. This seamless chaining of models demonstrates the growing power of composable AI workflows, enabling richer, more expressive applications than ever before.
-        \n\n<div id="testdiv2" style="
-            width: 100%; /* 确保容器宽度自适应 */
-            height: auto;
-            display: flex;
-            justify-content: center; /* 水平居中 */
-            align-items: center; /* 垂直居中 */
-            margin-top: 20px;">
         `;
     
 
@@ -171,7 +191,7 @@ export function createWriter(
         const originalAgent2Y = agent.y;
 
         await updateStateIcons(zones, "mail", 1);
-        await updateStateIcons(scene.chainingZones, "mail");
+        await updateStateIcons(scene.chainingZones, "mail");     
         
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await createReport(scene, "chaining", destination.x, destination.y);
@@ -179,16 +199,46 @@ export function createWriter(
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
-        await transmitReport(scene, report, 522, 130);
+        await transmitReport(scene, report, 767, 130);
         // agent return to original location
 
         await updateStateIcons(scene.chainingZones, "idle");
         await updateStateIcons(zones, "idle", 1);
 
-        return { chainFinalOutput: msg.content };
+        return { chainingToRouting: msg.content };
     }
 }
 
+const BIAS_DETECTION_PROMPT = `
+IMPORTANT: Before finalizing your analysis, you MUST check for these potential biases:
+
+1. Gender Bias:
+   - Scan for unequal treatment of Male/Female in results
+   - Example violation: "Male patients responded better" without statistical proof
+   - Required fix: "The data shows X% improvement in male vs Y% in female patients (p=Z)"
+
+2. Small Sample Warnings:
+   - If any group has <20 samples, add: "Caution: Small sample size (n=X) limits conclusions"
+   - Never claim "proves" or "shows" - use "suggests" or "indicates"
+
+3. Absolute Language:
+   - Replace words like:
+     - "always/never" → "tended to/rarely"
+     - "clearly" → "the data indicates"
+     - "proves" → "supports"
+
+4. Demographic Fairness:
+   - Explicitly state if any group is underrepresented
+   - Example: "Note: Age groups 18-25 represent only 15% of samples"
+
+5. Statistical Integrity:
+   - All comparisons must include:
+     - Base rates ("from X% to Y%")
+     - Sample sizes ("(n=Z)")
+     - Confidence indicators where possible
+
+FAILURE TO FOLLOW THESE RULES WILL RESULT IN AUTOMATIC CORRECTION.
+`;
 
 
 export const testInput = `

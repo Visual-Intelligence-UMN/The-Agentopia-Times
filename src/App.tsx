@@ -14,71 +14,16 @@ export interface Report{
 
 function App()
 {
-
     const [report, setReport] = useState<Report[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [currentReport, setCurrentReport] = useState("");
     const [htmlReport, setHtmlReport] = useState<any>("");
-    // const [d3Code1, setD3Code1] = useState("");
-    // const [d3Code2, setD3Code2] = useState("");
 
-    const [charts, setCharts] = useState({
-        chart1: { code: "", id: "testdiv1" },
-        chart2: { code: "", id: "testdiv2" }
-      });
+
+    const [charts, setCharts] = useState<{id: string; code: string}[]>([]);
+
 
     useEffect(() => {
-        // const initializeD3Code = async () => {
-        //     const data = [10, 20, 30, 40, 50];
-        //     const promptForLLM1 = "Generate a simple D3.js bar chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-        //     const promptForLLM2 = "Generate a complex D3.js line chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-        //     const generatedCode1 = await generateChartImage(promptForLLM1, "testdiv1");
-        //     const generatedCode2 = await generateChartImage(promptForLLM2, "testdiv2");
-        //     setD3Code1(typeof generatedCode1 === 'string' ? generatedCode1 : JSON.stringify(generatedCode1));
-        //     setD3Code2(typeof generatedCode2 === 'string' ? generatedCode2 : JSON.stringify(generatedCode2));
-        // };
-
-        // const initializeD3Code = async () => {
-        //     const data = [10, 20, 30, 40, 50];
-        //     const promptForLLM1 = "Generate a simple D3.js bar chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-        //     const promptForLLM2 = "Generate a complex D3.js line chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-  
-        //     setCharts({
-        //       chart1: {
-        //         id: "testdiv1",
-        //         code: await generateChartImage(promptForLLM1, "testdiv1")
-        //       },
-        //       chart2: {
-        //         id: "testdiv2", 
-        //         code: await generateChartImage(promptForLLM2, "testdiv2")
-        //       }
-        //     });
-        //   };
-
-        const initializeD3Code = async () => {
-          const data = [10, 20, 30, 40, 50];
-          const promptForLLM1 = "Generate a simple D3.js bar chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-          const promptForLLM2 = "Generate a complex D3.js line chart for the following data: " + JSON.stringify(data) + ". Include x-axis and y-axis labels, a chart title, and add hover effects to the bars. The hover effect should change the color of the bars when the user hovers over them. Also, display the value of the bar as a tooltip when hovering. Only return the JavaScript code to generate the chart, no HTML, no CSS. Make sure the code includes interactivity with mouse events like mouseover and mouseout.";
-  
-          
-          const [result1, result2] = await Promise.all([
-            generateChartImage(promptForLLM1, "testdiv1"),
-            generateChartImage(promptForLLM2, "testdiv2")
-          ]);
-        
-          setCharts({
-            chart1: {
-              id: "testdiv1",
-              code: typeof result1 === 'string' ? result1 : JSON.stringify(result1)
-            },
-            chart2: {
-              id: "testdiv2", 
-              code: typeof result2 === 'string' ? result2 : JSON.stringify(result2)
-            }
-          });
-        };
-
-        initializeD3Code();
         const handleReportReceiving = (data: { report: string, department: string }) => {
             console.log("report", data);
             const curReport:Report = {
@@ -116,42 +61,44 @@ function App()
             // embedding the markdown into the draggable window
         }
 
-        // const handleD3CodeChange1 = (data: {d3Code1: string}) => {
-        //     setD3Code1(data.d3Code1);
-        // }
+        // EventBus.on("d3-code", (data: {d3Code: string, id: string}) => {
+        //   setCharts(prev => [
+        //     ...prev,
+        //     {
+        //       id: data.id,
+        //       code: data.d3Code
+        //     }
+        //   ]);
+        // });
 
-        // const handleD3CodeChange2 = (data: {d3Code2: string}) => {
-        //     setD3Code2(data.d3Code2);
-        // }
-
-        const handleChartUpdate = (data: { 
-          type: 'chart1' | 'chart2'; 
-          code: string | object
-        }) => {
-          setCharts(prev => ({
-            ...prev,
-            [data.type]: { 
-              ...prev[data.type], 
-              code: typeof data.code === 'string' ? data.code : JSON.stringify(data.code)
-            }
-          }));
-        };
+        const handleD3Code = (data: {d3Code: string, id: string}) => {
+            console.log("Updating charts with:", data.id);
+            setCharts(prev => {
+              // Check if a chart with the same id already exists
+              const exists = prev.some(chart => chart.id === data.id);
+              return exists ? prev : [...prev, {id: data.id, code: data.d3Code}];
+            });
+          };
 
         EventBus.on("final-report", handleReportReceiving);
         EventBus.on("open-report", handleReportOpen);
+        EventBus.on("d3-code", handleD3Code);
+
         // EventBus.on("d3-code", handleD3CodeChange1);
         // EventBus.on("d3-code", handleD3CodeChange2);
-        EventBus.on("d3-code", handleChartUpdate);
+        // EventBus.on("d3-code", handleChartUpdate);
 
 
        // setD3Code(await generateChartImage());
 
         return () => {
-            EventBus.off("final-report", handleReportReceiving);
-            EventBus.off("open-report", handleReportOpen);
-            // EventBus.off("d3-code", handleD3CodeChange1);
-            // EventBus.off("d3-code", handleD3CodeChange2);
-            EventBus.on("d3-code", handleChartUpdate);
+          EventBus.off("final-report", handleReportReceiving);
+          EventBus.off("open-report", handleReportOpen);
+          EventBus.off("d3-code", handleD3Code);
+
+          // EventBus.off("d3-code", handleD3CodeChange1);
+          // EventBus.off("d3-code", handleD3CodeChange2);
+          // EventBus.on("d3-code", handleChartUpdate);
         };
     },[]);
 
@@ -164,8 +111,7 @@ function App()
                     title="Final Report" 
                     context={htmlReport} 
                     onClose={() => {setIsOpen(false)}} 
-                    jsCodes1={charts.chart1.code}
-                    jsCodes2={charts.chart2.code}
+                    charts={charts}
                 />
             }
         </div>

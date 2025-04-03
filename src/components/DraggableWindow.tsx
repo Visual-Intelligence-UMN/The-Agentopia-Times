@@ -1,25 +1,28 @@
 import Draggable from "react-draggable";
 import { compileJSCode } from "../langgraph/visualizationGenerate";
 import { TEST_D3_SCRIPT } from "../langgraph/const";
-import { useEffect } from "react";
+import { useEffect, useRef  } from "react";
+
 
 interface DraggableWindowProps {
     onClose: () => void;
     title: string;
     context: string;
-    jsCodes1: string;
-    jsCodes2: string;
-}
+    charts: { id: string; code: string }[]; // Change to dynamic chart array
+  }
+  
+  const DraggableWindow: React.FC<DraggableWindowProps> = ({ onClose, title, context, charts }) => {
+    const hasRenderedCharts = useRef(false); // Whether the marker has been rendered or not
 
-const DraggableWindow: React.FC<DraggableWindowProps> = ({ onClose, title, context, jsCodes1 , jsCodes2 }) => {
-    
     useEffect(() => {
-        if (jsCodes1 && jsCodes2) {
-            compileJSCode(jsCodes1, "#testdiv1");
-            compileJSCode(jsCodes2, "#testdiv2");
-        }
-    }, [jsCodes1, jsCodes2]);
-    
+      if(!hasRenderedCharts.current) {
+        charts.forEach(chart => {
+          compileJSCode(chart.code, chart.id);
+      });
+      }
+      hasRenderedCharts.current = true;
+    }, []);
+  
     return (
         <Draggable handle=".window-header" defaultPosition={{x: 0, y: 0}}>
             <div className="window">

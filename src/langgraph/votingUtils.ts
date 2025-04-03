@@ -71,7 +71,12 @@ export function createAggregator(
         await updateStateIcons(zones, "work");
 
         console.log("[Debug] Submitting aggregated votes to LLM...");
-        const decision = await llm.invoke(`aggregate vote: ${llmInput}; return the final result from this voting as the decision`);
+        const decision = await llm.invoke(`
+            aggregate vote: ${llmInput}; 
+            return the final result from this voting as the decision
+            If the final decision is UCBerkely, return "UCB"
+            If the final decision is COVID-19, return "COVID"
+        `);
         console.log("[Debug] Received final decision from LLM.");
 
         let originalAgent1X = agents[agents.length-1].x;
@@ -83,7 +88,7 @@ export function createAggregator(
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         console.log("[Debug] Decision sent to final location.");
 
-        const report = await createReport(scene, "voting", 522, 130);
+        const report = await createReport(scene, "voting", 250, 150);
 
         console.log("[Debug] Returning to office...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
@@ -98,7 +103,7 @@ export function createAggregator(
         await updateStateIcons(zones, "idle");
         console.log("[Debug] Aggregator completed.");
 
-        return { ...state, votingDecision: decision.content };
+        return { ...state, votingToChaining: decision.content };
     };
 }
 
@@ -142,7 +147,7 @@ export function constructVotingGraph(
                 zones
             )(state);
             console.log("[Debug] Aggregator phase completed.");
-            return { ...state, votingDecision: decision.votingDecision };
+            return { ...state, votingToChaining: decision.votingToChaining };
         }
     );
 
@@ -155,13 +160,10 @@ export function constructVotingGraph(
 }
 
 export const votingExample = `
-In a bustling newsroom, journalists are locked in a heated debate over the next issue’s front-page story. The editor-in-chief raps on the table, calling for order. “We need a quick vote to decide our headline!”  
-
-On the large screen at the front of the room, two options appear:  
-
-**Option A: Political Scandal Uncovered**  
-A prominent politician has been exposed for accepting bribes and abusing power to benefit a particular corporation. An exclusive investigation has unearthed evidence of insider deals, potentially triggering a nationwide controversy.  
-
-**Option B: Groundbreaking Tech Shocks the World**  
-A startup has announced a revolutionary breakthrough in artificial intelligence that could transform the journalism industry. Experts are debating whether this technology will assist reporters or ultimately replace some of their roles, sparking discussions about the future of news.  
+You are an employee in a news company.
+You are assigned to vote for the best theme for next news publication.
+There're two options: 
+1. the gender bias of UCBerkeley graduates admission
+2. the benefits/harms of British COVID-19 vaccination
+Choose one of the two options and give a reason for your choice.
 `;
