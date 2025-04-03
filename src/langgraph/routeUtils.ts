@@ -53,17 +53,20 @@ async function testBranchWork(command: string, state: any, content: string){
         console.log("csvRaw", csvRaw);
     
     if(command === "visualization"){
-        const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        console.log("cgartId1", chartId1)
-        const visCode1 = await generateChartImage(chartId1, csvRaw);
-        console.log("visCode", visCode1);
-        EventBus.emit("d3-code", { d3Code: visCode1, id: chartId1});
+        // const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
+        // console.log("cgartId1", chartId1)
+        // const visCode1 = await generateChartImage(chartId1, csvRaw);
+        // console.log("visCode", visCode1);
+        // EventBus.emit("d3-code", { d3Code: visCode1, id: chartId1});
 
-        const chartId2 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        console.log("cgartId2", chartId2)
-        const visCode2 = await generateChartImage(chartId2, csvRaw);
-        console.log("visCode", visCode2);
-        EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
+        // const chartId2 = `chart-${Math.random().toString(36).substr(2, 9)}`;
+        // console.log("cgartId2", chartId2)
+        // const visCode2 = await generateChartImage(chartId2, csvRaw);
+        // console.log("visCode", visCode2);
+        // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
+
+        const svgId1 = await generateChartImage(csvRaw);
+        const svgId2 = await generateChartImage(csvRaw);
 
         // EventBus.emit("final-report", { report: content, department: "routing" });
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
@@ -76,7 +79,7 @@ async function testBranchWork(command: string, state: any, content: string){
         
         \n\nThe above graph is designed to enhance comprehension, showing not just raw data but the story behind it. As with all visual tools, this graph serves as a bridge between data and human understanding, ensuring a deeper connection with the material.
     
-        \n\n<div id="${chartId1}" style="
+        \n\n<div id="${svgId1}" style="
             width: 100%; /* 确保容器宽度自适应 */
             height: auto;
             display: flex;
@@ -90,7 +93,7 @@ async function testBranchWork(command: string, state: any, content: string){
         \n\nBy integrating both textual and visual information, we are able to provide a more comprehensive and intuitive understanding of the subject matter. The generated image not only supports the descriptive elements provided earlier, but also adds clarity and engagement for users who benefit from visual representation. Such multimodal outputs enhance interpretability, especially in contexts that require abstract reasoning, conceptual associations, or aesthetic appreciation.
         
         \n\nMoreover, incorporating images generated dynamically through language model prompts opens up new possibilities for creative storytelling, education, simulation, and even product prototyping. In this case, the image acts as an extension of the language output—bridging the gap between imagination and representation. This seamless chaining of models demonstrates the growing power of composable AI workflows, enabling richer, more expressive applications than ever before.
-            \n\n<div id="${chartId2}" style="
+            \n\n<div id="${svgId2}" style="
             width: 100%; /* 确保容器宽度自适应 */
             height: auto;
             display: flex;

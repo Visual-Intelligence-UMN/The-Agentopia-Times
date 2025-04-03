@@ -3,6 +3,7 @@ import { initializeLLM } from "./chainingUtils";
 import * as d3 from 'd3';
 import * as ts from 'typescript';
 import vm from 'vm';
+import { EventBus } from "../game/EventBus";
 
 // Declare d3 as a property on globalThis.
 declare global {
@@ -10,7 +11,10 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(svgId: string, dataSheet: any) {
+export async function generateChartImage(dataSheet: any) {
+
+  const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
+
 
 // export async function generateChartImage(promptForLLM: string, svgId: string, dataSheet: any) {
 
@@ -92,8 +96,8 @@ export async function generateChartImage(svgId: string, dataSheet: any) {
           Your code should start like this(PARAMETER: means you can change the number on that line): 
           const width = 400; // PARAMETER: you can change the width
           const height = 200; // PARAMETER: you can change the height
-          console.log("${svgId}", d3.select('#${svgId}'));
-          const svg = d3.select('#${svgId}').append('svg')
+          console.log("${chartId}", d3.select('#${chartId}'));
+          const svg = d3.select('#${chartId}').append('svg')
             .attr('width', width)
             .attr('height', height);
           based on the following description:
@@ -114,7 +118,9 @@ export async function generateChartImage(svgId: string, dataSheet: any) {
 
     if (check.ok) {
       console.log("Generated valid D3.js code on attempt", attempt);
-      return d3Code;
+      EventBus.emit("d3-code", { d3Code: d3Code, id: chartId});
+      return chartId;
+      // return d3Code;
     } else {
       console.warn(`Attempt ${attempt} failed:`, check.error);
       lastError = check.error || "Unknown error";
