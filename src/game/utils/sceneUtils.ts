@@ -1,5 +1,5 @@
 import { render } from 'phaser-jsx';
-import { Depth, EXTERIOR_TILESET_NAME, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
+import { Depth, EXTERIOR_TILESET_NAME, INTERIOR_TILESET_NAME, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD, generateNonCollidingAgentPosition, getZoneBounds } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
@@ -242,25 +242,29 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
       EXTERIOR_TILESET_NAME, 
       key.image.exterior
     );
+    const tilesetInterior = this.tilemap.addTilesetImage(
+      INTERIOR_TILESET_NAME,
+      key.image.interior,
+    )!;
 
     console.log('Tileset Office:', tilesetOffice);
     console.log('Tileset Room Builder:', tilesetRoomBuilder);
 
     this.BelowPlayer = this.tilemap.createLayer(
       TilemapLayer.BelowPlayer,
-      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior, tilesetInterior],
       0,
       0,
     );
     this.worldLayer = this.tilemap.createLayer(
       TilemapLayer.World,
-      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior, tilesetInterior],
       0,
       0,
     );
     this.aboveLayer = this.tilemap.createLayer(
       TilemapLayer.AbovePlayer,
-      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior, tilesetInterior],
       0,
       0,
     );
