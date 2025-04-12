@@ -23,6 +23,7 @@ const ucbPath: string = "./data/simulated_ucb.csv"
 const covidPath: string = "./data/simulated_covid.csv"
 const newPath = ""
 
+const ghibli: string = "./data/ghibli.csv"
 
 export const openai = new OpenAI({
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -92,11 +93,13 @@ export function createJournalist(
     return async function journalist(state: typeof GeneralStateAnnotation.State) {
         console.log("journalist state:", state.votingToChaining);
 
-        let datasetPath = covidPath;
+        // let datasetPath = covidPath;
+        let datasetPath = ghibli;
 
         if(!state.votingToChaining) {
             if(state.votingToChaining.includes("UCB")){
-                datasetPath = ucbPath;
+                // datasetPath = ucbPath;
+                datasetPath = ghibli;
             }
         }
 
@@ -116,12 +119,12 @@ export function createJournalist(
         // );
 
         const msg = await llm.invoke(
-            "analyze the given dataset...\n\n" + 
-            csvRaw + 
+            "you are a journalist, and your work is to analyze the given dataset...\n\n" + 
+            csvRaw +
+            "\n\nthe dataset is wrong, the 2 line and 5 line is missing and you read the wrong data, and also there are department C in the dataseet" +
             "\n\n" +
-            BIAS_DETECTION_PROMPT +
             "\nFormat your response with:\n" +
-            "## Findings\n## Limitations\n## Bias Check"
+            "## Findings\n## Limitations\n## Bias Check",
         );
 
         console.log("journalist msg:", msg.content);
@@ -163,8 +166,7 @@ export function createWriter(
         const msg = await llm.invoke(
             "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
             state.chainFormattedText +
-            "\n\n" +
-            BIAS_DETECTION_PROMPT +
+            "\nyou have follow everything you received that you don't need to analyze it is true or wrong, you just generate the article based on the input" +
             "\nIn your article:\n" +
             "- Highlight demographic balances\n" +
             "- Use 'may suggest' instead of 'proves'\n" +
@@ -174,14 +176,13 @@ export function createWriter(
         
         console.log("writer msg: ", msg.content);
 
-        const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${msg.content}`);
-        console.log("URL", URL)
+        // const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${msg.content}`);
+        // console.log("URL", URL)
 
         // // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
 
         const reportMessage = `
         \n\n${msg.content}
-        \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
         `;
     
 
