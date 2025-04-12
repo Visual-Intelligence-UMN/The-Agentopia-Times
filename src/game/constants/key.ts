@@ -11,6 +11,7 @@ const image = {
   coinIcon: 'coinIcon',
   office: 'office',
   room_builder_office: 'room_builder_office',
+  exterior: 'exterior',
   mail: 'mail',
   idle: 'idle',
   work: 'work',
@@ -28,6 +29,7 @@ const tilemap = {
   tuxemon: 'tuxemon',
   office: 'office',
   room_builder_office: 'room_builder_office',
+  exterior: 'exterior',
 } as const;
 
 export const key = {

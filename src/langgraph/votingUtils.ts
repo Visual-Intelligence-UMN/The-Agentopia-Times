@@ -88,7 +88,9 @@ export function createAggregator(
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         console.log("[Debug] Decision sent to final location.");
 
-        const report = await createReport(scene, "voting", 250, 150);
+        const report = await createReport(scene, "voting", 250, 350);
+        await createReport(scene, "voting", 250, 350);
+
 
         console.log("[Debug] Returning to office...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");

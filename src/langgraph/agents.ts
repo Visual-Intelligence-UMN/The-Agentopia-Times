@@ -199,7 +199,7 @@ export function createWriter(
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
-        await transmitReport(scene, report, 767, 130);
+        await transmitReport(scene, report, 767, 330);
         // agent return to original location
 
         await updateStateIcons(scene.chainingZones, "idle");

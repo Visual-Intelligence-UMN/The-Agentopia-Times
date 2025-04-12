@@ -550,9 +550,9 @@ return result;
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
         
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:130}, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 250, y: 150}, {x:520, y:120}, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:120}, this.parallelZones);
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:330}, this.routeZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 250, y: 350}, {x:520, y:320}, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:320}, this.parallelZones);
 
         // await generateImage("generate a cute girl");
         // const imageGenerated = await generateChartImage();

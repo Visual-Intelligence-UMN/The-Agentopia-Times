@@ -6,6 +6,7 @@ import { testGraphChain } from './langgraph/testLanggraph';
 import {marked} from 'marked';
 import { generateChartImage } from './langgraph/visualizationGenerate';
 import { TEST_D3_SCRIPT } from './langgraph/const';
+import ConstitutionPanel from './components/ConstitutionPanel';
 
 export interface Report{
     report: string,
@@ -18,6 +19,7 @@ function App()
     const [isOpen, setIsOpen] = useState(false);
     const [currentReport, setCurrentReport] = useState("");
     const [htmlReport, setHtmlReport] = useState<any>("");
+    const [isConstitutionOpen, setIsConstitutionOpen] = useState(false);
 
 
     const [charts, setCharts] = useState<{id: string; code: string}[]>([]);
@@ -80,9 +82,14 @@ function App()
             });
           };
 
+          const handleConstitutionOpen = () => {
+            setIsConstitutionOpen(true);
+          };
+
         EventBus.on("final-report", handleReportReceiving);
         EventBus.on("open-report", handleReportOpen);
         EventBus.on("d3-code", handleD3Code);
+        EventBus.on("open-constitution", handleConstitutionOpen);
 
         // EventBus.on("d3-code", handleD3CodeChange1);
         // EventBus.on("d3-code", handleD3CodeChange2);
@@ -112,6 +119,12 @@ function App()
                     context={htmlReport} 
                     onClose={() => {setIsOpen(false)}} 
                     charts={charts}
+                />
+            }
+            {
+                isConstitutionOpen && 
+                <ConstitutionPanel 
+                    onClose={() => {setIsConstitutionOpen(false)}} 
                 />
             }
         </div>

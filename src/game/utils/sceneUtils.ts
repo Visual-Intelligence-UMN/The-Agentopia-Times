@@ -1,5 +1,5 @@
 import { render } from 'phaser-jsx';
-import { Depth, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
+import { Depth, EXTERIOR_TILESET_NAME, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD, generateNonCollidingAgentPosition, getZoneBounds } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
@@ -238,25 +238,29 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
       OFFICE_TILSET_NAME,
       key.image.office,
     )!;
+    const tilesetExterior = this.tilemap.addTilesetImage(
+      EXTERIOR_TILESET_NAME, 
+      key.image.exterior
+    );
 
     console.log('Tileset Office:', tilesetOffice);
     console.log('Tileset Room Builder:', tilesetRoomBuilder);
 
     this.BelowPlayer = this.tilemap.createLayer(
       TilemapLayer.BelowPlayer,
-      [tilesetOffice, tilesetRoomBuilder],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
       0,
       0,
     );
     this.worldLayer = this.tilemap.createLayer(
       TilemapLayer.World,
-      [tilesetOffice, tilesetRoomBuilder],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
       0,
       0,
     );
     this.aboveLayer = this.tilemap.createLayer(
       TilemapLayer.AbovePlayer,
-      [tilesetOffice, tilesetRoomBuilder],
+      [tilesetOffice, tilesetRoomBuilder, tilesetExterior],
       0,
       0,
     );
@@ -366,160 +370,7 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     }
 
   mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-    console.log('mssgBtn clicked');
-
-    if (this.mssgMenu) {
-      console.log('Destroying mssgMenu');
-
-      // Remove all related elements from hubElements
-      this.hudElements = this.hudElements.filter((hud: Phaser.GameObjects.GameObject) => 
-        hud !== this.mssgMenu &&
-        hud !== this.mssgMenuText &&
-        !(this.mssgGroup && this.mssgGroup.getChildren().includes(hud))
-      );
-
-      this.mssgMenu.destroy();
-      this.mssgMenuText?.destroy();
-      this.mssgMenu = null;
-      this.mssgMenuText = null;
-      this.mssgGroup.clear(true, true);
-    } else {
-      console.log('Creating mssgMenu');
-      this.mssgMenu = this.add
-        .rectangle(300, 300, 350, 125, 0x000000)
-        .setDepth(1001)
-        .setStrokeStyle(2, 0xffffff)
-        .setScrollFactor(0)
-        .setAlpha(0.5);
-
-        // Add floating windows to hudElements
-        if (this.hudElements) {
-          this.hudElements.push(this.mssgMenu);
-        }
-
-      this.mssgGroup = this.add.group();
-
-      for (let i = 0; i < this.mssgData.length; i++) {
-        const mssg = this.playerControlledAgent.getMemory()[i];
-        const mssgText = `${mssg.gpt}`;
-        const mssgBox = this.add
-          .rectangle(300 - 140 + i * 75, 290, 50, 50, 0x000000)
-          .setScrollFactor(0)
-          .setDepth(1003)
-          .setAlpha(0.5);
-
-        let color = '#ff0000';
-        if (this.playerControlledAgent.getMemory()[i].result) {
-          color = '#ffffff';
-        }
-
-        const mssgLabel = this.add
-          .text(300 - 140 + i * 75 - 15, 280, `Histor\nMessage ${i}`, {
-            fontSize: '10px',
-            color: color,
-          })
-          .setScrollFactor(0)
-          .setDepth(1004);
-
-        mssgBox.setInteractive({ useHandCursor: true });
-        mssgBox.on('pointerover', (pointer: Phaser.Input.Pointer) => {
-          const worldPoint = this.cameras.main.getWorldPoint(
-            pointer.x,
-            pointer.y,
-          );
-
-          if (!this.subMssg) {
-            this.subMssgText = this.add
-              .text(worldPoint.x, worldPoint.y, mssgText, {
-                fontSize: '10px',
-                color: '#ffffff',
-                wordWrap: { width: 150, useAdvancedWrap: true },
-              })
-              .setDepth(1010)
-              .setScrollFactor(1)
-              .setAlpha(1);
-
-            this.subMssg = this.add
-              .rectangle(
-                worldPoint.x,
-                worldPoint.y,
-                175,
-                this.subMssgText.height + 50,
-                0x000000,
-              )
-              .setDepth(1007)
-              .setStrokeStyle(2, 0xffffff)
-              .setAlpha(1)
-              .setOrigin(0, 0);
-
-            if (this.promptContainer) {
-              this.promptContainer.list.forEach((child: any) =>
-                child.destroy(),
-              );
-              this.promptContainer.destroy(true);
-              this.promptContainer = null;
-            }
-
-            this.promptContainer = this.add.container(0, 0).setDepth(1100);
-
-            for (let i = 0; i < mssg.currentPrompts.length; i++) {
-              const promptRect = this.add
-                .rectangle(
-                  worldPoint.x + 200,
-                  worldPoint.y + i * 20,
-                  150,
-                  20,
-                  0x000000,
-                )
-                .setDepth(1100)
-                .setStrokeStyle(2, 0xffffff)
-                .setAlpha(1)
-                .setOrigin(0, 0);
-
-              const promptText = this.add
-                .text(
-                  worldPoint.x + 200,
-                  worldPoint.y + i * 20,
-                  mssg.currentPrompts[i],
-                  {
-                    fontSize: '10px',
-                    color: '#ffffff',
-                    wordWrap: { width: 150, useAdvancedWrap: true },
-                  },
-                )
-                .setDepth(1101)
-                .setScrollFactor(1)
-                .setAlpha(1);
-
-              this.promptContainer.add(promptRect);
-              this.promptContainer.add(promptText);
-            }
-
-            console.log('subMssgText', this.subMssgText, this.subMssg);
-          }
-        });
-
-        mssgBox.on('pointerout', () => {
-          if (this.subMssg) {
-            this.subMssg.destroy();
-            this.subMssgText?.destroy();
-            this.subMssg = null;
-            this.subMssgText = null;
-            this.promptContainer.list.forEach((child: any) => child.destroy());
-            this.promptContainer.destroy(true);
-            this.promptContainer = null;
-          }
-        });
-
-          // Add the popup element to hudElements
-          if (this.hudElements) {
-            this.hudElements.push(mssgBox, mssgLabel);
-          }
-
-        this.mssgGroup.add(mssgBox);
-        this.mssgGroup.add(mssgLabel);
-      }
-    }
+    EventBus.emit("open-constitution");
   });
 
   this.controlMapping = [

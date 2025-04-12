@@ -439,3 +439,8 @@ export function drawArrow(
   graphics.lineTo(fixedEnd.x, fixedEnd.y);
   graphics.fillPath();
 }
+
+export function drawConstitutionUI(scene: any){
+  
+}
+
