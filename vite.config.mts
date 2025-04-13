@@ -7,5 +7,5 @@ export default defineConfig({
   },
   plugins: [createHtmlPlugin()],
   publicDir: 'public',
-  base: './',
+  base: '/vis-llm-game/',
 });
