@@ -51,6 +51,8 @@ async function testBranchWork(command: string, state: any, content: string){
         const res = await fetch(datasetPath);
         const csvRaw = await res.text();
         console.log("csvRaw", csvRaw);
+
+    command = "visualization";
     
     if(command === "visualization"){
         // const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
@@ -64,9 +66,14 @@ async function testBranchWork(command: string, state: any, content: string){
         // const visCode2 = await generateChartImage(chartId2, csvRaw);
         // console.log("visCode", visCode2);
         // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
+        console.log("entered visualization branch")
 
-        const svgId1 = await generateChartImage(csvRaw);
-        const svgId2 = await generateChartImage(csvRaw);
+        const chartData = await generateChartImage(csvRaw);
+
+        const svgId1 = chartData.chartId;
+        const svgId2 = chartData.chartId;
+
+        const d3Code = chartData.d3Code;
 
         // EventBus.emit("final-report", { report: content, department: "routing" });
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
@@ -93,10 +100,14 @@ async function testBranchWork(command: string, state: any, content: string){
             align-items: center; 
             margin-top: 20px;"></div>
         `;
+
+        const comments = await createJudge(d3Code);
+        console.log("comments from routes", comments);
     
 
         EventBus.emit("final-report", { report: reportMessage, department: "routing" });
     }else{
+        console.log("entered illustration branch")
         const URL = await generateImage("please give me an image of a man");
         console.log("URL", URL)
         
@@ -146,6 +157,50 @@ export function createLeaf(
         return { routeOutput: state.chainingToRouting };
     };
 }
+
+
+export async function createJudge(message: string) {
+    const llm = initializeLLM();
+    const systemMssg: string = `
+        You are a visualization grammar expert.
+
+        Your task is to examine a D3.js chart implementation and judge whether its visualization logic can be expressed in Vega-Lite.
+
+        Follow this reasoning process:
+        1. Read the D3.js code and extract the core visual encodings (data source, mark types, encodings for x/y/size/color, transformations like filtering or grouping, etc).
+        2. Determine if these visual elements are within the expressive scope of Vega-Lite. Vega-Lite supports:
+        - Marks: bar, line, point, area, tick, rect, circle, rule, etc.
+        - Encodings: x, y, color, size, shape, opacity, tooltip.
+        - Transformations: filter, calculate, aggregate, bin, timeUnit, window, etc.
+        - Interaction: selection (brush, click), conditional formatting.
+
+        Now evaluate the following D3 code:
+
+        ${message}
+
+        Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
+
+        Do not include any additional text—just the array of strings.
+    `;
+
+    const comment = await llm.invoke(systemMssg);
+
+    console.log("comments from routes llm: ", comment.content);
+
+    try {
+        // Try parsing response as a JSON array
+        const parsed = JSON.parse(String(comment.content));
+        if (Array.isArray(parsed)) {
+            return parsed;
+        } else {
+            throw new Error("Returned result is not an array.");
+        }
+    } catch (e) {
+        console.error("Failed to parse comment as string[]:", e);
+        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+    }
+}
+
 
 
 // we also need input locations for agents on the branches
