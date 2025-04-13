@@ -43,7 +43,7 @@ jobs:
           VITE_GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
 
       - name: Deploy
-        if: github.ref_name == 'master'
+        if: github.ref_name == 'main'
         uses: remarkablemark/gitploy-action@v1
         with:
           directory: dist
