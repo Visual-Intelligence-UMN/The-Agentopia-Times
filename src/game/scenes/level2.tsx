@@ -153,31 +153,6 @@ export class Level2 extends ParentScene {
 
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
-
-    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
-    // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
-    // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
-    // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
-
-    // just for testing
-    // testChain();
-
-    // this.agentGroup.add(agent1);
-    // this.agentGroup.add(agent2);
-    // this.agentGroup.add(agent3);
-    // this.agentGroup.add(agent4);
-
-    // this.controllableCharacters.push(agent1);
-    // this.controllableCharacters.push(agent2);
-    // this.controllableCharacters.push(agent3);
-    // this.controllableCharacters.push(agent4);
-
-    // this.agentList.set(agent1.getName(), agent1);
-    // this.agentList.set(agent2.getName(), agent2);
-    // this.agentList.set(agent3.getName(), agent3);
-    // this.agentList.set(agent4.getName(), agent4);
-    // console.log('controled characters', this.controllableCharacters);
-
     //set the camera
     this.isCameraFollowing = false;
 

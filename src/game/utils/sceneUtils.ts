@@ -53,6 +53,23 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
     });
 }
 
+
+export function addAgentsBasedOnSpawningPoints(scene: any, objectsLayer: any, tag: string) {
+  const spawningPoints = objectsLayer.objects.filter((obj: any) => obj.type === tag);
+
+  console.log("start spawning points", spawningPoints);
+
+  spawningPoints.forEach((spawningPoint: any) => {
+    const agentX = spawningPoint.x + spawningPoint.width / 2;
+    const agentY = spawningPoint.y + spawningPoint.height / 2;
+    const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
+
+    scene.agentGroup.add(agent);
+    scene.controllableCharacters.push(agent);
+    scene.agentList.set(agent.getName(), agent);
+  });
+}
+
 export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   const zoneDataList = objectsLayer.objects.filter((obj: any) => obj.name === zoneName);
 
@@ -276,6 +293,8 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.votingZones = setupZones(this, objectsLayer, 'voting');
     this.chainingZones = setupZones(this, objectsLayer, 'chaining');
     this.routeZones = setupZones(this, objectsLayer, 'routing');
+
+    addAgentsBasedOnSpawningPoints(this, objectsLayer, 'agent');
 
     console.log("Tile properties:", this.worldLayer.layer.properties);
 
