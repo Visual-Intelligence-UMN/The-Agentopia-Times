@@ -37,7 +37,7 @@ const sampleSystemPrompts = [
 ];
 
 
-async function testBranchWork(command: string, state: any, content: string){
+async function testBranchWork(command: string, state: any, content: string, agent: any){
     let datasetPath = covidPath;
 
     console.log("state route", state);
@@ -69,7 +69,7 @@ async function testBranchWork(command: string, state: any, content: string){
         // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
         console.log("entered visualization branch")
 
-        const chartData = await generateChartImage(csvRaw);
+        const chartData = await generateChartImage(csvRaw, agent);
 
         const svgId1 = chartData.chartId;
         const svgId2 = chartData.chartId;
@@ -105,7 +105,7 @@ async function testBranchWork(command: string, state: any, content: string){
         console.log("d3code", d3Code)
 
 
-        const comments = await extractTSArray(await createJudge(d3Code));
+        const comments = await extractTSArray(await createVisualizationJudge(d3Code));
         console.log("comments from routes", comments, d3Code);
 
         if(comments){
@@ -147,7 +147,7 @@ export function createLeaf(
     tilemap: any,
     destination: any,
     systemPrompt: string = "",
-    zones: any
+    zones: any,
 ){
     return async function leaf(state: typeof GeneralStateAnnotation.State) {
         // store the original position
@@ -157,7 +157,7 @@ export function createLeaf(
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
         
-        testBranchWork(state.routeDecision, state, state.chainingToRouting);
+        testBranchWork(state.routeDecision, state, state.chainingToRouting, agent);
 
         await updateStateIcons(zones, "mail");
 
@@ -176,7 +176,7 @@ export function createLeaf(
 }
 
 
-export async function createJudge(message: string) {
+export async function createVisualizationJudge(message: string) {
     const llm = initializeLLM();
     const systemMssg: string = `
         You are a visualization grammar expert.
@@ -220,7 +220,39 @@ export async function createJudge(message: string) {
     }
 }
 
+export async function createWritingJudge(message: string) {
+    const llm = initializeLLM();
+    const systemMssg: string = `
+        You are a bias detection expert.
+        Carefully evaluate the following text and identify any potential biases or misleading statements.
+        Your task is to provide a list of potential biases or misleading statements in the text.
 
+        ${message}
+        
+        Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
+
+        Do not include any additional text—just the array of strings.
+
+        Example Output: 
+        [
+            "The data source can be specified in Vega-Lite using a similar dataset.",
+            "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
+            "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
+        ]
+    `;
+
+    const comment = await llm.invoke(systemMssg);
+
+    console.log("comments from routes llm: ", comment.content);
+
+    try {
+        // Try parsing response as a JSON array
+        return comment.content;
+    } catch (e) {
+        console.error("Failed to parse comment as string[]:", e);
+        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+    }
+}
 
 // we also need input locations for agents on the branches
 export function createRouter(

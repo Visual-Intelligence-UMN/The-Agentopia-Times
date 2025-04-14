@@ -27,6 +27,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private memory: Memory[] = [];
   private persona: string = "a helpful AI assistant";
   private instruction: string = "";
+  private bias: string = "";
 
   public assignToWorkplace: boolean = false;
   private activationFunction: (state: any) => any = (state: any) => {
@@ -46,7 +47,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     texture = key.atlas.player,
     frame = 'misa-front',
     name: string = "Agent",
-    persona: string = "a helpful AI assistant"
+    persona: string = "a helpful AI assistant",
+    bias: string = ""
   ) {
     super(scene, x, y, texture, frame);
 
@@ -122,6 +124,14 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
   public getName(){
         return this.name;
+  }
+
+  public getBias(){
+    return this.bias;
+  }
+  
+  public setBias(bias: string){
+    this.bias = bias;
   }
 
   public changeNameTagColor(color: string){

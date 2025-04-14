@@ -53,16 +53,41 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
     });
 }
 
+export const INJECTED_BIASES = {
+  "analysis_bias": "analyze the data and provide misleading conclusions and insights",
+  "writing_bias": "writing the report with a biased perspective",
+  "visualization_bias": "visualize the data in a way that misrepresents the findings",
+  "voting_bias": "based on the false assumption, provide your voting decision"
+}
 
-export function addAgentsBasedOnSpawningPoints(scene: any, objectsLayer: any, tag: string) {
+export function addAgentsBasedOnSpawningPoints(
+  scene: any, 
+  objectsLayer: any, 
+  tag: string,
+  biasProbability: number = 0.3
+) {
   const spawningPoints = objectsLayer.objects.filter((obj: any) => obj.type === tag);
 
   console.log("start spawning points", spawningPoints);
 
   spawningPoints.forEach((spawningPoint: any) => {
+
+    const randomValue = Math.random();
+    let bias:string = "";
+    let agentStartName = "Agent"
+    if (randomValue < biasProbability) {
+      console.log("bias probability triggered", spawningPoint);
+      if(spawningPoint.name.includes("voting_"))bias = INJECTED_BIASES["voting_bias"];
+      else if(spawningPoint.name.includes("analysis_"))bias = INJECTED_BIASES["analysis_bias"];
+      else if(spawningPoint.name.includes("writing_"))bias = INJECTED_BIASES["writing_bias"];
+      else if(spawningPoint.name.includes("vis_"))bias = INJECTED_BIASES["visualization_bias"];
+      else bias = "";
+      console.log("bias: ", bias);
+      agentStartName = "Biased Agent";
+    }
     const agentX = spawningPoint.x + spawningPoint.width / 2;
     const agentY = spawningPoint.y + spawningPoint.height / 2;
-    const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
+    const agent = new Agent(scene, agentX, agentY, "player", "misa-front", agentStartName + scene.controllableCharacters.length);
 
     scene.agentGroup.add(agent);
     scene.controllableCharacters.push(agent);

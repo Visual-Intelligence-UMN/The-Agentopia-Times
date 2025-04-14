@@ -11,7 +11,7 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(dataSheet: any) {
+export async function generateChartImage(dataSheet: any, agent: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -76,6 +76,8 @@ export async function generateChartImage(dataSheet: any) {
   ${lastError ? `5. ERROR FIXING: Correct these issues from last attempt:
     - ${lastError}
     - Specifically ensure: ${getSpecificFix(lastError)}` : ''}
+
+  ${agent.getBias()}
 
   Medical disclaimer must be included as:
   // Data source: ClinicalTrials.gov ID NCTXXXXXX

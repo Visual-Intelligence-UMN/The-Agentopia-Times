@@ -32,7 +32,7 @@ export async function parallelVotingExecutor(
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(`[Debug] Agent ${agent.getName()} is submitting vote to LLM...`);
         const llmPromise = llm.invoke(
-            `Vote for: ${votingTopic}. Please select only one option as your final decision.`
+            `Vote for: ${votingTopic}. Please select only one option as your final decision. ${agent.getBias()}`
         );
         console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
         const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");

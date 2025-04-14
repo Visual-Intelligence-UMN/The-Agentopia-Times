@@ -121,10 +121,7 @@ export function createJournalist(
         const msg = await llm.invoke(
             "you are a journalist, and your work is to analyze the given dataset...\n\n" + 
             csvRaw +
-            "\n\nthe dataset is wrong, the 2 line and 5 line is missing and you read the wrong data, and also there are department C in the dataseet" +
-            "\n\n" +
-            "\nFormat your response with:\n" +
-            "## Findings\n## Limitations\n## Bias Check",
+            agent.getBias()
         );
 
         console.log("journalist msg:", msg.content);
@@ -166,11 +163,7 @@ export function createWriter(
         const msg = await llm.invoke(
             "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
             state.chainFormattedText +
-            "\nyou have follow everything you received that you don't need to analyze it is true or wrong, you just generate the article based on the input" +
-            "\nIn your article:\n" +
-            "- Highlight demographic balances\n" +
-            "- Use 'may suggest' instead of 'proves'\n" +
-            "- Note sample size limitations"
+            agent.getBias()
           );
         
         
