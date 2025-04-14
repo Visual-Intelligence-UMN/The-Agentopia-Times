@@ -53,6 +53,37 @@ function App()
             if(index !== -1){
                 setCurrentReport(report[index].report);
 
+                marked.use({
+                    extensions: [
+                      {
+                        name: 'highlight',
+                        level: 'inline',
+                        start(src) {
+                          return src.indexOf("=="); // 找到任意位置的 ==
+                        },
+                        tokenizer(src, tokens) {
+                          const rule = /^==([^=]+)==/;
+                          const match = rule.exec(src);
+                          if (match) {
+                            return {
+                              type: 'highlight',
+                              raw: match[0],
+                              text: match[1],
+                              tokens: this.lexer.inlineTokens(match[1]),
+                            };
+                          }
+                        },
+                        renderer(token: any) {
+                          return `<mark>${marked.parser(token.tokens)}</mark>`;
+                        },
+                      },
+                    ],
+                  });
+                  
+
+                // report[index].report += "<mark>TEST 111</mark>";
+            
+
                 const compiledHTML = marked(report[index].report);
                 setHtmlReport(compiledHTML);
 
