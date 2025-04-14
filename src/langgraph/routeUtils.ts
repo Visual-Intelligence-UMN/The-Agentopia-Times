@@ -82,7 +82,7 @@ async function testBranchWork(command: string, state: any, content: string, agen
 
         let reportMessage = `\n\n\n\n${content}
         \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        \n\n## Visual Representation
+        \n\n## Visualization I
         \n\n<div id="${svgId1}" style="
             width: 100%; 
             height: auto;
@@ -92,7 +92,7 @@ async function testBranchWork(command: string, state: any, content: string, agen
             margin-top: 20px;">
         </div>
         <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        \n\n## Conclusion
+        \n\n## Visualization II
             \n\n<div id="${svgId2}" style="
             width: 100%; 
             height: auto;
@@ -109,8 +109,18 @@ async function testBranchWork(command: string, state: any, content: string, agen
         console.log("comments from routes", comments, d3Code);
 
         if(comments){
+            reportMessage += `\n\n## Comments on Visualization`;
             for (let i = 0; i < comments.length; i++){
                 reportMessage += `\n\n- ${comments[i]}`;
+            }
+        }
+
+        const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+
+        if(writingComments){
+            reportMessage += `\n\n## Comments on Writing`;
+            for (let i = 0; i < writingComments.length; i++){
+                reportMessage += `\n\n- ${writingComments[i]}`;
             }
         }
     
@@ -228,7 +238,7 @@ export async function createWritingJudge(message: string) {
         Your task is to provide a list of potential biases or misleading statements in the text.
 
         ${message}
-        
+
         Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
 
         Do not include any additional text—just the array of strings.
