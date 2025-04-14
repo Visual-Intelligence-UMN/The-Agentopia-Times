@@ -6,7 +6,7 @@ import { Agent } from "openai/_shims/index.mjs";
 import { EventBus } from "../game/EventBus";
 import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
-import { generateChartImage } from "./visualizationGenerate";
+import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
 import { generateImage } from "./dalleUtils";
 
 // const RouteAnnotation = Annotation.Root({
@@ -53,6 +53,7 @@ async function testBranchWork(command: string, state: any, content: string){
         console.log("csvRaw", csvRaw);
 
     command = "visualization";
+    console.log("command", command);
     
     if(command === "visualization"){
         // const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
@@ -79,7 +80,7 @@ async function testBranchWork(command: string, state: any, content: string){
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
         console.log("URL", URL)
 
-        const reportMessage = `\n\n\n\n${content}
+        let reportMessage = `\n\n\n\n${content}
         \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
         \n\n## Visual Representation
         \n\n<div id="${svgId1}" style="
@@ -101,8 +102,17 @@ async function testBranchWork(command: string, state: any, content: string){
             margin-top: 20px;"></div>
         `;
 
-        const comments = await createJudge(d3Code);
-        console.log("comments from routes", comments);
+        console.log("d3code", d3Code)
+
+
+        const comments = await extractTSArray(await createJudge(d3Code));
+        console.log("comments from routes", comments, d3Code);
+
+        if(comments){
+            for (let i = 0; i < comments.length; i++){
+                reportMessage += `\n\n- ${comments[i]}`;
+            }
+        }
     
 
         EventBus.emit("final-report", { report: reportMessage, department: "routing" });
@@ -123,6 +133,13 @@ async function testBranchWork(command: string, state: any, content: string){
     return content;
 }
 
+
+async function extractTSArray(raw: any): Promise<string[]> {
+    //const trimmed = raw.map((str) => str.trim());
+    const clean = raw.replace(/^```typescript\s*|```$/g, "");
+    return JSON.parse(clean);
+  }
+  
 
 export function createLeaf(
     agent: any,
@@ -181,6 +198,13 @@ export async function createJudge(message: string) {
         Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
 
         Do not include any additional text—just the array of strings.
+
+        Example Output: 
+        [
+            "The data source can be specified in Vega-Lite using a similar dataset.",
+            "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
+            "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
+        ]
     `;
 
     const comment = await llm.invoke(systemMssg);
@@ -189,12 +213,7 @@ export async function createJudge(message: string) {
 
     try {
         // Try parsing response as a JSON array
-        const parsed = JSON.parse(String(comment.content));
-        if (Array.isArray(parsed)) {
-            return parsed;
-        } else {
-            throw new Error("Returned result is not an array.");
-        }
+        return comment.content;
     } catch (e) {
         console.error("Failed to parse comment as string[]:", e);
         return [`Error: LLM response is not a valid string[]: ${comment.content}`];

@@ -119,7 +119,7 @@ export async function generateChartImage(dataSheet: any) {
     if (check.ok) {
       console.log("Generated valid D3.js code on attempt", attempt);
       EventBus.emit("d3-code", { d3Code: d3Code, id: chartId});
-      return chartId;
+      return {chartId, d3Code};
       // return d3Code;
     } else {
       console.warn(`Attempt ${attempt} failed:`, check.error);
@@ -131,50 +131,10 @@ export async function generateChartImage(dataSheet: any) {
   throw new Error("Failed to generate valid D3.js code after 3 attempts. Last error:\n" + lastError);
 }
 
-function cleanUpD3Code(code: any) {
+export function cleanUpD3Code(code: any) {
     // For example, remove tags like "```javascript" and "```".
     return code.replace(/```javascript|```/g, "").trim();
 }
-
-// Use canvas to display the chart image on the console.
-// function createCanvasPreview() {
-//     setTimeout(() => {
-//         const svg = document.querySelector("svg");
-
-//         if (svg) {
-//             const svgURL = new XMLSerializer().serializeToString(svg);
-
-//             // Drawing SVG charts with canvas (converting SVG to images)
-//             const canvas = document.createElement('canvas');
-//             const ctx = canvas.getContext('2d');
-//             canvas.width = 500;
-//             canvas.height = 300;
-
-//             const img = new Image();
-//             const svgBlob = new Blob([svgURL], { type: 'image/svg+xml' });
-//             const url = URL.createObjectURL(svgBlob);
-
-//             img.onload = function () {
-//                 if (ctx) {
-//                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-//                     // get a base64 image and insert it into the console
-//                     const base64Image = canvas.toDataURL("image/png");
-//                     console.log("%c ", `font-size:100px; background: url(${base64Image}) no-repeat center; background-size: contain;`);
-//                     console.log("c1", base64Image)
-//                     return base64Image
-//                 } else {
-//                     console.error('Canvas context is not available.');
-//                 }
-//             };
-
-//             img.src = url;
-//         } else {
-//             console.error('SVG element not found.');
-//         }
-//     }, 500);
-// }
-
 
 // Define the CodeCheckResult type
 interface CodeCheckResult {

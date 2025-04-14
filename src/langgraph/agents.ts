@@ -210,37 +210,6 @@ export function createWriter(
     }
 }
 
-const BIAS_DETECTION_PROMPT = `
-IMPORTANT: Before finalizing your analysis, you MUST check for these potential biases:
-
-1. Gender Bias:
-   - Scan for unequal treatment of Male/Female in results
-   - Example violation: "Male patients responded better" without statistical proof
-   - Required fix: "The data shows X% improvement in male vs Y% in female patients (p=Z)"
-
-2. Small Sample Warnings:
-   - If any group has <20 samples, add: "Caution: Small sample size (n=X) limits conclusions"
-   - Never claim "proves" or "shows" - use "suggests" or "indicates"
-
-3. Absolute Language:
-   - Replace words like:
-     - "always/never" → "tended to/rarely"
-     - "clearly" → "the data indicates"
-     - "proves" → "supports"
-
-4. Demographic Fairness:
-   - Explicitly state if any group is underrepresented
-   - Example: "Note: Age groups 18-25 represent only 15% of samples"
-
-5. Statistical Integrity:
-   - All comparisons must include:
-     - Base rates ("from X% to Y%")
-     - Sample sizes ("(n=Z)")
-     - Confidence indicators where possible
-
-FAILURE TO FOLLOW THESE RULES WILL RESULT IN AUTOMATIC CORRECTION.
-`;
-
 
 export const testInput = `
 Breaking News: Company XYZ's Q3 Report Released
