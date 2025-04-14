@@ -59,7 +59,7 @@ function App()
                         name: 'highlight',
                         level: 'inline',
                         start(src) {
-                          return src.indexOf("=="); // 找到任意位置的 ==
+                          return src.indexOf("=="); 
                         },
                         tokenizer(src, tokens) {
                           const rule = /^==([^=]+)==/;

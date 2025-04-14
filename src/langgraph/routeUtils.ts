@@ -123,6 +123,8 @@ async function testBranchWork(command: string, state: any, content: string, agen
                 reportMessage += `\n\n- ${writingComments[i]}`;
             }
         }
+
+        reportMessage = await createHighlighter(reportMessage);
     
 
         EventBus.emit("final-report", { report: reportMessage, department: "routing" });
@@ -143,6 +145,33 @@ async function testBranchWork(command: string, state: any, content: string, agen
     return content;
 }
 
+
+async function createHighlighter(message: string) {
+    const llm = initializeLLM();
+    const systemMssg: string = `
+        You are a text highlighter expert.
+        Highlight the biased statements in the writing portion(all texts above Visualization I) of the text.
+        For example: 
+
+        Message: xxxx, aaaa, bbb. 
+        If xxxx is biased, highlight it.
+        Then, the output is: 
+        <mark>xxxx</mark>, aaaa, bbb. 
+
+        Don't write anything else except that. 
+
+        ${message}
+
+        return the original message with highlighted texts, 
+        but don't change any other texts in the message.
+    `;
+
+    const comment = await llm.invoke(systemMssg);
+
+    console.log("comments from routes llm: ", comment.content);
+
+    return comment.content;
+}
 
 async function extractTSArray(raw: any): Promise<string[]> {
     //const trimmed = raw.map((str) => str.trim());
