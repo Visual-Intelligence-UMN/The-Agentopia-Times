@@ -81,7 +81,15 @@ async function testBranchWork(command: string, state: any, content: string, agen
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
         console.log("URL", URL)
 
-        let reportMessage = `\n\n\n\n${content}
+        
+
+        console.log("d3code", d3Code)
+
+        // eval(d3Script)
+
+        let reportMessage = (await createHighlighter(content)) as any;
+
+        reportMessage = `\n\n\n\n${reportMessage}
         \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
         \n\n## Visualization I
         \n\n<div id="${svgId1}" style="
@@ -110,10 +118,6 @@ async function testBranchWork(command: string, state: any, content: string, agen
             margin-top: 20px;"></div>
         `;
 
-        console.log("d3code", d3Code)
-
-        // eval(d3Script)
-
 
         const comments = await extractTSArray(await createVisualizationJudge(d3Code));
         console.log("comments from routes", comments, d3Code);
@@ -125,7 +129,11 @@ async function testBranchWork(command: string, state: any, content: string, agen
             }
         }
 
-        reportMessage = String(await createHighlighter(reportMessage));
+        console.log("reportMessage before stringnify", reportMessage)
+
+        
+
+        console.log("reportMessage after stringnify", reportMessage)
 
         const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
 
@@ -162,6 +170,7 @@ async function createHighlighter(message: string) {
     const llm = initializeLLM();
     const systemMssg: string = `
         You are a text highlighter expert.
+        Don't remove or modify any html tags in the message.
         Highlight the biased statements in the writing portion(all texts above Visualization I) of the text.
         For example: 
 
@@ -170,7 +179,7 @@ async function createHighlighter(message: string) {
         Then, the output is: 
         <mark>xxxx</mark>, aaaa, bbb. 
 
-        Don't write anything else except that. 
+        Dont change any other texts in the message.
 
         ${message}
 
@@ -178,11 +187,14 @@ async function createHighlighter(message: string) {
         but don't change any other texts in the message.
     `;
 
+
+    console.log("message before highlighter", message)
     const comment = await llm.invoke(systemMssg);
+    console.log("message after highligher: ", comment.content);
 
     console.log("comments from routes llm: ", comment.content);
 
-    return typeof comment.content === "string" ? comment.content : JSON.stringify(comment.content);
+    return comment.content;
 }
 
 async function extractTSArray(raw: any): Promise<string[]> {
@@ -229,6 +241,7 @@ export function createLeaf(
 
 export async function createVisualizationJudge(message: string) {
     const llm = initializeLLM();
+    console.log("message before vis judge", message)
     const systemMssg: string = `
         You are a visualization grammar expert.
 
@@ -262,6 +275,8 @@ export async function createVisualizationJudge(message: string) {
 
     console.log("comments from routes llm: ", comment.content);
 
+    console.log("message after vis judge", comment.content)
+
     try {
         // Try parsing response as a JSON array
         return comment.content;
@@ -273,6 +288,7 @@ export async function createVisualizationJudge(message: string) {
 
 export async function createWritingJudge(message: string) {
     const llm = initializeLLM();
+    console.log("message before writing judge", message)
     const systemMssg: string = `
         You are a bias detection expert.
         Carefully evaluate the following text and identify any potential biases or misleading statements.
@@ -296,6 +312,8 @@ export async function createWritingJudge(message: string) {
     const comment = await llm.invoke(systemMssg);
 
     console.log("comments from routes llm: ", comment.content);
+
+    console.log("message after writing judge", comment.content)
 
     try {
         // Try parsing response as a JSON array

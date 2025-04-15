@@ -27,7 +27,7 @@ function App()
 
     useEffect(() => {
         const handleReportReceiving = (data: { report: string, department: string }) => {
-            console.log("report", data);
+            console.log("report received", data.department, data);
             const curReport:Report = {
                 report: data.report,
                 department: data.department,
@@ -82,6 +82,8 @@ function App()
                   
 
                 // report[index].report += "<mark>TEST 111</mark>";
+
+                console.log("report[index].report", report[index].report);
             
 
                 const compiledHTML = marked(report[index].report);
@@ -150,12 +152,6 @@ function App()
                     context={htmlReport} 
                     onClose={() => {setIsOpen(false)}} 
                     charts={charts}
-                />
-            }
-            {
-                isConstitutionOpen && 
-                <ConstitutionPanel 
-                    onClose={() => {setIsConstitutionOpen(false)}} 
                 />
             }
         </div>

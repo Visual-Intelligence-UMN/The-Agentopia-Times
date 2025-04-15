@@ -19,7 +19,7 @@ interface DraggableWindowProps {
         charts.forEach(chart => {
           compileJSCode(chart.code, chart.id);
       });
-    compileJSCode(d3Script, "ghibli-viz");  
+    // compileJSCode(d3Script, "ghibli-viz");  
     }
 
       hasRenderedCharts.current = true;
@@ -33,7 +33,7 @@ interface DraggableWindowProps {
                     <button onClick={onClose}>✖</button>
                 </div>
                 <div className="window-content" style={{ color: "black" }} dangerouslySetInnerHTML={{ __html: context }}></div>
-                <div id="ghibli-viz" ></div>
+                {/* <div id="ghibli-viz" ></div> */}
             </div>
         </Draggable>
     );

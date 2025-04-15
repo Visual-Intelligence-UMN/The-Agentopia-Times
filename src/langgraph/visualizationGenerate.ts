@@ -70,7 +70,9 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
 
     const promptForLLM = `
   Generate a data visualization with following description:
-    Create a visualization that compares two groups across multiple subcategories and also shows the overall average. Emphasize how the trend in each subgroup differs from the trend in the aggregated data. Include appropriate labels and legends to make both the subgroup and overall patterns clear
+    Create a visualization that compares two groups across multiple subcategories and also shows the overall average. 
+    Emphasize how the trend in each subgroup differs from the trend in the aggregated data. 
+    Include appropriate labels and legends to make both the subgroup and overall patterns clear
   
     
   ${lastError ? `5. ERROR FIXING: Correct these issues from last attempt:
@@ -91,7 +93,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
 
     const result = await llm.invoke([
       { role: "system", content: `
-          Generate only the JavaScript code for a simple D3.js chart, 
+          Generate only the JavaScript code for a visualization we need created for a given dataset, 
           Your code should start like this(PARAMETER: means you can change the number on that line): 
           const width = 400; // PARAMETER: you can change the width
           const height = 200; // PARAMETER: you can change the height
