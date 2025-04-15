@@ -5,6 +5,14 @@ import * as ts from 'typescript';
 import vm from 'vm';
 import { EventBus } from "../game/EventBus";
 import { d3Script } from './const';
+import * as vega from 'vega';
+import * as vegaLite from 'vega-lite';
+import vegaEmbed from 'vega-embed';
+
+(window as any).vega = vega;
+(window as any).vegaLite = vegaLite;
+(window as any).vegaEmbed = vegaEmbed;
+
 
 const baseballSample = `
 player,year,is_hit
@@ -70,10 +78,8 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
 
     const promptForLLM = `
   Generate a data visualization with following description:
-    Create a visualization that compares two groups across multiple subcategories and also shows the overall average. 
-    Emphasize how the trend in each subgroup differs from the trend in the aggregated data. 
-    Include appropriate labels and legends to make both the subgroup and overall patterns clear
-  
+    Create a visualization that is engaging and can effective communicate the truth behind the data.
+    You can use vega-lite visualization grammar for guidance but use d3.js to implement it.
     
   ${lastError ? `5. ERROR FIXING: Correct these issues from last attempt:
     - ${lastError}
@@ -93,19 +99,27 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
 
     const result = await llm.invoke([
       { role: "system", content: `
+          You are a vegalite and visualization expert.
           Generate only the JavaScript code for a visualization we need created for a given dataset, 
           Your code should start like this(PARAMETER: means you can change the number on that line): 
-          const width = 400; // PARAMETER: you can change the width
-          const height = 200; // PARAMETER: you can change the height
-          console.log("${chartId}", d3.select('#${chartId}'));
-          const svg = d3.select('#${chartId}').append('svg')
-            .attr('width', width)
-            .attr('height', height);
-          
-          d3.csv("${dataPath}", d3.autoType).then((data) => {
-            //  visualization implementation here: 
 
-          }
+          const spec = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "description": write your description here,
+            "data": {
+              "url": "${dataPath}",
+              "format": {
+                "type": "csv"
+              }
+            },
+            "mark": write your mark here,
+            "encoding": {
+              write your encoding here
+            }
+          };
+
+          vegaEmbed('#test-chart', spec);
+
 
           Here is a part of the data, which helps you better implement the visualization:
           ${dataSample}
@@ -122,7 +136,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
     let d3Code = cleanUpD3Code(result.content);
 
     // Validate the code
-    const check = await checkIfCodeCanRunInBrowser(d3Script);
+    const check = await checkIfCodeCanRunInBrowser(d3Code);
 
     console.log("checking for code", attempt, check.ok, check.error, d3Code);
 

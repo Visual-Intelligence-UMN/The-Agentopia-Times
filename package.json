@@ -29,7 +29,10 @@
         "phaser-jsx": "0.13.6",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
-        "react-draggable": "^4.4.6"
+        "react-draggable": "^4.4.6",
+        "vega": "^6.1.2",
+        "vega-embed": "^7.0.2",
+        "vega-lite": "^6.1.0"
     },
     "devDependencies": {
         "@commitlint/cli": "19.6.1",

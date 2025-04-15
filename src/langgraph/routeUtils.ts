@@ -92,7 +92,7 @@ async function testBranchWork(command: string, state: any, content: string, agen
         reportMessage = `\n\n\n\n${reportMessage}
         \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
         \n\n## Visualization I
-        \n\n<div id="${svgId1}" style="
+        \n\n<div id="test-chart" style="
             width: 100%; 
             height: auto;
             display: flex;
@@ -101,21 +101,6 @@ async function testBranchWork(command: string, state: any, content: string, agen
             margin-top: 20px;">
         </div>
         <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        \n\n## Visualization II
-            \n\n<div id="${svgId2}" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center; 
-            margin-top: 20px;"></div>
-            \n\n<div id="ghibli-viz" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center; 
-            margin-top: 20px;"></div>
         `;
 
 
@@ -245,17 +230,20 @@ export async function createVisualizationJudge(message: string) {
     const systemMssg: string = `
         You are a visualization grammar expert.
 
-        Your task is to examine a D3.js chart implementation and judge whether its visualization logic can be expressed in Vega-Lite.
+Your task is to evaluate a Vega-Lite specification and provide constructive feedback about its quality and correctness. Consider whether the visualization uses appropriate encodings, mark types, and transformations to represent the intended data meaningfully and clearly.
 
-        Follow this reasoning process:
-        1. Read the D3.js code and extract the core visual encodings (data source, mark types, encodings for x/y/size/color, transformations like filtering or grouping, etc).
-        2. Determine if these visual elements are within the expressive scope of Vega-Lite. Vega-Lite supports:
-        - Marks: bar, line, point, area, tick, rect, circle, rule, etc.
-        - Encodings: x, y, color, size, shape, opacity, tooltip.
-        - Transformations: filter, calculate, aggregate, bin, timeUnit, window, etc.
-        - Interaction: selection (brush, click), conditional formatting.
+Follow this reasoning process:
+1. Examine the Vega-Lite specification carefully.
+2. Identify issues such as:
+   - Missing or misleading encodings (e.g., using nominal on a quantitative field).
+   - Ineffective mark choices (e.g., using bar when line is more suitable).
+   - Redundant or invalid transformations.
+   - Poor use of scale, axis, or color channels.
+   - Incompatibility with common visualization best practices.
+3. Note any good practices or well-designed elements.
+4. Do **not** check for syntax errors—assume the spec is valid JSON and compiles.
 
-        Now evaluate the following D3 code:
+        Now evaluate the following vega-lite code:
 
         ${message}
 
@@ -265,9 +253,9 @@ export async function createVisualizationJudge(message: string) {
 
         Example Output: 
         [
-            "The data source can be specified in Vega-Lite using a similar dataset.",
-            "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
-            "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
+            "aaaaaaaaaaaaaaaaaaa",
+            "bbbbbbbbbbbbbbbbbbb",
+            "ccccccccccccccccccc"
         ]
     `;
 
