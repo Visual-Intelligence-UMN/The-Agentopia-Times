@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { getStoredOpenAIKey } from '../utils/openai';
+
+const apiKey = getStoredOpenAIKey();
 
 const openaiApiUrl = 'https://api.openai.com/v1/chat/completions'; 
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+// const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 
 const apiClient = axios.create({

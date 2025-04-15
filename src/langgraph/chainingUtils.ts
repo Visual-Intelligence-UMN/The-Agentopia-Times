@@ -12,19 +12,30 @@ import { ChatOpenAI } from "@langchain/openai";
 // DONE: 3. using parallelZone to construct a more flexible data map represents the relationship between agents and locations
 // DONE: 4. write a tranformation function here to convert the data map into a langgraph Graph
 
+import { getStoredOpenAIKey } from '../utils/openai';
+
+const apiKey = getStoredOpenAIKey() || undefined;
+
 interface subgraph{
     agents: Agent[],
     location: string,
     task: string
 }
 
-
 export function initializeLLM(){
     return new ChatOpenAI({
-        apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+        apiKey,
         modelName: "gpt-4o-mini",
     });
 }
+
+
+// export function initializeLLM(){
+//     return new ChatOpenAI({
+//         apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//         modelName: "gpt-4o-mini",
+//     });
+// }
 
 // right now, we use a pre-defined action sequence to define characters' roles
 // const actions = [

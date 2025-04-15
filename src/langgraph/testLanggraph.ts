@@ -1,11 +1,20 @@
 import { StateGraph, Annotation, START, END } from "@langchain/langgraph/web";
 import { ChatOpenAI } from "@langchain/openai";
 import { EventBus } from "../game/EventBus";
+import { getStoredOpenAIKey } from '../utils/openai';
+
+const apiKey = getStoredOpenAIKey() || undefined;
 
 const llm = new ChatOpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    modelName: "gpt-4o-mini",
+  apiKey,
+  modelName: "gpt-4o-mini",
 });
+
+
+// const llm = new ChatOpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     modelName: "gpt-4o-mini",
+// });
 
 // Graph state
 const StateAnnotation = Annotation.Root({

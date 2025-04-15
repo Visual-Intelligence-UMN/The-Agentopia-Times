@@ -18,6 +18,9 @@ import * as fs from "fs";
 import { generateImage } from "./dalleUtils";
 import { generateChartImage } from './visualizationGenerate';
 
+import { getStoredOpenAIKey } from '../utils/openai';
+
+const apiKey = getStoredOpenAIKey() || undefined;
 
 const ucbPath: string = "./data/simulated_ucb.csv"
 const covidPath: string = "./data/simulated_covid.csv"
@@ -26,9 +29,14 @@ const newPath = ""
 const ghibli: string = "./data/ghibli.csv"
 
 export const openai = new OpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+    apiKey,
     dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
 });
+
+// export const openai = new OpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
+// });
 
 export const promptTable = {
     extraction: "Extract the key information from the input and format it clearly and concisely.",
@@ -39,9 +47,14 @@ export const promptTable = {
 };
 
 const llm = new ChatOpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+    apiKey,
     modelName: "gpt-4o-mini",
 });
+
+// const llm = new ChatOpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     modelName: "gpt-4o-mini",
+// });
 
 export const GeneralStateAnnotation = Annotation.Root({
     data: Annotation<string>, 
