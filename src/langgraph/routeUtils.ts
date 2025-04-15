@@ -8,6 +8,7 @@ import { createReport, GeneralStateAnnotation } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
 import { generateImage } from "./dalleUtils";
+import { d3Script } from "./const";
 
 // const RouteAnnotation = Annotation.Root({
 //     input: Annotation<string>,
@@ -69,7 +70,7 @@ async function testBranchWork(command: string, state: any, content: string, agen
         // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
         console.log("entered visualization branch")
 
-        const chartData = await generateChartImage(csvRaw, agent);
+        const chartData = await generateChartImage(csvRaw, agent, state);
 
         const svgId1 = chartData.chartId;
         const svgId2 = chartData.chartId;
@@ -100,9 +101,18 @@ async function testBranchWork(command: string, state: any, content: string, agen
             justify-content: center;
             align-items: center; 
             margin-top: 20px;"></div>
+            \n\n<div id="ghibli-viz" style="
+            width: 100%; 
+            height: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center; 
+            margin-top: 20px;"></div>
         `;
 
         console.log("d3code", d3Code)
+
+        // eval(d3Script)
 
 
         const comments = await extractTSArray(await createVisualizationJudge(d3Code));
@@ -115,6 +125,8 @@ async function testBranchWork(command: string, state: any, content: string, agen
             }
         }
 
+        reportMessage = String(await createHighlighter(reportMessage));
+
         const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
 
         if(writingComments){
@@ -124,7 +136,7 @@ async function testBranchWork(command: string, state: any, content: string, agen
             }
         }
 
-        reportMessage = await createHighlighter(reportMessage);
+        
     
 
         EventBus.emit("final-report", { report: reportMessage, department: "routing" });
@@ -170,7 +182,7 @@ async function createHighlighter(message: string) {
 
     console.log("comments from routes llm: ", comment.content);
 
-    return comment.content;
+    return typeof comment.content === "string" ? comment.content : JSON.stringify(comment.content);
 }
 
 async function extractTSArray(raw: any): Promise<string[]> {
@@ -271,6 +283,7 @@ export async function createWritingJudge(message: string) {
         Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
 
         Do not include any additional text—just the array of strings.
+        Do not highlight any texts in the "Comments on Writing" or "Comments on Visualization" sections.
 
         Example Output: 
         [

@@ -4,6 +4,29 @@ import * as d3 from 'd3';
 import * as ts from 'typescript';
 import vm from 'vm';
 import { EventBus } from "../game/EventBus";
+import { d3Script } from './const';
+
+const baseballSample = `
+player,year,is_hit
+Derek Jeter,1995.0,1.0
+Derek Jeter,1995.0,1.0
+Derek Jeter,1995.0,1.0
+Derek Jeter,1995.0,1.0
+Derek Jeter,1995.0,1.0
+Derek Jeter,1995.0,1.0
+......
+`
+
+const kidneySample = `
+treatment,stone_size,success
+B,large,1
+A,large,1
+A,large,0
+A,large,1
+A,large,1
+B,large,1
+......
+`
 
 // Declare d3 as a property on globalThis.
 declare global {
@@ -11,9 +34,18 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(dataSheet: any, agent: any) {
+export async function generateChartImage(dataSheet: any, agent: any, state: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
+
+  let dataSample = baseballSample;
+  let dataPath = "./data/baseball.csv";
+
+  
+  if(state.votingToChaining.includes("Kidney")){
+    dataSample = kidneySample;
+    dataPath = "./data/kidney.csv";
+  }
 
 
 // export async function generateChartImage(promptForLLM: string, svgId: string, dataSheet: any) {
@@ -37,50 +69,15 @@ export async function generateChartImage(dataSheet: any, agent: any) {
     // `;
 
     const promptForLLM = `
-  Generate a clinical trial visualization with these strict requirements:
-
-  1. DATA CHARACTERISTICS:
-  - Dataset: ${JSON.stringify(dataSheet.slice(0, 3))}... (total ${dataSheet.length} records)
-  - Key variables:
-    * X-axis: ${dataSheet[0].AgeGroup ? 'AgeGroup' : 'Gender'}
-    * Y-axis: Survival/Admission Rate (%)
-    ${dataSheet[0].Treatment ? '* Grouping: Treatment' : ''}
-
-  2. CHART SPECIFICATIONS:
-  - Type: Grouped bar chart (if Treatment exists) or stacked bars
-  - Required elements:
-    ▢ 95% confidence intervals (if n>30 per group)
-    ▢ p-value annotations for group comparisons
-    ▢ Color coding:
-      - Survival >70%: #4daf4a
-      - 30-70%: #ff7f00
-      - <30%: #e41a1c
-    ▢ Baseline reference line at overall survival rate
-    ▢ Clear "Survival Rate (%)" Y-axis label
-
-  3. DATA TRANSFORMATION:
-  - Pre-calculate percentages per group
-  - Handle missing data explicitly
-  - Sort categories clinically (Young→Old, Female→Male)
-
-  4. OUTPUT CONTROL:
-  - Only return executable D3.js v7+ code
-  - Use this exact structure:
-    // 1. Dimensions and margins
-    const margin = {top: 25, right: 30, bottom: 45, left: 60};
-    // 2. Data processing
-    const survivalRates = ...;
-    // 3. Chart rendering
-    const svg = ...;
+  Generate a data visualization with following description:
+    Create a visualization that compares two groups across multiple subcategories and also shows the overall average. Emphasize how the trend in each subgroup differs from the trend in the aggregated data. Include appropriate labels and legends to make both the subgroup and overall patterns clear
+  
     
   ${lastError ? `5. ERROR FIXING: Correct these issues from last attempt:
     - ${lastError}
     - Specifically ensure: ${getSpecificFix(lastError)}` : ''}
 
   ${agent.getBias()}
-
-  Medical disclaimer must be included as:
-  // Data source: ClinicalTrials.gov ID NCTXXXXXX
   `;
 
   function getSpecificFix(error: string) {
@@ -102,6 +99,15 @@ export async function generateChartImage(dataSheet: any, agent: any) {
           const svg = d3.select('#${chartId}').append('svg')
             .attr('width', width)
             .attr('height', height);
+          
+          d3.csv("${dataPath}", d3.autoType).then((data) => {
+            //  visualization implementation here: 
+
+          }
+
+          Here is a part of the data, which helps you better implement the visualization:
+          ${dataSample}
+          
           based on the following description:
         ` 
       },
@@ -114,7 +120,7 @@ export async function generateChartImage(dataSheet: any, agent: any) {
     let d3Code = cleanUpD3Code(result.content);
 
     // Validate the code
-    const check = await checkIfCodeCanRunInBrowser(d3Code);
+    const check = await checkIfCodeCanRunInBrowser(d3Script);
 
     console.log("checking for code", attempt, check.ok, check.error, d3Code);
 
