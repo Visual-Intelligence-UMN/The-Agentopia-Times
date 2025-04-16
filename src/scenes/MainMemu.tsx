@@ -99,7 +99,11 @@ export class MainMenu extends Scene {
       
       if (isValid) {
         setStoredOpenAIKey(apiKey);
-        this.scene.start("level1");
+        // window.location.href = window.location.href;
+        window.location.href = window.location.pathname + '?t=' + Date.now();
+
+
+        // this.scene.start("level1");
       } else {
         this.showErrorMessage('Invalid OpenAI API key.');
       }
