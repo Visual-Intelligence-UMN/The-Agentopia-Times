@@ -181,17 +181,17 @@ export class Level2 extends ParentScene {
 
    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
-    const squareSize = 50;
-    const spacing = 20;
-    const startX = 75;
-    const startY = 520;
-    addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+    // const squareSize = 50;
+    // const spacing = 20;
+    // const startX = 75;
+    // const startY = 520;
+    // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
     // add controls UI
     this.agentControlButtons = this.add.group();
     this.agentControlButtonLabels = [];
 
-    addTaskAssignmentHUD.call(this);
+    // addTaskAssignmentHUD.call(this);
     this.overlappedItems = new Set();
     let overlappedItems = new Set();
     let isDebate = false;

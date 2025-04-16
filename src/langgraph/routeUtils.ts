@@ -284,6 +284,13 @@ export async function createWritingJudge(message: string) {
 
         ${message}
 
+        You can use the answers below for refeerences:
+        1. BaseBall Answer: 
+        This phenomenon occurs due to unequal sample sizes across subgroups. David Justice had a higher batting average than Derek Jeter in both 1995 and 1996. However, Jeter had significantly more at-bats in the season when his performance was strongest (1996), while Justice had more at-bats in the season with a lower average (1995). As a result, when the data is aggregated, Jeter's overall average surpasses Justice’s, illustrating how subgroup trends can reverse in the combined data.
+
+        2. Kidney Answer:
+        This reversal arises from differences in subgroup composition. Treatment A showed higher success rates than Treatment B for both small and large kidney stones. However, Treatment A was administered more frequently to patients with large stones, which are harder to treat, while Treatment B was more common among patients with small stones. When the data is combined without accounting for stone size, the overall success rate of Treatment B appears higher, even though it was less effective in every subgroup.
+
         Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
 
         Do not include any additional text—just the array of strings.
