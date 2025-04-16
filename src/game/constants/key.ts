@@ -18,6 +18,7 @@ const image = {
   work: 'work',
   report: 'report',
   hiring: "hiring",
+  start: "start",
 } as const;
 
 const scene = {
