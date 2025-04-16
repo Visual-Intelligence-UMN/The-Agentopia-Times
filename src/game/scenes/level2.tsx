@@ -71,7 +71,7 @@ export class Level2 extends ParentScene {
 
   constructor() {
     super("level2");
-    this.sceneName = "Game: Level 2";
+    this.sceneName = "Data Jounalism Simualtion";
     eventTargetBus.addEventListener("signal", (event:any) => {
       console.log(`Level2 received: ${event.detail}`);
       if (event.detail === "signal 1") {
