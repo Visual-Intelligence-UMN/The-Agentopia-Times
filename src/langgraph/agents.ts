@@ -28,10 +28,19 @@ const newPath = ""
 
 const ghibli: string = "./data/ghibli.csv"
 
-export const openai = new OpenAI({
-    apiKey,
-    dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
-});
+let cachedOpenAI: OpenAI | null = null;
+
+export function getOpenAI(): OpenAI {
+  if (!cachedOpenAI) {
+    const apiKey = getStoredOpenAIKey();
+    if (!apiKey) throw new Error("❌ OpenAI API key not set.");
+    cachedOpenAI = new OpenAI({
+      apiKey,
+      dangerouslyAllowBrowser: true,
+    });
+  }
+  return cachedOpenAI;
+}
 
 // export const openai = new OpenAI({
 //     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -46,10 +55,22 @@ export const promptTable = {
     voting: "Vote for the best options based on the information provided.",
 };
 
-const llm = new ChatOpenAI({
-    apiKey,
-    modelName: "gpt-4o-mini",
-});
+let cachedLLM: ChatOpenAI | null = null;
+
+export function getLLM() {
+  if (!cachedLLM) {
+    const apiKey = getStoredOpenAIKey();
+    if (!apiKey) {
+      throw new Error("OpenAI API Key is not set.");
+    }
+
+    cachedLLM = new ChatOpenAI({
+      apiKey,
+      modelName: "gpt-4o-mini",
+    });
+  }
+  return cachedLLM;
+}
 
 // const llm = new ChatOpenAI({
 //     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -130,8 +151,9 @@ export function createJournalist(
         //      + csvRaw + 
         //      "\n\nPlease provide a detailed analysis of the dataset, including any trends, patterns, or anomalies you observe."
         // );
-
-        const msg = await llm.invoke(
+        
+        const msg = await getLLM().invoke(
+        // const msg = await llm.invoke(
             "you are a journalist, and your work is to analyze the given dataset...\n\n" + 
             csvRaw +
             "\n\nthe dataset is wrong, the 2 line and 5 line is missing and you read the wrong data, and also there are department C in the dataseet" +
@@ -176,7 +198,9 @@ export function createWriter(
 
         
         // const msg = await llm.invoke("you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)" + state.chainFormattedText);
-        const msg = await llm.invoke(
+
+        const msg = await getLLM().invoke(
+        // const msg = await llm.invoke(
             "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
             state.chainFormattedText +
             "\nyou have follow everything you received that you don't need to analyze it is true or wrong, you just generate the article based on the input" +
