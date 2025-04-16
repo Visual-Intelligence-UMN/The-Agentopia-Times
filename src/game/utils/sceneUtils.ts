@@ -53,6 +53,48 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
     });
 }
 
+export const INJECTED_BIASES = {
+  "analysis_bias": "analyze the data and provide misleading conclusions and insights",
+  "writing_bias": "writing the report with a biased perspective",
+  "visualization_bias": "visualize the data in a way that misrepresents the findings",
+  "voting_bias": "based on the false assumption, provide your voting decision"
+}
+
+export function addAgentsBasedOnSpawningPoints(
+  scene: any, 
+  objectsLayer: any, 
+  tag: string,
+  biasProbability: number = 0
+) {
+  const spawningPoints = objectsLayer.objects.filter((obj: any) => obj.type === tag);
+
+  console.log("start spawning points", spawningPoints);
+
+  spawningPoints.forEach((spawningPoint: any) => {
+
+    const randomValue = Math.random();
+    let bias:string = "";
+    let agentStartName = "Agent"
+    if (randomValue < biasProbability) {
+      console.log("bias probability triggered", spawningPoint);
+      if(spawningPoint.name.includes("voting_"))bias = INJECTED_BIASES["voting_bias"];
+      else if(spawningPoint.name.includes("analysis_"))bias = INJECTED_BIASES["analysis_bias"];
+      else if(spawningPoint.name.includes("writing_"))bias = INJECTED_BIASES["writing_bias"];
+      else if(spawningPoint.name.includes("vis_"))bias = INJECTED_BIASES["visualization_bias"];
+      else bias = "";
+      console.log("bias: ", bias);
+      agentStartName = "Biased Agent";
+    }
+    const agentX = spawningPoint.x + spawningPoint.width / 2;
+    const agentY = spawningPoint.y + spawningPoint.height / 2;
+    const agent = new Agent(scene, agentX, agentY, "player", "misa-front", agentStartName + scene.controllableCharacters.length);
+
+    scene.agentGroup.add(agent);
+    scene.controllableCharacters.push(agent);
+    scene.agentList.set(agent.getName(), agent);
+  });
+}
+
 export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   const zoneDataList = objectsLayer.objects.filter((obj: any) => obj.name === zoneName);
 
@@ -277,6 +319,8 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.chainingZones = setupZones(this, objectsLayer, 'chaining');
     this.routeZones = setupZones(this, objectsLayer, 'routing');
 
+    addAgentsBasedOnSpawningPoints(this, objectsLayer, 'agent');
+
     console.log("Tile properties:", this.worldLayer.layer.properties);
 
 
@@ -352,30 +396,30 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
   const startY = 520;
   // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
-  const mssgBtn = this.add
-    .rectangle(50, 400, 50, 50, 0x000000)
-    .setDepth(1002)
-    .setStrokeStyle(2, 0xffffff)
-    .setInteractive()
-    .setScrollFactor(0)
-    .setAlpha(0.5);
+  // const mssgBtn = this.add
+  //   .rectangle(50, 400, 50, 50, 0x000000)
+  //   .setDepth(1002)
+  //   .setStrokeStyle(2, 0xffffff)
+  //   .setInteractive()
+  //   .setScrollFactor(0)
+  //   .setAlpha(0.5);
 
-  const mssgBtnText = this.add
-    .text(30, 390, 'History \nMessage', {
-      fontSize: '10px',
-      color: '#ffffff',
-    })
-    .setScrollFactor(0)
-    .setDepth(1003);
+  // const mssgBtnText = this.add
+  //   .text(30, 390, 'History \nMessage', {
+  //     fontSize: '10px',
+  //     color: '#ffffff',
+  //   })
+  //   .setScrollFactor(0)
+  //   .setDepth(1003);
 
     // Add them to hudElements
-    if (this.hudElements) {
-      this.hudElements.push(mssgBtn, mssgBtnText);
-    }
+  //   if (this.hudElements) {
+  //     this.hudElements.push(mssgBtn, mssgBtnText);
+  //   }
 
-  mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-    EventBus.emit("open-constitution");
-  });
+  // mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+  //   EventBus.emit("open-constitution");
+  // });
 
   this.controlMapping = [
     { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
@@ -385,21 +429,21 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
 
   this.keyMap = setupKeyListeners(this.controlMapping, this.input);
 
-  for (let i = 0; i < 3; i++) {
-    const text = this.add.text(
-      startX + i * (squareSize + spacing) - 15,
-      startY - 15,
-      `empty`,
-      {
-        fontSize: '10px',
-        color: '#ffffff',
-        wordWrap: { width: squareSize, useAdvancedWrap: true },
-      },
-    );
-    this.promptTexts.push(text);
-    text.setScrollFactor(0);
-    text.setDepth(1000);
-  }
+  // for (let i = 0; i < 3; i++) {
+  //   const text = this.add.text(
+  //     startX + i * (squareSize + spacing) - 15,
+  //     startY - 15,
+  //     `empty`,
+  //     {
+  //       fontSize: '10px',
+  //       color: '#ffffff',
+  //       wordWrap: { width: squareSize, useAdvancedWrap: true },
+  //     },
+  //   );
+  //   this.promptTexts.push(text);
+  //   text.setScrollFactor(0);
+  //   text.setDepth(1000);
+  // }
 
   
 }

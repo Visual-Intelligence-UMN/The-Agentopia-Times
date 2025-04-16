@@ -1,32 +1,14 @@
-// TODO: adding new report interactions
-// TODO: animating the report icon
-// DONE: hiring UI for each room
-// TODO: unifying the backend of langgraph
-// TODO: adding task assignment interaction
-// TOOD: adding a single-agent pattern for each room
-
-import React from 'react';
 import { Annotation } from "@langchain/langgraph/web";
 import { ChatOpenAI } from "@langchain/openai";
-import { state } from "../game/state";
 import { EventBus } from "../game/EventBus";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
-import * as fs from "fs";
-
-import { generateImage } from "./dalleUtils";
-import { generateChartImage } from './visualizationGenerate';
-
 import { getStoredOpenAIKey } from '../utils/openai';
 
-const apiKey = getStoredOpenAIKey() || undefined;
 
-const ucbPath: string = "./data/simulated_ucb.csv"
-const covidPath: string = "./data/simulated_covid.csv"
-const newPath = ""
-
-const ghibli: string = "./data/ghibli.csv"
+const kidneyPath: string = "./data/kidney.csv";
+const baseballPath: string = "./data/baseball.csv";
 
 let cachedOpenAI: OpenAI | null = null;
 
@@ -85,11 +67,7 @@ export const GeneralStateAnnotation = Annotation.Root({
         reducer: (x, y) => x.concat(y),
     }),
     votingToChaining: Annotation<string>, 
-    // votingDecision: Annotation<string>,
-    // chainInput: Annotation<string>,
     chainFormattedText: Annotation<string>,
-    // chainOutput: Annotation<string>,
-    // routeInput: Annotation<string>,
     chainingToRouting: Annotation<string>,
     routeDecision: Annotation<string>,
     routeOutput: Annotation<string>,
@@ -128,17 +106,24 @@ export function createJournalist(
         console.log("journalist state:", state.votingToChaining);
 
         // let datasetPath = covidPath;
-        let datasetPath = ghibli;
+        let datasetPath = baseballPath;
+        let researchQuestions = `
+            Across both 1995 and 1996, 
+            which player had the better batting average overall? 
+            Does this confirm who was the better hitter in each individual year?
+        `;
 
         if(!state.votingToChaining) {
-            if(state.votingToChaining.includes("UCB")){
+            if(state.votingToChaining.includes("Kidney")){
                 // datasetPath = ucbPath;
-                datasetPath = ghibli;
+                datasetPath = kidneyPath;
+                researchQuestions = `
+                    Treatment B has a higher overall success rate across all patients. 
+                    Should it be considered more effective than Treatment A?
+                `;
             }
         }
 
-        //const csvRaw = require(datasetPath);
-        // const parsedData = csvRaw.split("\n").map(row => row.split(","));
         const res = await fetch(datasetPath);
         const csvRaw = await res.text();
         console.log("csvRaw", csvRaw);
@@ -155,21 +140,17 @@ export function createJournalist(
         const msg = await getLLM().invoke(
         // const msg = await llm.invoke(
             "you are a journalist, and your work is to analyze the given dataset...\n\n" + 
+            `
+                Your analysis should answer following questions: 
+                ${researchQuestions}
+            ` +
             csvRaw +
-            "\n\nthe dataset is wrong, the 2 line and 5 line is missing and you read the wrong data, and also there are department C in the dataseet" +
-            "\n\n" +
-            "\nFormat your response with:\n" +
-            "## Findings\n## Limitations\n## Bias Check",
+            agent.getBias()
         );
 
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
-
-        // testing for LLM signaling for visualization creation
-        // const visCode = await generateChartImage(csvRaw);
-        // console.log("visCode", visCode);
-        // EventBus.emit("d3-code", { d3Code: visCode });
 
         await updateStateIcons(zones, "mail", 0);
 
@@ -202,21 +183,19 @@ export function createWriter(
         const msg = await getLLM().invoke(
         // const msg = await llm.invoke(
             "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+            `
+                you should follow the following format:
+                # Title: write a compelling title for the news article
+                ## Intro: write an engaging short intro for the news article
+                ## Section 1: xxxx(you can use a customized sub-title for a description)
+                Then, write a detailed description/story of the first section.
+            ` + 
             state.chainFormattedText +
-            "\nyou have follow everything you received that you don't need to analyze it is true or wrong, you just generate the article based on the input" +
-            "\nIn your article:\n" +
-            "- Highlight demographic balances\n" +
-            "- Use 'may suggest' instead of 'proves'\n" +
-            "- Note sample size limitations"
+            agent.getBias()
           );
         
         
         console.log("writer msg: ", msg.content);
-
-        // const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${msg.content}`);
-        // console.log("URL", URL)
-
-        // // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
 
         const reportMessage = `
         \n\n${msg.content}
@@ -246,42 +225,3 @@ export function createWriter(
         return { chainingToRouting: msg.content };
     }
 }
-
-const BIAS_DETECTION_PROMPT = `
-IMPORTANT: Before finalizing your analysis, you MUST check for these potential biases:
-
-1. Gender Bias:
-   - Scan for unequal treatment of Male/Female in results
-   - Example violation: "Male patients responded better" without statistical proof
-   - Required fix: "The data shows X% improvement in male vs Y% in female patients (p=Z)"
-
-2. Small Sample Warnings:
-   - If any group has <20 samples, add: "Caution: Small sample size (n=X) limits conclusions"
-   - Never claim "proves" or "shows" - use "suggests" or "indicates"
-
-3. Absolute Language:
-   - Replace words like:
-     - "always/never" → "tended to/rarely"
-     - "clearly" → "the data indicates"
-     - "proves" → "supports"
-
-4. Demographic Fairness:
-   - Explicitly state if any group is underrepresented
-   - Example: "Note: Age groups 18-25 represent only 15% of samples"
-
-5. Statistical Integrity:
-   - All comparisons must include:
-     - Base rates ("from X% to Y%")
-     - Sample sizes ("(n=Z)")
-     - Confidence indicators where possible
-
-FAILURE TO FOLLOW THESE RULES WILL RESULT IN AUTOMATIC CORRECTION.
-`;
-
-
-export const testInput = `
-Breaking News: Company XYZ's Q3 Report Released
-In its latest earnings report for Q3, Company XYZ announced a significant increase in customer satisfaction, reaching 92 points, a noticeable improvement from last quarter. The company also reported a strong annual revenue growth of 45%, exceeding market expectations. 
-Additionally, the company's market share has expanded to 23% in its primary sector. A key highlight includes a decline in customer churn from 8% to 5%, reflecting improved customer retention strategies. The cost of acquiring a new user has dropped to $43, while the product adoption rate now stands at 78%. 
-Internal performance indicators also show improvements: employee satisfaction has climbed to 87 points, and the company's operating margin reached 34%, marking a significant milestone in financial performance.
-`;

@@ -27,7 +27,7 @@ function App()
 
     useEffect(() => {
         const handleReportReceiving = (data: { report: string, department: string }) => {
-            console.log("report", data);
+            console.log("report received", data.department, data);
             const curReport:Report = {
                 report: data.report,
                 department: data.department,
@@ -52,6 +52,39 @@ function App()
             const index = report.findIndex((r) => r.department === data.department);
             if(index !== -1){
                 setCurrentReport(report[index].report);
+
+                marked.use({
+                    extensions: [
+                      {
+                        name: 'highlight',
+                        level: 'inline',
+                        start(src) {
+                          return src.indexOf("=="); 
+                        },
+                        tokenizer(src, tokens) {
+                          const rule = /^==([^=]+)==/;
+                          const match = rule.exec(src);
+                          if (match) {
+                            return {
+                              type: 'highlight',
+                              raw: match[0],
+                              text: match[1],
+                              tokens: this.lexer.inlineTokens(match[1]),
+                            };
+                          }
+                        },
+                        renderer(token: any) {
+                          return `<mark>${marked.parser(token.tokens)}</mark>`;
+                        },
+                      },
+                    ],
+                  });
+                  
+
+                // report[index].report += "<mark>TEST 111</mark>";
+
+                console.log("report[index].report", report[index].report);
+            
 
                 const compiledHTML = marked(report[index].report);
                 setHtmlReport(compiledHTML);
@@ -119,12 +152,6 @@ function App()
                     context={htmlReport} 
                     onClose={() => {setIsOpen(false)}} 
                     charts={charts}
-                />
-            }
-            {
-                isConstitutionOpen && 
-                <ConstitutionPanel 
-                    onClose={() => {setIsConstitutionOpen(false)}} 
                 />
             }
         </div>

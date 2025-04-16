@@ -1,6 +1,6 @@
 import Draggable from "react-draggable";
 import { compileJSCode } from "../langgraph/visualizationGenerate";
-import { TEST_D3_SCRIPT } from "../langgraph/const";
+import { d3Script, TEST_D3_SCRIPT } from "../langgraph/const";
 import { useEffect, useRef  } from "react";
 
 
@@ -19,7 +19,9 @@ interface DraggableWindowProps {
         charts.forEach(chart => {
           compileJSCode(chart.code, chart.id);
       });
-      }
+    // compileJSCode(d3Script, "ghibli-viz");  
+    }
+
       hasRenderedCharts.current = true;
     }, []);
   
@@ -31,6 +33,7 @@ interface DraggableWindowProps {
                     <button onClick={onClose}>✖</button>
                 </div>
                 <div className="window-content" style={{ color: "black" }} dangerouslySetInnerHTML={{ __html: context }}></div>
+                {/* <div id="ghibli-viz" ></div> */}
             </div>
         </Draggable>
     );

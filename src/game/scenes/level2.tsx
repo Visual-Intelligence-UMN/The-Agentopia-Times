@@ -46,7 +46,7 @@ export class Level2 extends ParentScene {
   private startWorkflowBtn!: Phaser.GameObjects.Rectangle;
   private startWorkflowLabel!: Phaser.GameObjects.Text;
 
-  private debateStartBtn!: Phaser.GameObjects.Rectangle;
+  private debateStartBtn!: Phaser.GameObjects.Image;
   private debateStartLabel!: Phaser.GameObjects.Text;
 
   private roomStatusTexts: Phaser.GameObjects.Text[] = [];
@@ -153,31 +153,6 @@ export class Level2 extends ParentScene {
 
     this.physics.add.collider(this.agentGroup, this.worldLayer);
     
-
-    // const agent1 = new Agent(this, 50, 300, 'player', 'misa-front', 'Alice');
-    // const agent2 = new Agent(this, 100, 300, 'player', 'misa-front', 'Bob');
-    // const agent3 = new Agent(this, 200, 300, 'player', 'misa-front', 'Cathy');
-    // const agent4 = new Agent(this, 300, 300, 'player', 'misa-front', 'David');
-
-    // just for testing
-    // testChain();
-
-    // this.agentGroup.add(agent1);
-    // this.agentGroup.add(agent2);
-    // this.agentGroup.add(agent3);
-    // this.agentGroup.add(agent4);
-
-    // this.controllableCharacters.push(agent1);
-    // this.controllableCharacters.push(agent2);
-    // this.controllableCharacters.push(agent3);
-    // this.controllableCharacters.push(agent4);
-
-    // this.agentList.set(agent1.getName(), agent1);
-    // this.agentList.set(agent2.getName(), agent2);
-    // this.agentList.set(agent3.getName(), agent3);
-    // this.agentList.set(agent4.getName(), agent4);
-    // console.log('controled characters', this.controllableCharacters);
-
     //set the camera
     this.isCameraFollowing = false;
 
@@ -206,17 +181,17 @@ export class Level2 extends ParentScene {
 
    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
-    const squareSize = 50;
-    const spacing = 20;
-    const startX = 75;
-    const startY = 520;
-    addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
+    // const squareSize = 50;
+    // const spacing = 20;
+    // const startX = 75;
+    // const startY = 520;
+    // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
 
     // add controls UI
     this.agentControlButtons = this.add.group();
     this.agentControlButtonLabels = [];
 
-    addTaskAssignmentHUD.call(this);
+    // addTaskAssignmentHUD.call(this);
     this.overlappedItems = new Set();
     let overlappedItems = new Set();
     let isDebate = false;
@@ -237,21 +212,24 @@ export class Level2 extends ParentScene {
           isDebate = true;
           console.log('Agent is overlapping both debate positions!');
           debateStartBtn = this.add
-            .rectangle(50, 330, 50, 50, 0x000000)
+            .image(50, 330, 'start')
             .setScrollFactor(0)
             .setDepth(1001)
-            .setAlpha(0.5)
-            .setStrokeStyle(2, 0xffffff)
             .setInteractive();
 
-          debateStartLabel = this.add
-            .text(35, 320, 'Start Debate', {
-              fontSize: '10px',
-              color: '#ffffff',
-              wordWrap: { width: 50, useAdvancedWrap: true },
-            })
-            .setScrollFactor(0)
-            .setDepth(1002);
+            //const creditsIcon = this.add.image(570, 35, 'coinIcon') 
+  //   .setOrigin(1, 0.5) 
+  //   .setScrollFactor(0)
+  //   .setDepth(1000);
+
+          // debateStartLabel = this.add
+          //   .text(35, 320, 'Start Debate', {
+          //     fontSize: '10px',
+          //     color: '#ffffff',
+          //     wordWrap: { width: 50, useAdvancedWrap: true },
+          //   })
+          //   .setScrollFactor(0)
+          //   .setDepth(1002);
           debateStartBtn.on('pointerdown', (pointer: any) => {
             console.log('start debate!!');
             debate('Is the earth flat?', 3);
@@ -512,21 +490,21 @@ return result;
     console.log("All zones are occupied!");
     // create a start workflow button
     this.debateStartBtn = this.add
-            .rectangle(50, 330, 50, 50, 0x000000)
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setAlpha(0.5)
-            .setStrokeStyle(2, 0xffffff)
-            .setInteractive();
+    .image(50, 330, 'start')
+    .setScrollFactor(0)
+    .setDepth(1010)
+    .setInteractive()
+    .setAlpha(0.75)
+    .setScale(1.5); // Increase the size of the image by scaling it
 
-          this.debateStartLabel = this.add
-            .text(35, 320, 'Start Workflow', {
-              fontSize: '10px',
-              color: '#ffffff',
-              wordWrap: { width: 50, useAdvancedWrap: true },
-            })
-            .setScrollFactor(0)
-            .setDepth(1002);
+          // this.debateStartLabel = this.add
+          //   .text(35, 320, 'Start Workflow', {
+          //     fontSize: '10px',
+          //     color: '#ffffff',
+          //     wordWrap: { width: 50, useAdvancedWrap: true },
+          //   })
+          //   .setScrollFactor(0)
+          //   .setDepth(1002);
 
     this.debateStartBtn.on('pointerdown', async () => {
       this.registry.set('isWorkflowRunning', true);

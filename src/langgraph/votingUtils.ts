@@ -32,7 +32,7 @@ export async function parallelVotingExecutor(
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(`[Debug] Agent ${agent.getName()} is submitting vote to LLM...`);
         const llmPromise = llm.invoke(
-            `Vote for: ${votingTopic}. Please select only one option as your final decision.`
+            `Vote for: ${votingTopic}. Please select only one option as your final decision. ${agent.getBias()}`
         );
         console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
         const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");
@@ -74,8 +74,8 @@ export function createAggregator(
         const decision = await llm.invoke(`
             aggregate vote: ${llmInput}; 
             return the final result from this voting as the decision
-            If the final decision is UCBerkely, return "UCB"
-            If the final decision is COVID-19, return "COVID"
+            If the final decision is Baseball, return "baseball"
+            If the final decision is Kidney Stone Treatment, return "kidney"
         `);
         console.log("[Debug] Received final decision from LLM.");
 
@@ -165,7 +165,17 @@ export const votingExample = `
 You are an employee in a news company.
 You are assigned to vote for the best theme for next news publication.
 There're two options: 
-1. the gender bias of UCBerkeley graduates admission
-2. the benefits/harms of British COVID-19 vaccination
+1. Kidney Stone Treatment
+
+This topic compares the success rates of two medical treatments (A and B) for patients with kidney stones. 
+
+We can write a news article about the effectiveness of these treatments, including statistics and expert opinions.
+
+2. Baseball Players Comparison
+
+This topic compared two baseball players in terms of their performance.
+
+We can write a news article about their statistics, achievements, and impact on the game.
+
 Choose one of the two options and give a reason for your choice.
 `;
