@@ -217,18 +217,20 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     private onClick(pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) {
       if (gameObject === this) {
         console.log(`Agent ${this.name} clicked!`);
-        this.changeNameTagColor('#ff00ff'); 
-        if(this.bias===""){
+        // this.changeNameTagColor('#ff00ff'); 
+        if(!this.isBiased){
           // update to biased agent
           // choose the designated bias by occupation
           this.name = "Biased " + this.name;
           this.nameTag.setText(this.name);
           this.isBiased = true;
+          //TODO: change avatar
         } else {
           // update to unbiased agent
-          this.name = this.name.split(' ').slice(-2).join(' ');
+          this.name = this.name.split(' ').slice(-1).join(' ');
           this.nameTag.setText(this.name);
           this.isBiased = false;
+          // TODO: change avatar
         }
       }
     }
