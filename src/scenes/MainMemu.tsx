@@ -2,6 +2,8 @@ import { Scene } from 'phaser';
 import { MainMenuButton } from '../components';
 import { TextInput } from '../components/TextInput';
 import { mainmenu_background, title } from '../assets/images';
+import { setStoredOpenAIKey } from '../utils/openai';
+
 
 export class MainMenu extends Scene {
   private messageText!: Phaser.GameObjects.Text;
@@ -87,11 +89,24 @@ export class MainMenu extends Scene {
     const apiKey = this.textInput.getText().trim();
     if (this.isValidApiKey(apiKey)) {
       const isValid = await this.verifyApiKey(apiKey);
+      // if (isValid) {
+      //   localStorage.setItem('openai-api-key', apiKey);
+      //   console.log('API Key is valid. Starting game...');
+      //   location.reload();
+
+      //   // this.scene.start('level1');
+      // } 
+      
       if (isValid) {
-        localStorage.setItem('openai-api-key', apiKey);
-        console.log('API Key is valid. Starting game...');
+        setStoredOpenAIKey(apiKey);
+        // window.location.href = window.location.href;
+        // window.location.href = window.location.pathname + '?t=' + Date.now();
+        // window.location.href = window.location.pathname + '?reload=' + Date.now();
         window.location.reload();
-        // this.scene.start('level2');
+
+
+
+        // this.scene.start("level1");
       } else {
         this.showErrorMessage('Invalid OpenAI API key.');
       }

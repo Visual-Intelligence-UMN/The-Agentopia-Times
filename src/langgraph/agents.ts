@@ -4,14 +4,30 @@ import { EventBus } from "../game/EventBus";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
+import { getStoredOpenAIKey } from '../utils/openai';
+
 
 const kidneyPath: string = "./data/kidney.csv";
 const baseballPath: string = "./data/baseball.csv";
 
-export const openai = new OpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
-});
+let cachedOpenAI: OpenAI | null = null;
+
+export function getOpenAI(): OpenAI {
+  if (!cachedOpenAI) {
+    const apiKey = getStoredOpenAIKey();
+    if (!apiKey) throw new Error("❌ OpenAI API key not set.");
+    cachedOpenAI = new OpenAI({
+      apiKey,
+      dangerouslyAllowBrowser: true,
+    });
+  }
+  return cachedOpenAI;
+}
+
+// export const openai = new OpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
+// });
 
 export const promptTable = {
     extraction: "Extract the key information from the input and format it clearly and concisely.",
@@ -21,10 +37,27 @@ export const promptTable = {
     voting: "Vote for the best options based on the information provided.",
 };
 
-const llm = new ChatOpenAI({
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    modelName: "gpt-4o-mini",
-});
+let cachedLLM: ChatOpenAI | null = null;
+
+export function getLLM() {
+  if (!cachedLLM) {
+    const apiKey = getStoredOpenAIKey();
+    if (!apiKey) {
+      throw new Error("OpenAI API Key is not set.");
+    }
+
+    cachedLLM = new ChatOpenAI({
+      apiKey,
+      modelName: "gpt-4o-mini",
+    });
+  }
+  return cachedLLM;
+}
+
+// const llm = new ChatOpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     modelName: "gpt-4o-mini",
+// });
 
 export const GeneralStateAnnotation = Annotation.Root({
     data: Annotation<string>, 
@@ -109,7 +142,7 @@ export function createJournalist(
             },
         ];
 
-        const msg = await llm.invoke(message);
+        const msg = await getLLM().invoke(message);
 
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
@@ -159,7 +192,7 @@ export function createWriter(
             },
         ];
 
-        const msg = await llm.invoke(message);
+        const msg = await getLLM().invoke(message);
         
         
         console.log("writer msg: ", msg.content);

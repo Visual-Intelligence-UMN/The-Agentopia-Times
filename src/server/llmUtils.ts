@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { selector } from './templates';
 import { extractXML } from './textProcessingUtils';
-import { getStoredOpenAIKey } from '../../utils/openai';
+import { getStoredOpenAIKey } from '../utils/openai';
+
 
 
 interface Message {
@@ -12,7 +13,7 @@ interface Message {
 // call LLM API with messages and return the response.
 export const callLLM = async (messages: Message[]) => {
   const openaiApiUrl = 'https://api.openai.com/v1/chat/completions';
-  const apiKey = getStoredOpenAIKey() || undefined;
+  const apiKey = getStoredOpenAIKey();
   // const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   const apiClient = axios.create({
     baseURL: openaiApiUrl,
@@ -41,10 +42,7 @@ export const chain = async (input: string, prompts: string[]) => {
     let result: string = input;
     for (const prompt of prompts) {
         try{
-        const messages: Message[] = [
-          {role: 'system', content: result}, 
-          {role: 'user', content: prompt}
-        ];
+        const messages: Message[] = [{role: 'system', content: result}, {role: 'user', content: prompt}];
         const response = await callLLM(messages);
         result = response.choices[0].message.content;
         } catch (error) {

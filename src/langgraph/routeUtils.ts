@@ -38,7 +38,13 @@ const sampleSystemPrompts = [
 ];
 
 
-async function testBranchWork(command: string, state: any, content: string, agent: any){
+async function testBranchWork(
+    command: string, 
+    state: any, 
+    content: string, 
+    agent: any,
+    scoreText: Phaser.GameObjects.Text,
+){
     let datasetPath = covidPath;
 
     console.log("state route", state);
@@ -124,10 +130,14 @@ async function testBranchWork(command: string, state: any, content: string, agen
 
         if(writingComments){
             reportMessage += `\n\n## Comments on Writing`;
-            for (let i = 0; i < writingComments.length; i++){
+            for (let i = 1; i < writingComments.length; i++){
                 reportMessage += `\n\n- ${writingComments[i]}`;
             }
+            scoreText.setText(writingComments[0]);
         }
+
+        // Scene.scoreText = writingComments[0];
+        
 
         
     
@@ -196,6 +206,7 @@ export function createLeaf(
     destination: any,
     systemPrompt: string = "",
     zones: any,
+    scoreText: Phaser.GameObjects.Text
 ){
     return async function leaf(state: typeof GeneralStateAnnotation.State) {
         // store the original position
@@ -205,7 +216,7 @@ export function createLeaf(
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
         
-        testBranchWork(state.routeDecision, state, state.chainingToRouting, agent);
+        testBranchWork(state.routeDecision, state, state.chainingToRouting, agent, scoreText);
 
         await updateStateIcons(zones, "mail");
 
@@ -291,6 +302,9 @@ export async function createWritingJudge(message: string) {
         2. Kidney Answer:
         This reversal arises from differences in subgroup composition. Treatment A showed higher success rates than Treatment B for both small and large kidney stones. However, Treatment A was administered more frequently to patients with large stones, which are harder to treat, while Treatment B was more common among patients with small stones. When the data is combined without accounting for stone size, the overall success rate of Treatment B appears higher, even though it was less effective in every subgroup.
 
+        Also, give a score from 1 to 10 for the writing quality, where 1 is the worst and 10 is the best.
+        The score should be the first element in the output array, formatted as "Score: X/10".
+
         Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
 
         Do not include any additional text—just the array of strings.
@@ -298,6 +312,7 @@ export async function createWritingJudge(message: string) {
 
         Example Output: 
         [
+            "Score: 9/10",
             "The data source can be specified in Vega-Lite using a similar dataset.",
             "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
             "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
@@ -393,7 +408,7 @@ export function constructRouteGraph(
         if(i < 2){
             routeGraph.addNode(
                 sampleSystemPrompts[i].role, 
-                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt, zones)
+                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt, zones, scene.creditsText)
             );
             remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
         }
