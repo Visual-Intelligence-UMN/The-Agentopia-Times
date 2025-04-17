@@ -100,6 +100,9 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
     const result = await llm.invoke([
       { role: "system", content: `
           You are a vegalite and visualization expert.
+          You need to generate three charts based on the given dataset.
+          You should have one visualization that gives a general overview of the data,
+          You should have another two visualizations that focus on each subgroup of the data(preferred using a scatter plot).
           Generate only the JavaScript code for a visualization we need created for a given dataset, 
           Your code should start like this(PARAMETER: means you can change the number on that line): 
 
@@ -118,7 +121,17 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
             }
           };
 
+          const specSubgroup1 = {
+            ......
+          }
+
+          const specSubgroup2 = {
+            ......
+          }
+
           vegaEmbed('#test-chart', spec);
+          vegaEmbed('#test-chart1', specSubgroup1);
+          vegaEmbed('#test-chart2', specSubgroup2);
 
 
           Here is a part of the data, which helps you better implement the visualization:

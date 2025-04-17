@@ -106,6 +106,22 @@ async function testBranchWork(
             align-items: center; 
             margin-top: 20px;">
         </div>
+        \n\n<div id="test-chart1" style="
+            width: 100%; 
+            height: auto;
+            display: flex;
+            justify-content: center; 
+            align-items: center; 
+            margin-top: 20px;">
+        </div>
+        \n\n<div id="test-chart2" style="
+            width: 100%; 
+            height: auto;
+            display: flex;
+            justify-content: center; 
+            align-items: center; 
+            margin-top: 20px;">
+        </div>
         <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
         `;
 
@@ -412,10 +428,6 @@ export function constructRouteGraph(
             );
             remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
         }
-        // else {
-        //     const agentNode = agents[i].getName();
-        //     routeGraph.addNode(agentNode, createLeaf(agents[i], scene, tilemap, destination));
-        // }
     }
 
     routeGraph.addNode("router", createRouter(scene, tilemap, agents[2], remainAgents, zones) as any);
