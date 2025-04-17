@@ -100,7 +100,10 @@ export class MainMenu extends Scene {
       if (isValid) {
         setStoredOpenAIKey(apiKey);
         // window.location.href = window.location.href;
-        window.location.href = window.location.pathname + '?t=' + Date.now();
+        // window.location.href = window.location.pathname + '?t=' + Date.now();
+        // window.location.href = window.location.pathname + '?reload=' + Date.now();
+        window.location.reload();
+
 
 
         // this.scene.start("level1");
