@@ -90,7 +90,8 @@ export class MainMenu extends Scene {
       if (isValid) {
         localStorage.setItem('openai-api-key', apiKey);
         console.log('API Key is valid. Starting game...');
-        this.scene.start('level2');
+        window.location.reload();
+        // this.scene.start('level2');
       } else {
         this.showErrorMessage('Invalid OpenAI API key.');
       }
