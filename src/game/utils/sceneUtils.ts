@@ -65,7 +65,7 @@ export function addAgentsBasedOnSpawningPoints(
   scene: any, 
   objectsLayer: any, 
   tag: string,
-  biasProbability: number = 1
+  biasProbability: number = 0
 ) {
   const spawningPoints = objectsLayer.objects.filter((obj: any) => obj.type === tag);
 
@@ -76,19 +76,52 @@ export function addAgentsBasedOnSpawningPoints(
     const randomValue = Math.random();
     let bias:string = "";
     let agentStartName = "Agent"
+    let occupation = "voter"
     if (randomValue < biasProbability) {
       console.log("bias probability triggered", spawningPoint);
-      if(spawningPoint.name.includes("voting_"))bias = INJECTED_BIASES["voting_bias"];
-      else if(spawningPoint.name.includes("analysis_"))bias = INJECTED_BIASES["analysis_bias"];
-      else if(spawningPoint.name.includes("writing_"))bias = INJECTED_BIASES["writing_bias"];
-      else if(spawningPoint.name.includes("vis_"))bias = INJECTED_BIASES["visualization_bias"];
-      else bias = "";
+      if(spawningPoint.name.includes("voting_")){
+        bias = INJECTED_BIASES["voting_bias"];
+        occupation = "voter"
+      } else if(spawningPoint.name.includes("analysis_")){
+        bias = INJECTED_BIASES["analysis_bias"];
+        occupation = "analyst"
+      } else if(spawningPoint.name.includes("writing_")){
+        bias = INJECTED_BIASES["writing_bias"];
+        occupation = "writer"
+      } else if(spawningPoint.name.includes("vis_")){
+        bias = INJECTED_BIASES["visualization_bias"];
+        occupation = "visualizer"
+      }
+      else {bias = "";}
       console.log("bias: ", bias);
       agentStartName = "Biased Agent";
     }
+    if(spawningPoint.name.includes("voting_")){
+      bias = INJECTED_BIASES["voting_bias"];
+      occupation = "voter"
+    } else if(spawningPoint.name.includes("analysis_")){
+      bias = INJECTED_BIASES["analysis_bias"];
+      occupation = "analyst"
+    } else if(spawningPoint.name.includes("writing_")){
+      bias = INJECTED_BIASES["writing_bias"];
+      occupation = "writer"
+    } else if(spawningPoint.name.includes("vis_")){
+      bias = INJECTED_BIASES["visualization_bias"];
+      occupation = "visualizer"
+    }
     const agentX = spawningPoint.x + spawningPoint.width / 2;
     const agentY = spawningPoint.y + spawningPoint.height / 2;
-    const agent = new Agent(scene, agentX, agentY, "player", "misa-front", agentStartName + scene.controllableCharacters.length);
+    const agent = new Agent(
+      scene, 
+      agentX, 
+      agentY, 
+      "player", 
+      "misa-front", 
+      agentStartName + 
+      scene.controllableCharacters.length, 
+      occupation,
+      bias
+    );
 
     scene.agentGroup.add(agent);
     scene.controllableCharacters.push(agent);

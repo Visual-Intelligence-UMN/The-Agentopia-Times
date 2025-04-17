@@ -98,15 +98,18 @@ export function createJournalist(
         await updateStateIcons(zones, "work", 0);
         await updateStateIcons(scene.chainingZones, "work");
 
-        const msg = await llm.invoke(
-            "you are a journalist, and your work is to analyze the given dataset...\n\n" + 
-            `
-                Your analysis should answer following questions: 
-                ${researchQuestions}
-            ` +
-            csvRaw +
-            agent.getBias()
-        );
+        const message = [
+            {
+                role: "system", 
+                content: "You are a data analyst." + agent.getBias()
+            },
+            {
+                role: "user", 
+                content: "Your work is to analyze the given dataset..." + csvRaw + ` and answer following questions ${researchQuestions}`
+            },
+        ];
+
+        const msg = await llm.invoke(message);
 
         console.log("journalist msg:", msg.content);
         const originalAgent1X = agent.x;
@@ -137,18 +140,26 @@ export function createWriter(
 
         await updateStateIcons(zones, "work", 1);
 
-        const msg = await llm.invoke(
-            "you are a news writer, based on the given insights, generate a consice news article to summarize that(words<200)\n" +
-            `
-                you should follow the following format:
-                # Title: write a compelling title for the news article
-                ## Intro: write an engaging short intro for the news article
-                ## Section 1: xxxx(you can use a customized sub-title for a description)
-                Then, write a detailed description/story of the first section.
-            ` + 
-            state.chainFormattedText +
-            agent.getBias()
-          );
+        const message = [
+            {
+                role: "system", 
+                content: "You are a report writer." + agent.getBias()
+            },
+            {
+                role: "user", 
+                content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+                `
+                        you should follow the following format:
+                        # Title: write a compelling title for the news article
+                        ## Intro: write an engaging short intro for the news article
+                        ## Section 1: xxxx(you can use a customized sub-title for a description)
+                        Then, write a detailed description/story of the first section.
+                    ` + 
+                    state.chainFormattedText
+            },
+        ];
+
+        const msg = await llm.invoke(message);
         
         
         console.log("writer msg: ", msg.content);

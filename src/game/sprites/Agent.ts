@@ -28,6 +28,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private persona: string = "a helpful AI assistant";
   private instruction: string = "";
   private bias: string = "";
+  private isBiased: boolean = false;
 
   public assignToWorkplace: boolean = false;
   private activationFunction: (state: any) => any = (state: any) => {
@@ -111,10 +112,14 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
     scene.input.on('dragend', (pointer:any, gameObject:any) => {
       if (gameObject === this) {
-        this.clearTint(); // 结束拖拽后恢复原色
+        this.clearTint(); // 结束拖A拽后恢复原色
       }
     });
 
+    this.on('pointerdown', (pointer:any) => {
+      this.onClick(pointer, this);
+    });
+    
 
   }
 
@@ -127,7 +132,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   public getBias(){
-    return this.bias;
+    if(this.isBiased)return this.bias;
+    else return "";
   }
   
   public setBias(bias: string){
@@ -212,6 +218,18 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
       if (gameObject === this) {
         console.log(`Agent ${this.name} clicked!`);
         this.changeNameTagColor('#ff00ff'); 
+        if(this.bias===""){
+          // update to biased agent
+          // choose the designated bias by occupation
+          this.name = "Biased " + this.name;
+          this.nameTag.setText(this.name);
+          this.isBiased = true;
+        } else {
+          // update to unbiased agent
+          this.name = this.name.split(' ').slice(-2).join(' ');
+          this.nameTag.setText(this.name);
+          this.isBiased = false;
+        }
       }
     }
 
