@@ -1,5 +1,6 @@
 const atlas = {
   player: 'player',
+  bias: 'biasAtlas',
 } as const;
 
 const image = {

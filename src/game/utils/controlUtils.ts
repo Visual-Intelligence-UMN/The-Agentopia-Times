@@ -428,10 +428,23 @@ async function asyncMoveAlongPath(
         const dy = targetY - agent.y;
 
         if (agent.anims) {
+            // if (Math.abs(dx) > Math.abs(dy)) {
+            // agent.anims.play(dx > 0 ? Animation.Right : Animation.Left, true);
+            // } else {
+            // agent.anims.play(dy > 0 ? Animation.Down : Animation.Up, true);
+            // }
             if (Math.abs(dx) > Math.abs(dy)) {
-            agent.anims.play(dx > 0 ? Animation.Right : Animation.Left, true);
+                if (dx > 0) {
+                    agent.anims.play(`${agent.name}_${Animation.Right}`, true);
+                } else {
+                    agent.anims.play(`${agent.name}_${Animation.Left}`, true);
+                }
             } else {
-            agent.anims.play(dy > 0 ? Animation.Down : Animation.Up, true);
+                if (dy > 0) {
+                    agent.anims.play(`${agent.name}_${Animation.Down}`, true);
+                } else {
+                    agent.anims.play(`${agent.name}_${Animation.Up}`, true);
+                }
             }
         }
 

@@ -43,6 +43,7 @@ export class Boot extends Scene {
     this.load.tilemapTiledJSON(key.tilemap.office, assets.tilemaps.office);
 
     this.load.atlas(key.atlas.player, assets.atlas.image, assets.atlas.data);
+    this.load.atlas(key.atlas.bias, assets.atlas.biasImage, assets.atlas.biasData);
 
     // remove it during deployment
     // this.scene.start('level2');

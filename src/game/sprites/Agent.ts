@@ -64,9 +64,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
         align: 'center',
       }).setOrigin(0.5, 1); 
 
-      this.nameTag.setDepth(10);
-  
-
+    this.nameTag.setDepth(10);
+    
     // Add the sprite to the scene
     scene.add.existing(this);
 
@@ -85,7 +84,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
 
     // Create sprite animations
-    this.createAnimations();
+    this.createAnimations(key.atlas.player);
 
     this.selector = scene.physics.add.staticBody(x - 8, y + 32, 16, 16);
 
@@ -224,78 +223,143 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           this.name = "Biased " + this.name;
           this.nameTag.setText(this.name);
           this.isBiased = true;
-          //TODO: change avatar
+          
+          this.setTexture(key.atlas.bias);
+          this.createAnimations(key.atlas.bias);          
+          // this.play("player_down");
         } else {
           // update to unbiased agent
           this.name = this.name.split(' ').slice(-1).join(' ');
           this.nameTag.setText(this.name);
           this.isBiased = false;
-          // TODO: change avatar
+
+          this.setTexture(key.atlas.player);
+          this.createAnimations(key.atlas.player);
+          // this.play("player_down");
         }
       }
     }
 
-  private createAnimations() {
-    const anims = this.scene.anims;
-
-    // Create left animation
-    if (!anims.exists(Animation.Left)) {
-      anims.create({
-        key: Animation.Left,
-        frames: anims.generateFrameNames(key.atlas.player, {
-          prefix: 'misa-left-walk.',
-          start: 0,
-          end: 3,
-          zeroPad: 3,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
+    private createAnimations(atlasKey: string) {
+      const anims = this.scene.anims;
+    
+      const baseKey = this.name;
+    
+      const animList = [
+        { key: Animation.Left, prefix: 'misa-left-walk.' },
+        { key: Animation.Right, prefix: 'misa-right-walk.' },
+        { key: Animation.Up, prefix: 'misa-back-walk.' },
+        { key: Animation.Down, prefix: 'misa-front-walk.' },
+      ];
+    
+      for (const { key, prefix } of animList) {
+        const fullKey = `${baseKey}_${key}`;
+    
+        if (anims.exists(fullKey)) anims.remove(fullKey);
+    
+        anims.create({
+          key: fullKey,
+          frames: anims.generateFrameNames(atlasKey, {
+            prefix,
+            start: 0,
+            end: 3,
+            zeroPad: 3,
+          }),
+          frameRate: 10,
+          repeat: -1,
+        });
+      }
     }
+    
 
-    // Create right animation
-    if (!anims.exists(Animation.Right)) {
-      anims.create({
-        key: Animation.Right,
-        frames: anims.generateFrameNames(key.atlas.player, {
-          prefix: 'misa-right-walk.',
-          start: 0,
-          end: 3,
-          zeroPad: 3,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
+    // private createAnimations(atlasKey: string) {
+    //   const anims = this.scene.anims;
+    
+    //   const animList = [
+    //     { key: Animation.Left, prefix: 'misa-left-walk.' },
+    //     { key: Animation.Right, prefix: 'misa-right-walk.' },
+    //     { key: Animation.Up, prefix: 'misa-back-walk.' },
+    //     { key: Animation.Down, prefix: 'misa-front-walk.' },
+    //   ];
+    
+    //   for (const { key, prefix } of animList) {
+    //     anims.remove(key); // 确保更新贴图时重新生成
+    //     anims.create({
+    //       key,
+    //       frames: anims.generateFrameNames(atlasKey, {
+    //         prefix,
+    //         start: 0,
+    //         end: 3,
+    //         zeroPad: 3,
+    //       }),
+    //       frameRate: 10,
+    //       repeat: -1,
+    //     });
+    //   }
+    // }
+    
 
-    // Create up animation
-    if (!anims.exists(Animation.Up)) {
-      anims.create({
-        key: Animation.Up,
-        frames: anims.generateFrameNames(key.atlas.player, {
-          prefix: 'misa-back-walk.',
-          start: 0,
-          end: 3,
-          zeroPad: 3,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
+  // private createAnimations() {
+  //   const anims = this.scene.anims;
 
-    // Create down animation
-    if (!anims.exists(Animation.Down)) {
-      anims.create({
-        key: Animation.Down,
-        frames: anims.generateFrameNames(key.atlas.player, {
-          prefix: 'misa-front-walk.',
-          start: 0,
-          end: 3,
-          zeroPad: 3,
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-    }
-  }
+  //   // Create left animation
+  //   if (!anims.exists(Animation.Left)) {
+  //     anims.create({
+  //       key: Animation.Left,
+  //       frames: anims.generateFrameNames(key.atlas.player, {
+  //         prefix: 'misa-left-walk.',
+  //         start: 0,
+  //         end: 3,
+  //         zeroPad: 3,
+  //       }),
+  //       frameRate: 10,
+  //       repeat: -1,
+  //     });
+  //   }
+
+  //   // Create right animation
+  //   if (!anims.exists(Animation.Right)) {
+  //     anims.create({
+  //       key: Animation.Right,
+  //       frames: anims.generateFrameNames(key.atlas.player, {
+  //         prefix: 'misa-right-walk.',
+  //         start: 0,
+  //         end: 3,
+  //         zeroPad: 3,
+  //       }),
+  //       frameRate: 10,
+  //       repeat: -1,
+  //     });
+  //   }
+
+  //   // Create up animation
+  //   if (!anims.exists(Animation.Up)) {
+  //     anims.create({
+  //       key: Animation.Up,
+  //       frames: anims.generateFrameNames(key.atlas.player, {
+  //         prefix: 'misa-back-walk.',
+  //         start: 0,
+  //         end: 3,
+  //         zeroPad: 3,
+  //       }),
+  //       frameRate: 10,
+  //       repeat: -1,
+  //     });
+  //   }
+
+  //   // Create down animation
+  //   if (!anims.exists(Animation.Down)) {
+  //     anims.create({
+  //       key: Animation.Down,
+  //       frames: anims.generateFrameNames(key.atlas.player, {
+  //         prefix: 'misa-front-walk.',
+  //         start: 0,
+  //         end: 3,
+  //         zeroPad: 3,
+  //       }),
+  //       frameRate: 10,
+  //       repeat: -1,
+  //     });
+  //   }
+  // }
 }
