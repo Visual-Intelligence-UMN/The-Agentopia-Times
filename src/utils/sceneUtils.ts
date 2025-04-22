@@ -4,6 +4,12 @@ import { initKeyboardInputs, setupKeyListeners } from "./controlUtils";
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD } from "./hudUtils";
 import { TilemapDebug, Typewriter } from '../components';
 
+export function randomAssignTopic(){
+  const topics = ['baseball', 'kidney'];
+  const randomIndex = Math.floor(Math.random() * topics.length);
+  return topics[randomIndex];
+}
+
 export function createItem(this: any, group: any, x: number, y: number, texture: any, scaleFactor = 0.25) {
     const item = group.create(x, y, texture).setScale(scaleFactor);
     this.physics.world.enable(item);
