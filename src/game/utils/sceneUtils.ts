@@ -170,28 +170,28 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
 
     scene.roomStatusTexts.push(statusText);
 
-    if (parallelZoneData.name !== "chaining") {
-      const hiringBtn = scene.add.image(centerX - 52.5, centerY + 20, "hiring")
-        .setDepth(1002).setInteractive();
+    // if (parallelZoneData.name !== "chaining") {
+    //   const hiringBtn = scene.add.image(centerX - 52.5, centerY + 20, "hiring")
+    //     .setDepth(1002).setInteractive();
 
-      hiringBtn.on("pointerdown", () => {
-        const bounds = getZoneBounds(parallelZone);
-        const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(scene.controllableCharacters, bounds);
-        const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
+    //   hiringBtn.on("pointerdown", () => {
+    //     const bounds = getZoneBounds(parallelZone);
+    //     const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(scene.controllableCharacters, bounds);
+    //     const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
 
-        scene.agentGroup.add(agent);
-        scene.controllableCharacters.push(agent);
-        scene.agentList.set(agent.getName(), agent);
+    //     scene.agentGroup.add(agent);
+    //     scene.controllableCharacters.push(agent);
+    //     scene.agentList.set(agent.getName(), agent);
 
-        zones.forEach(zone => {
-          if (zone.zone === parallelZone) {
-            zone.agentsInside.add(agent);
-          }
-        });
+    //     zones.forEach(zone => {
+    //       if (zone.zone === parallelZone) {
+    //         zone.agentsInside.add(agent);
+    //       }
+    //     });
 
-        console.log("New agent added at", agentX, agentY);
-      });
-    }
+    //     console.log("New agent added at", agentX, agentY);
+    //   });
+    // }
 
     const stateIcon = scene.add.image(centerX + 35, centerY + 20, "idle").setDepth(1001).setScale(1);
 

@@ -184,12 +184,24 @@ export function createWriter(
                 `
                         you should follow the following format:
                         # Title: write a compelling title for the news article
-                        ## Intro: write an engaging short intro for the news article
+                        ## Intro:write an engaging short intro for the news article
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
                     state.chainFormattedText
             },
+            // {
+            //     role: "user", 
+            //     content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+            //     `
+            //             you should follow the following format:
+            //             # Title: write a compelling title for the news article
+            //             ## Intro: write an engaging short intro for the news article
+            //             ## Section 1: xxxx(you can use a customized sub-title for a description)
+            //             Then, write a detailed description/story of the first section.
+            //         ` + 
+            //         state.chainFormattedText
+            // },
         ];
 
         const msg = await getLLM().invoke(message);

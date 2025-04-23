@@ -9,6 +9,8 @@ import { updateStateIcons } from "../game/utils/sceneUtils";
 import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
 import { generateImage } from "./dalleUtils";
 import { d3Script } from "./const";
+import { marked } from "marked";
+
 
 // const RouteAnnotation = Annotation.Root({
 //     input: Annotation<string>,
@@ -93,64 +95,272 @@ async function testBranchWork(
 
         // eval(d3Script)
 
-        let reportMessage = (await createHighlighter(content)) as any;
+        // let reportMessage = (await createHighlighter(content)) as any;
 
-        reportMessage = `\n\n\n\n${reportMessage}
-        \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        \n\n## Visualization I
-        \n\n<div id="test-chart" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        \n\n<div id="test-chart1" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        \n\n<div id="test-chart2" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        `;
+        // reportMessage = `\n\n\n\n${reportMessage}
+        // \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
+        // \n\n## Visualization I
+        // \n\n<div id="test-chart" style="
+        //     width: 100%; 
+        //     height: auto;
+        //     display: flex;
+        //     justify-content: center; 
+        //     align-items: center; 
+        //     margin-top: 20px;">
+        // </div>
+        // \n\n<div id="test-chart1" style="
+        //     width: 100%; 
+        //     height: auto;
+        //     display: flex;
+        //     justify-content: center; 
+        //     align-items: center; 
+        //     margin-top: 20px;">
+        // </div>
+        // \n\n<div id="test-chart2" style="
+        //     width: 100%; 
+        //     height: auto;
+        //     display: flex;
+        //     justify-content: center; 
+        //     align-items: center; 
+        //     margin-top: 20px;">
+        // </div>
+        // <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
+        // `;
 
-
-        const comments = await extractTSArray(await createVisualizationJudge(d3Code));
-        console.log("comments from routes", comments, d3Code);
-
-        if(comments){
-            reportMessage += `\n\n## Comments on Visualization`;
-            for (let i = 0; i < comments.length; i++){
-                reportMessage += `\n\n- ${comments[i]}`;
-            }
-        }
-
-        console.log("reportMessage before stringnify", reportMessage)
-
+        const markdownFromLLM = await createHighlighter(content) as any;
         
 
-        console.log("reportMessage after stringnify", reportMessage)
+        // const h1Match = markdownFromLLM.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        // const dynamicTitle = h1Match ? h1Match[1].replace(/^Title:\s*/i, '') : "Generated Report Summary";
 
-        const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+        // const markdownCleaned = markdownFromLLM.replace(/<h1[^>]*>.*?<\/h1>/i, '');
+        // const highlightedText = marked.parse(markdownCleaned);
 
-        if(writingComments){
-            reportMessage += `\n\n## Comments on Writing`;
-            for (let i = 1; i < writingComments.length; i++){
-                reportMessage += `\n\n- ${writingComments[i]}`;
-            }
-            scoreText.setText(writingComments[0]);
-        }
+        let dynamicTitle = "Generated Report Summary";
+let markdownCleaned = markdownFromLLM;
+
+const markdownTitleLine = markdownFromLLM
+  .split('\n')
+  .find((line: string) =>
+    line.trim().startsWith('#') && line.toLowerCase().includes('title:')
+  );
+
+
+if (markdownTitleLine) {
+  dynamicTitle = markdownTitleLine.replace(/^#+\s*Title:\s*/i, '').trim();
+  markdownCleaned = markdownFromLLM.replace(markdownTitleLine, '');
+} else {
+  const h1Match = markdownFromLLM.match(/<h1[^>]*>(.*?)<\/h1>/i);
+  if (h1Match) {
+    dynamicTitle = h1Match[1].replace(/^Title:\s*/i, '').trim();
+    markdownCleaned = markdownFromLLM.replace(h1Match[0], '');
+  }
+}
+
+const highlightedText = marked.parse(markdownCleaned);
+
+
+
+
+        const style = `
+  <style>
+    .newspaper {
+      font-family: "Georgia", serif;
+      background-color: #f9f6ef;
+      color: #000;
+      padding: 40px;
+      max-width: 960px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    .newspaper-title {
+      font-size: 36px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 0;
+      text-transform: uppercase;
+    }
+    .authors {
+      font-size: 14px;
+      text-align: center;
+      margin-top: 5px;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+    .headline {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: left;
+      margin-top: 20px;
+    }
+    .newspaper-body {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .article-text {
+    flex: 2;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+.article-graphic {
+  flex: 1;
+  max-width: 30%;
+  text-align: center;
+}
+
+.article-graphic img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto 20px auto;
+}
+
+
+.visualization-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  margin: 30px 0;
+  flex-wrap: nowrap;
+}
+
+
+.vis-box {
+  width: 220px;
+  height: 220px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+
+
+    .comment-section {
+      margin-top: 30px;
+    }
+    .comment-section h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .comment-section ul {
+      padding-left: 20px;
+    }
+    .comment-section li {
+      margin-bottom: 5px;
+    }
+
+
+
+
+
+
+  </style>
+`;
+
+const comments = await extractTSArray(await createVisualizationJudge(d3Code));
+const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+
+let commentsHTML = "";
+
+if (comments?.length > 0) {
+  commentsHTML += `
+    <div class="comment-section">
+      <h3>Comments on Visualization</h3>
+      <ul>
+        ${comments.map(c => `<li>${c}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+if (writingComments?.length > 1) {
+  commentsHTML += `
+    <div class="comment-section">
+      <h3>Comments on Writing</h3>
+      <ul>
+        ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+  scoreText.setText(writingComments[0]);
+}
+
+const body = `
+  <div class="newspaper">
+    <!-- Header -->
+    <h1 class="newspaper-title">The Visual Times</h1>
+    <p class="authors">Auto Generated Report</p>
+    <hr />
+    <h2 class="headline">${dynamicTitle}</h2>
+    <hr />
+
+    <div class="newspaper-body">
+      <div class="article-text">
+        ${highlightedText}
+      </div>
+      <div class="article-graphic">
+        <img src="${URL}" alt="Generated Image" />
+      </div>
+    </div>
+
+<h3 style="text-align: center;">Visualization I</h3>
+<div class="visualization-row">
+  <div id="test-chart" class="vis-box"></div>
+  <div id="test-chart1" class="vis-box"></div>
+  <div id="test-chart2" class="vis-box"></div>
+</div>
+
+
+    <hr style="...">
+    ${commentsHTML}
+  </div>
+`;
+
+let reportMessage = `${style}${body}`;
+
+// const comments = await extractTSArray(await createVisualizationJudge(d3Code));
+// console.log("comments from routes", comments, d3Code);
+
+// if (comments && comments.length > 0) {
+//   reportMessage += `
+//     <div class="comment-section">
+//       <h3>Comments on Visualization</h3>
+//       <ul>
+//         ${comments.map(c => `<li>${c}</li>`).join('')}
+//       </ul>
+//     </div>
+//   `;
+// }
+
+// console.log("reportMessage before stringnify", reportMessage);
+
+// // === Comments Section - Writing ===
+// const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+
+// if (writingComments && writingComments.length > 1) {
+//   reportMessage += `
+//     <div class="comment-section">
+//       <h3>Comments on Writing</h3>
+//       <ul>
+//         ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
+//       </ul>
+//     </div>
+//   `;
+//   scoreText.setText(writingComments[0]);
+// }
+
+// console.log("reportMessage after stringnify", reportMessage);
+
+
 
         // Scene.scoreText = writingComments[0];
         

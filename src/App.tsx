@@ -86,8 +86,12 @@ function App()
                 console.log("report[index].report", report[index].report);
             
 
-                const compiledHTML = marked(report[index].report);
-                setHtmlReport(compiledHTML);
+                // const compiledHTML = marked(report[index].report);
+                // const compiledHTML = marked.parse(report[index].report);
+
+                setHtmlReport(report[index].report);
+
+                //setHtmlReport(compiledHTML);
 
                 if(!isOpen)setIsOpen(true);
 
