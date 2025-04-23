@@ -5,6 +5,8 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 import { getStoredOpenAIKey } from '../utils/openai';
+import { marked } from "marked";
+
 
 
 const kidneyPath: string = "./data/kidney.csv";
@@ -205,15 +207,24 @@ export function createWriter(
         ];
 
         const msg = await getLLM().invoke(message);
+
+        const rawText = msg.content as string;
+        const htmlContent = marked.parse(rawText);
+        
         
         
         console.log("writer msg: ", msg.content);
 
         const reportMessage = `
-        \n\n${msg.content}
+        <div class="report-body">
+            ${htmlContent}
+        </div>
         `;
-    
 
+        // const reportMessage = `
+        // \n\n${msg.content}
+        // `;
+    
         EventBus.emit("final-report", { report: reportMessage, department: "chaining" });
         // send the final report to final location
         const originalAgent2X = agent.x;

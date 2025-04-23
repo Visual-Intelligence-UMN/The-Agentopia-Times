@@ -114,6 +114,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
           const spec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "description": write your description here,
+            "background": "#f9f6ef",
             "data": {
               "url": "${dataPath}",
               "format": {

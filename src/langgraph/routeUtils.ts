@@ -162,7 +162,7 @@ const highlightedText = marked.parse(markdownCleaned);
 
 
 
-        const style = `
+const style = `
   <style>
     .newspaper {
       font-family: "Georgia", serif;
@@ -174,6 +174,7 @@ const highlightedText = marked.parse(markdownCleaned);
       border-radius: 12px;
       box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
+
     .newspaper-title {
       font-size: 36px;
       font-weight: bold;
@@ -181,6 +182,7 @@ const highlightedText = marked.parse(markdownCleaned);
       margin-bottom: 0;
       text-transform: uppercase;
     }
+
     .authors {
       font-size: 14px;
       text-align: center;
@@ -188,59 +190,69 @@ const highlightedText = marked.parse(markdownCleaned);
       margin-bottom: 20px;
       font-style: italic;
     }
+
     .headline {
       font-size: 28px;
       font-weight: bold;
       text-align: left;
       margin-top: 20px;
     }
+
     .newspaper-body {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-  }
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
 
-  .article-text {
-    flex: 2;
-    font-size: 16px;
-    line-height: 1.6;
-  }
+    .article-text {
+      flex: 1;
+      font-size: 16px;
+      line-height: 1.6;
+      min-width: 300px;
+    }
 
-.article-graphic {
-  flex: 1;
-  max-width: 30%;
-  text-align: center;
-}
+    .article-graphic {
+      flex: 1;
+      max-width: 48%;
+      text-align: center;
+    }
 
-.article-graphic img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  display: block;
-  margin: 0 auto 20px auto;
-}
+    .article-graphic img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+      margin: 50px auto 20px auto;
+    }
 
+    .vis-above {
+      width: 100%;
+      height: 260px;
+      border-radius: 8px;
+      margin-top: 80px;
+      margin-bottom: 20px;
+    }
 
-.visualization-row {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 20px;
-  margin: 30px 0;
-  flex-wrap: nowrap;
-}
+    .visualization-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 30px 0;
+    }
 
-
-.vis-box {
-  width: 220px;
-  height: 220px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 8px;
-  border-radius: 8px;
-}
+    .vis-box {
+      flex: 1 1 40%;
+      height: auto;
+      width: 100%;
+      min-width: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      border-radius: 6px;
+      background-color: #f9f6ef;
+    }
 
 
 
@@ -257,12 +269,6 @@ const highlightedText = marked.parse(markdownCleaned);
     .comment-section li {
       margin-bottom: 5px;
     }
-
-
-
-
-
-
   </style>
 `;
 
@@ -296,7 +302,6 @@ if (writingComments?.length > 1) {
 
 const body = `
   <div class="newspaper">
-    <!-- Header -->
     <h1 class="newspaper-title">The Visual Times</h1>
     <p class="authors">Auto Generated Report</p>
     <hr />
@@ -309,18 +314,18 @@ const body = `
       </div>
       <div class="article-graphic">
         <img src="${URL}" alt="Generated Image" />
+        <div id="test-chart" class="vis-above"></div>
       </div>
     </div>
 
 <h3 style="text-align: center;">Visualization I</h3>
 <div class="visualization-row">
-  <div id="test-chart" class="vis-box"></div>
   <div id="test-chart1" class="vis-box"></div>
   <div id="test-chart2" class="vis-box"></div>
 </div>
 
 
-    <hr style="...">
+    <hr style="margin: 30px 0;" />
     ${commentsHTML}
   </div>
 `;
