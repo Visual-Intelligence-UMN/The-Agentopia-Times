@@ -113,7 +113,7 @@ export function createJournalist(
             Does this confirm who was the better hitter in each individual year?
         `;
 
-        if(!state.votingToChaining) {
+        if(state.votingToChaining) {
             if(state.votingToChaining.includes("Kidney")){
                 // datasetPath = ucbPath;
                 datasetPath = kidneyPath;

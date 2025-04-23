@@ -18,6 +18,8 @@ import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUt
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
+import { restart } from '../assets/sprites';
+import { randomAssignTopic } from '../../utils/sceneUtils';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
 
@@ -56,6 +58,7 @@ export class Level2 extends ParentScene {
   private reportBtn!: Phaser.GameObjects.Image;
 
   private routeStartBtn!: Phaser.GameObjects.Rectangle;
+  private restartBtn!: Phaser.GameObjects.Image;
   private routeStartLabel!: Phaser.GameObjects.Text;
 
   private votingStartBtn!: Phaser.GameObjects.Rectangle;
@@ -196,6 +199,7 @@ export class Level2 extends ParentScene {
     let overlappedItems = new Set();
     let isDebate = false;
     let debateStartBtn = null;
+    let restartBtn = null;
     let debateStartLabel = null;
 
     this.physics.add.overlap(
@@ -216,6 +220,14 @@ export class Level2 extends ParentScene {
             .setScrollFactor(0)
             .setDepth(1001)
             .setInteractive();
+
+          restartBtn = this.add
+            .image(50, 400, 'restart')
+            .setScrollFactor(0)
+            .setDepth(1001)
+            .setInteractive()
+
+          console.log("debateStartBtn", debateStartBtn, restartBtn);
 
             //const creditsIcon = this.add.image(570, 35, 'coinIcon') 
   //   .setOrigin(1, 0.5) 
@@ -506,6 +518,18 @@ return result;
           //   .setScrollFactor(0)
           //   .setDepth(1002);
 
+          this.restartBtn = this.add
+          .image(50, 400, 'restart')
+          .setScrollFactor(0)
+          .setDepth(1001)
+          .setAlpha(0.75)
+          .setScale(1.5) // Increase the size of the image by scaling it
+          .setInteractive()
+
+    this.restartBtn.on('pointerdown', (pointer: any) => {
+      this.scene.restart();
+    })
+
     this.debateStartBtn.on('pointerdown', async () => {
       this.registry.set('isWorkflowRunning', true);
       console.log("btn pre-start zones data", this.parallelZones);
@@ -522,6 +546,8 @@ return result;
         console.log("agent2", agent2, agent2?.x, agent2?.y);
 
         console.log("btn start zones data", this.parallelZones);
+
+        const topic = randomAssignTopic();
 
         const datamap = transformDataMap(this.parallelZones, this.controllableCharacters);
         const datamap2 = transformDataMap(this.votingZones, this.controllableCharacters);
