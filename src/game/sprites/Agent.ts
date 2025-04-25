@@ -244,9 +244,9 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
     private createWorkAnimations(atlasKey: string) {
 
-      console.log("✅ texture keys:", this.scene.textures.getTextureKeys());
-      console.log("✅ work texture object:", this.scene.textures.get('work'));
-      console.log("✅ work frames:", this.scene.textures.get('work').getFrameNames());
+      // console.log("✅ texture keys:", this.scene.textures.getTextureKeys());
+      // console.log("✅ work texture object:", this.scene.textures.get('work'));
+      // console.log("✅ work frames:", this.scene.textures.get('work').getFrameNames());
       
       
 
