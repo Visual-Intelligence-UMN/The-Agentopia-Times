@@ -46,6 +46,9 @@ export class Boot extends Scene {
     this.load.atlas(key.atlas.player, assets.atlas.image, assets.atlas.data);
     this.load.atlas(key.atlas.bias, assets.atlas.biasImage, assets.atlas.biasData);
 
+    this.load.atlas(key.atlas.workPlayer, assets.atlas.workImage, assets.atlas.workData);
+    this.load.atlas(key.atlas.workBias, assets.atlas.workBiasImage, assets.atlas.workBiasData);
+
     // remove it during deployment
     // this.scene.start('level2');
 

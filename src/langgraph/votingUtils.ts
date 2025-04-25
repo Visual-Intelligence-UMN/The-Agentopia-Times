@@ -16,7 +16,8 @@ export async function parallelVotingExecutor(
 ) {
     console.log("[Debug] Starting parallelVotingExecutor...");
     const originalPositions = agents.map(agent => ({ x: agent.x, y: agent.y }));
-    await updateStateIcons(zones, "work");
+
+    // await updateStateIcons(zones, "work");
 
     const llm = initializeLLM();
 
@@ -28,6 +29,11 @@ export async function parallelVotingExecutor(
         console.log(`[Debug] Agent ${agent.getName()} is moving to voting location...`);
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Go vote");
         console.log(`[Debug] Agent ${agent.getName()} has reached the voting location.`);
+
+        
+        // agent.anims.play(`${agent.name}_${'player_work'}`, true);
+        agent.setAgentState("work");
+        
 
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(`[Debug] Agent ${agent.getName()} is submitting vote to LLM...`);
@@ -68,7 +74,7 @@ export function createAggregator(
         let llmInput = votes.join("; ");
         const llm = initializeLLM();
 
-        await updateStateIcons(zones, "work");
+        // await updateStateIcons(zones, "work");
 
         console.log("[Debug] Submitting aggregated votes to LLM...");
         const decision = await llm.invoke(`
@@ -82,7 +88,7 @@ export function createAggregator(
         let originalAgent1X = agents[agents.length-1].x;
         let originalAgent1Y = agents[agents.length-1].y;
 
-        await updateStateIcons(zones, "mail");
+        // await updateStateIcons(zones, "mail");
 
         console.log("[Debug] Sending decision to final location...");
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
@@ -102,7 +108,7 @@ export function createAggregator(
         EventBus.emit("final-report", { report: decision.content, department: "voting" });
         console.log("[Debug] Final report emitted.");
 
-        await updateStateIcons(zones, "idle");
+        // await updateStateIcons(zones, "idle");
         console.log("[Debug] Aggregator completed.");
 
         return { ...state, votingToChaining: decision.content };

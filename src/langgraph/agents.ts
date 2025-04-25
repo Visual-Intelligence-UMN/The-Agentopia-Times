@@ -129,9 +129,11 @@ export function createJournalist(
         const res = await fetch(datasetPath);
         const csvRaw = await res.text();
         console.log("csvRaw", csvRaw);
+
+        agent.setAgentState("work");
         
-        await updateStateIcons(zones, "work", 0);
-        await updateStateIcons(scene.chainingZones, "work");
+        // await updateStateIcons(zones, "work", 0);
+        // await updateStateIcons(scene.chainingZones, "work");
 
         const message = [
             {
@@ -150,12 +152,12 @@ export function createJournalist(
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
 
-        await updateStateIcons(zones, "mail", 0);
+        // await updateStateIcons(zones, "mail", 0);
 
         await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Send Message");
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
-        await updateStateIcons(zones, "idle", 0);
+        // await updateStateIcons(zones, "idle", 0);
 
         return { chainFormattedText: msg.content };
     };
@@ -173,7 +175,8 @@ export function createWriter(
     return async function writer(state: typeof GeneralStateAnnotation.State){
         console.log("writer state: ", state.chainFormattedText);
 
-        await updateStateIcons(zones, "work", 1);
+        agent.setAgentState("work");
+        // await updateStateIcons(zones, "work", 1);
 
         const message = [
             {
@@ -230,8 +233,8 @@ export function createWriter(
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;
 
-        await updateStateIcons(zones, "mail", 1);
-        await updateStateIcons(scene.chainingZones, "mail");     
+        // await updateStateIcons(zones, "mail", 1);
+        // await updateStateIcons(scene.chainingZones, "mail");     
         
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await createReport(scene, "chaining", destination.x, destination.y);
@@ -242,8 +245,8 @@ export function createWriter(
         await transmitReport(scene, report, 767, 330);
         // agent return to original location
 
-        await updateStateIcons(scene.chainingZones, "idle");
-        await updateStateIcons(zones, "idle", 1);
+        // await updateStateIcons(scene.chainingZones, "idle");
+        // await updateStateIcons(zones, "idle", 1);
 
         return { chainingToRouting: msg.content };
     }

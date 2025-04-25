@@ -449,7 +449,7 @@ export function createLeaf(
         
         testBranchWork(state.routeDecision, state, state.chainingToRouting, agent, scoreText);
 
-        await updateStateIcons(zones, "mail");
+        // await updateStateIcons(zones, "mail");
 
         await autoControlAgent(scene, agent, tilemap, 767, 330, "Send report to final location"); //ERROR
         // create the report from routing graph
@@ -459,7 +459,7 @@ export function createLeaf(
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
 
-        await updateStateIcons(zones, "idle");
+        // await updateStateIcons(zones, "idle");
 
         return { routeOutput: state.chainingToRouting };
     };
@@ -582,7 +582,8 @@ export function createRouter(
 
         console.log("checking for data", state)
 
-        await updateStateIcons(zones, "work");
+        // await updateStateIcons(zones, "work");
+        
 
         const decision = await routeLLM.invoke([
             {

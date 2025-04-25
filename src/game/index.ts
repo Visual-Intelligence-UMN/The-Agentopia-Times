@@ -20,7 +20,8 @@ new Phaser.Game({
   physics: {
     default: 'arcade',
     arcade: {
-      debug: import.meta.env.DEV,
+      // debug: import.meta.env.DEV,
+      debug: false,
     },
   },
   disableContextMenu: import.meta.env.PROD,

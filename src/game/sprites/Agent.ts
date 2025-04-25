@@ -86,6 +86,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     // Create sprite animations
     this.createAnimations(key.atlas.player);
 
+    // this.createWorkAnimations(key.atlas.work);
+
     this.selector = scene.physics.add.staticBody(x - 8, y + 32, 16, 16);
 
     // this.setInteractive({ useHandCursor: true });
@@ -240,6 +242,61 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
+    private createWorkAnimations(atlasKey: string) {
+
+      console.log("✅ texture keys:", this.scene.textures.getTextureKeys());
+      console.log("✅ work texture object:", this.scene.textures.get('work'));
+      console.log("✅ work frames:", this.scene.textures.get('work').getFrameNames());
+      
+      
+
+      const anims = this.scene.anims;
+    
+      const baseKey = this.name;
+          
+      const animList = [
+        { key: 'player_work', prefix: 'misa-work.' },
+      ];
+    
+      for (const { key, prefix } of animList) {
+        const fullKey = `${baseKey}_${key}`;
+    
+        if (anims.exists(fullKey)) anims.remove(fullKey);
+    
+        anims.create({
+          key: fullKey,
+          frames: anims.generateFrameNames(atlasKey, {
+            prefix,
+            start: 0,
+            end: 11,
+            zeroPad: 3,
+          }),
+          frameRate: 10,
+          repeat: -1,
+        });
+      }
+    }
+
+    public setAgentState(state: 'work' | 'idle') {
+      if (state === 'work') {
+        if (!this.isBiased) {
+          this.setTexture(key.atlas.workPlayer);
+          this.createWorkAnimations(key.atlas.workPlayer);
+          this.anims.play(`${this.name}_player_work`, true);
+        } else {
+          this.setTexture(key.atlas.workBias);
+          this.createWorkAnimations(key.atlas.workBias);
+          this.anims.play(`${this.name}_player_work`, true);
+        }
+      } else {
+        this.anims.stop();
+        this.setTexture(this.isBiased ? key.atlas.bias : key.atlas.player);
+        this.createAnimations(this.isBiased ? key.atlas.bias : key.atlas.player);
+      }
+    }
+    
+    
+
     private createAnimations(atlasKey: string) {
       const anims = this.scene.anims;
     
@@ -262,7 +319,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           frames: anims.generateFrameNames(atlasKey, {
             prefix,
             start: 0,
-            end: 3,
+            end: 5,
             zeroPad: 3,
           }),
           frameRate: 10,
