@@ -151,14 +151,14 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     //   .setOrigin(0.5).setDepth(1000);
 
     let yOffset = 90;
-    let task = "Voting for Decision";
+    let task = "Discussion for Title";
 
     if (zoneName === "parallel") {
       if (i === 0) {
-        task = "Data Analysis";
+        task = "Analytics Room";
         yOffset = -55;
       } else {
-        task = "Writing Report";
+        task = "Writing Room";
         yOffset = -50;
       }
     } else if (zoneName === "routing") {
