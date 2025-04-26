@@ -4,345 +4,345 @@
 			"image": "bias.png",
 			"format": "RGBA8888",
 			"size": {
-				"w": 345,
-				"h": 127
+				"w": 327,
+				"h": 121
 			},
 			"scale": 2,
 			"frames": [
 				{
 					"filename": "misa-front-walk.000",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 58
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 48
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 58
 					},
 					"frame": {
-						"x": 50,
-						"y": 72,
-						"w": 30,
-						"h": 48
+						"x": 41,
+						"y": 63,
+						"w": 40,
+						"h": 58
 					}
 				},
 				{
 					"filename": "misa-back-walk.002",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 62
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 52
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					},
 					"frame": {
-						"x": 7,
-						"y": 7,
-						"w": 30,
-						"h": 52
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					}
 				},
 				{
 					"filename": "misa-back-walk.000",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 58
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 48
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 58
 					},
 					"frame": {
-						"x": 7,
-						"y": 72,
-						"w": 30,
-						"h": 48
+						"x": 0,
+						"y": 63,
+						"w": 40,
+						"h": 58
 					}
 				},
 				{
 					"filename": "misa-front-walk.002",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 62
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 52
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					},
 					"frame": {
-						"x": 50,
-						"y": 7,
-						"w": 30,
-						"h": 52
+						"x": 41,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					}
 				},
 				{
 					"filename": "misa-left-walk.002",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 62
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 52
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					},
 					"frame": {
-						"x": 93,
-						"y": 7,
-						"w": 30,
-						"h": 52
+						"x": 82,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					}
 				},
 				{
 					"filename": "misa-left-walk.000",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 58
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 48
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 58
 					},
 					"frame": {
-						"x": 93,
-						"y": 72,
-						"w": 30,
-						"h": 48
+						"x": 82,
+						"y": 63,
+						"w": 40,
+						"h": 58
 					}
 				},
 				{
 					"filename": "misa-right-walk.002",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 62
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 52
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					},
 					"frame": {
-						"x": 136,
-						"y": 7,
-						"w": 30,
-						"h": 52
+						"x": 123,
+						"y": 0,
+						"w": 40,
+						"h": 62
 					}
 				},
 				{
 					"filename": "misa-right-walk.000",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 58
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 48
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 58
 					},
 					"frame": {
-						"x": 136,
-						"y": 72,
-						"w": 30,
-						"h": 48
+						"x": 123,
+						"y": 63,
+						"w": 40,
+						"h": 58
 					}
 				},
 				{
 					"filename": "misa-back-walk.001",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 179,
-						"y": 7,
-						"w": 30,
-						"h": 50
+						"x": 164,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-back-walk.003",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 179,
-						"y": 70,
-						"w": 30,
-						"h": 50
+						"x": 164,
+						"y": 61,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-front-walk.001",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 222,
-						"y": 7,
-						"w": 30,
-						"h": 50
+						"x": 205,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-front-walk.003",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 222,
-						"y": 70,
-						"w": 30,
-						"h": 50
+						"x": 205,
+						"y": 61,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-left-walk.001",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 265,
-						"y": 7,
-						"w": 30,
-						"h": 50
+						"x": 246,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-left-walk.003",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 265,
-						"y": 70,
-						"w": 30,
-						"h": 50
+						"x": 287,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-right-walk.001",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 308,
-						"y": 7,
-						"w": 30,
-						"h": 50
+						"x": 246,
+						"y": 61,
+						"w": 40,
+						"h": 60
 					}
 				},
 				{
 					"filename": "misa-right-walk.003",
 					"rotated": false,
-					"trimmed": true,
+					"trimmed": false,
 					"sourceSize": {
 						"w": 40,
 						"h": 60
 					},
 					"spriteSourceSize": {
-						"x": 5,
-						"y": 5,
-						"w": 30,
-						"h": 50
+						"x": 0,
+						"y": 0,
+						"w": 40,
+						"h": 60
 					},
 					"frame": {
-						"x": 308,
-						"y": 70,
-						"w": 30,
-						"h": 50
+						"x": 287,
+						"y": 61,
+						"w": 40,
+						"h": 60
 					}
 				}
 			]
@@ -351,6 +351,6 @@
 	"meta": {
 		"app": "https://www.codeandweb.com/texturepacker",
 		"version": "3.0",
-		"smartupdate": "$TexturePacker:SmartUpdate:a6f1cc1d6b9c3c252223070eafeb538b:0bdebd48652b9dd6c60bf24895b6e4a8:9a1bf034be66d75f50c2c26bde799e0c$"
+		"smartupdate": "$TexturePacker:SmartUpdate:ba126991ddbb01425b431d96929d0799:0bdebd48652b9dd6c60bf24895b6e4a8:9a1bf034be66d75f50c2c26bde799e0c$"
 	}
 }

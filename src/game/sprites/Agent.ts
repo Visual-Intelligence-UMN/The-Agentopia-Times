@@ -23,7 +23,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   selector: Phaser.Physics.Arcade.StaticBody;
   name: string;
 
-  private nameTag: Phaser.GameObjects.Text;
+  // private nameTag: Phaser.GameObjects.Text;
   private memory: Memory[] = [];
   private persona: string = "a helpful AI assistant";
   private instruction: string = "";
@@ -56,15 +56,15 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     this.name = name;
     this.persona = persona;
 
-    this.nameTag = scene.add.text(x, y - 20, name, {
-        fontSize: '14px',
-        color: '#ffffff',
-        backgroundColor: '#00000088',
-        padding: { x: 4, y: 2 },
-        align: 'center',
-      }).setOrigin(0.5, 1); 
+    // this.nameTag = scene.add.text(x, y - 20, name, {
+    //     fontSize: '14px',
+    //     color: '#ffffff',
+    //     backgroundColor: '#00000088',
+    //     padding: { x: 4, y: 2 },
+    //     align: 'center',
+    //   }).setOrigin(0.5, 1); 
 
-    this.nameTag.setDepth(10);
+    // this.nameTag.setDepth(10);
     
     // Add the sprite to the scene
     scene.add.existing(this);
@@ -86,6 +86,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     // Create sprite animations
     this.createAnimations(key.atlas.player);
 
+    // this.createWorkAnimations(key.atlas.work);
+
     this.selector = scene.physics.add.staticBody(x - 8, y + 32, 16, 16);
 
     // this.setInteractive({ useHandCursor: true });
@@ -105,7 +107,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
       if (gameObject === this) {
         this.x = dragX;
         this.y = dragY;
-        this.nameTag.setPosition(this.x, this.y - 25); 
+        // this.nameTag.setPosition(this.x, this.y - 25); 
       }
     });
 
@@ -123,7 +125,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    this.nameTag.setPosition(this.x, this.y - 25);
+    // this.nameTag.setPosition(this.x, this.y - 25);
   }
 
   public getName(){
@@ -140,7 +142,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   public changeNameTagColor(color: string){
-    this.nameTag.setColor(color);
+    // this.nameTag.setColor(color);
   } 
 
   public storeMemory(system: string, user: string, gpt: string, currentPrompts: string[], result: boolean) {
@@ -221,7 +223,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           // update to biased agent
           // choose the designated bias by occupation
           this.name = "Biased " + this.name;
-          this.nameTag.setText(this.name);
+          // this.nameTag.setText(this.name);
           this.isBiased = true;
           
           this.setTexture(key.atlas.bias);
@@ -230,7 +232,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
         } else {
           // update to unbiased agent
           this.name = this.name.split(' ').slice(-1).join(' ');
-          this.nameTag.setText(this.name);
+          // this.nameTag.setText(this.name);
           this.isBiased = false;
 
           this.setTexture(key.atlas.player);
@@ -239,6 +241,61 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
         }
       }
     }
+
+    private createWorkAnimations(atlasKey: string) {
+
+      // console.log("✅ texture keys:", this.scene.textures.getTextureKeys());
+      // console.log("✅ work texture object:", this.scene.textures.get('work'));
+      // console.log("✅ work frames:", this.scene.textures.get('work').getFrameNames());
+      
+      
+
+      const anims = this.scene.anims;
+    
+      const baseKey = this.name;
+          
+      const animList = [
+        { key: 'player_work', prefix: 'misa-work.' },
+      ];
+    
+      for (const { key, prefix } of animList) {
+        const fullKey = `${baseKey}_${key}`;
+    
+        if (anims.exists(fullKey)) anims.remove(fullKey);
+    
+        anims.create({
+          key: fullKey,
+          frames: anims.generateFrameNames(atlasKey, {
+            prefix,
+            start: 0,
+            end: 11,
+            zeroPad: 3,
+          }),
+          frameRate: 10,
+          repeat: -1,
+        });
+      }
+    }
+
+    public setAgentState(state: 'work' | 'idle') {
+      if (state === 'work') {
+        if (!this.isBiased) {
+          this.setTexture(key.atlas.workPlayer);
+          this.createWorkAnimations(key.atlas.workPlayer);
+          this.anims.play(`${this.name}_player_work`, true);
+        } else {
+          this.setTexture(key.atlas.workBias);
+          this.createWorkAnimations(key.atlas.workBias);
+          this.anims.play(`${this.name}_player_work`, true);
+        }
+      } else {
+        this.anims.stop();
+        this.setTexture(this.isBiased ? key.atlas.bias : key.atlas.player);
+        this.createAnimations(this.isBiased ? key.atlas.bias : key.atlas.player);
+      }
+    }
+    
+    
 
     private createAnimations(atlasKey: string) {
       const anims = this.scene.anims;
@@ -262,7 +319,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           frames: anims.generateFrameNames(atlasKey, {
             prefix,
             start: 0,
-            end: 3,
+            end: 5,
             zeroPad: 3,
           }),
           frameRate: 10,
