@@ -30,6 +30,8 @@ export class Boot extends Scene {
     this.load.image(key.image.interior, assets.tilesets.interior);
     this.load.image(key.image.exterior, assets.tilesets.exterior);
     this.load.image(key.image.coinIcon, assets.sprites.coinIcon);
+    this.load.image(key.image.baseball, assets.sprites.baseball);
+    this.load.image(key.image.kidney, assets.sprites.kidney);
     this.load.image(key.image.restart, assets.sprites.restart);
     this.load.image(key.image.start, assets.sprites.start);
     this.load.image(key.image.logo, assets.sprites.logo);

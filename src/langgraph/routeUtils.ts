@@ -302,8 +302,8 @@ if (writingComments?.length > 1) {
 
 const body = `
   <div class="newspaper">
-    <h1 class="newspaper-title">The Visual Times</h1>
-    <p class="authors">Auto Generated Report</p>
+    <h1 class="newspaper-title">The Agentopia Times</h1>
+    <p class="authors">Written by Professional LLM Journalists</p>
     <hr />
     <h2 class="headline">${dynamicTitle}</h2>
     <hr />
@@ -453,7 +453,7 @@ export function createLeaf(
 
         await autoControlAgent(scene, agent, tilemap, 767, 330, "Send report to final location"); //ERROR
         // create the report from routing graph
-        const report = await createReport(scene, "routing", 767, 330);
+        const report = await createReport(scene, "routing", 767, 345);
         // transmit the report to the final location
         await transmitReport(scene, report, destination.x, destination.y);
         // move the agent back to the original position

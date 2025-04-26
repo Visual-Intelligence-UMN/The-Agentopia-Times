@@ -170,29 +170,6 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
 
     scene.roomStatusTexts.push(statusText);
 
-    // if (parallelZoneData.name !== "chaining") {
-    //   const hiringBtn = scene.add.image(centerX - 52.5, centerY + 20, "hiring")
-    //     .setDepth(1002).setInteractive();
-
-    //   hiringBtn.on("pointerdown", () => {
-    //     const bounds = getZoneBounds(parallelZone);
-    //     const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(scene.controllableCharacters, bounds);
-    //     const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
-
-    //     scene.agentGroup.add(agent);
-    //     scene.controllableCharacters.push(agent);
-    //     scene.agentList.set(agent.getName(), agent);
-
-    //     zones.forEach(zone => {
-    //       if (zone.zone === parallelZone) {
-    //         zone.agentsInside.add(agent);
-    //       }
-    //     });
-
-    //     console.log("New agent added at", agentX, agentY);
-    //   });
-    // }
-
     const stateIcon = scene.add.image(centerX + 35, centerY + 20, "idle").setDepth(1001).setScale(1);
 
     scene.zoneBackgrounds.push(background);
@@ -434,37 +411,6 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.tilemap.heightInPixels,
   );
 
-  const squareSize = 50;
-  const spacing = 20;
-  const startX = 75;
-  const startY = 520;
-  // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
-
-  // const mssgBtn = this.add
-  //   .rectangle(50, 400, 50, 50, 0x000000)
-  //   .setDepth(1002)
-  //   .setStrokeStyle(2, 0xffffff)
-  //   .setInteractive()
-  //   .setScrollFactor(0)
-  //   .setAlpha(0.5);
-
-  // const mssgBtnText = this.add
-  //   .text(30, 390, 'History \nMessage', {
-  //     fontSize: '10px',
-  //     color: '#ffffff',
-  //   })
-  //   .setScrollFactor(0)
-  //   .setDepth(1003);
-
-    // Add them to hudElements
-  //   if (this.hudElements) {
-  //     this.hudElements.push(mssgBtn, mssgBtnText);
-  //   }
-
-  // mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-  //   EventBus.emit("open-constitution");
-  // });
-
   this.controlMapping = [
     { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
     { activateIndex: 1, triggerKey: Phaser.Input.Keyboard.KeyCodes.TWO },
@@ -472,22 +418,6 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
   ];
 
   this.keyMap = setupKeyListeners(this.controlMapping, this.input);
-
-  // for (let i = 0; i < 3; i++) {
-  //   const text = this.add.text(
-  //     startX + i * (squareSize + spacing) - 15,
-  //     startY - 15,
-  //     `empty`,
-  //     {
-  //       fontSize: '10px',
-  //       color: '#ffffff',
-  //       wordWrap: { width: squareSize, useAdvancedWrap: true },
-  //     },
-  //   );
-  //   this.promptTexts.push(text);
-  //   text.setScrollFactor(0);
-  //   text.setDepth(1000);
-  // }
 
   
 }

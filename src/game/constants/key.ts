@@ -10,6 +10,8 @@ const image = {
   coin: 'coin',
   bird: 'bird',
   coinIcon: 'coinIcon',
+  baseball: 'baseball',
+  kidney: 'kidney',
   restart: 'restart',
   office: 'office',
   room_builder_office: 'room_builder_office',

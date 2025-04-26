@@ -60,6 +60,8 @@ export class Level2 extends ParentScene {
   private routeStartBtn!: Phaser.GameObjects.Rectangle;
   private restartBtn!: Phaser.GameObjects.Image;
   private routeStartLabel!: Phaser.GameObjects.Text;
+  private baseBallBtn!: Phaser.GameObjects.Image;
+  private kidneyBtn!: Phaser.GameObjects.Image;
 
   private votingStartBtn!: Phaser.GameObjects.Rectangle;
   private votingStartLabel!: Phaser.GameObjects.Text;
@@ -69,12 +71,16 @@ export class Level2 extends ParentScene {
   private isCameraFollowing: boolean = false; 
 
   private debugGraphics!: Phaser.GameObjects.Graphics;
+  private hoverWindow?: Phaser.GameObjects.Rectangle;
+  private hoverWindowText?: Phaser.GameObjects.Text;
+  private selectedText?: Phaser.GameObjects.Text;
+  private selectedDataset: string = "none";
 
 
 
   constructor() {
     super("level2");
-    this.sceneName = "Data Jounalism Simualtion";
+    this.sceneName = "";
     eventTargetBus.addEventListener("signal", (event:any) => {
       console.log(`Level2 received: ${event.detail}`);
       if (event.detail === "signal 1") {
@@ -215,17 +221,17 @@ export class Level2 extends ParentScene {
         if (overlappedItems.size === 2 && !isDebate) {
           isDebate = true;
           console.log('Agent is overlapping both debate positions!');
-          debateStartBtn = this.add
-            .image(50, 330, 'start')
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setInteractive();
+          // debateStartBtn = this.add
+          //   .image(50, 330, 'start')
+          //   .setScrollFactor(0)
+          //   .setDepth(1001)
+          //   .setInteractive();
 
-          restartBtn = this.add
-            .image(50, 400, 'restart')
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setInteractive()
+          // restartBtn = this.add
+          //   .image(50, 400, 'restart')
+          //   .setScrollFactor(0)
+          //   .setDepth(1001)
+          //   .setInteractive()
 
           console.log("debateStartBtn", debateStartBtn, restartBtn);
 
@@ -438,6 +444,24 @@ export class Level2 extends ParentScene {
 
     }
 
+
+  // 获取 tilemap 的尺寸
+  const mapWidth = this.tilemap.widthInPixels;
+  const mapHeight = this.tilemap.heightInPixels;
+
+  // 获取画布的尺寸
+  const canvasWidth = this.scale.width;
+  const canvasHeight = this.scale.height;
+
+  // 计算缩放比例
+  const zoomX = canvasWidth / mapWidth;
+  const zoomY = canvasHeight / mapHeight;
+  const zoom = Math.min(zoomX, zoomY);
+
+  // 设置摄像头缩放和中心
+  this.cameras.main.setZoom(zoom);
+  this.cameras.main.centerOn(mapWidth / 2, mapHeight / 2);
+
   }
 
   private async choosePattern(pattern: string) {
@@ -502,12 +526,124 @@ return result;
     console.log("All zones are occupied!");
     // create a start workflow button
     this.debateStartBtn = this.add
-    .image(50, 330, 'start')
+    .image(0, 330, 'start')
     .setScrollFactor(0)
     .setDepth(1010)
     .setInteractive()
-    .setAlpha(0.75)
+    .setAlpha(1)
     .setScale(1.5); // Increase the size of the image by scaling it
+
+    this.baseBallBtn = this.add
+    .image(0, 425, 'baseball')
+    .setScrollFactor(0)
+    .setDepth(1010)
+    .setInteractive()
+    .setAlpha(1)
+    .setScale(1.5)
+    .on("pointerover", (pointer:any)=>{
+      console.log("pointer over");
+      if(!this.hoverWindow){
+      this.hoverWindow = this
+        .add
+        .rectangle(pointer.x, pointer.y, 135, 50, 0x000000)
+        .setScrollFactor(0)
+        .setDepth(1011)
+        .setAlpha(1)
+        .setStrokeStyle(2, 0xffffff);
+      this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Baseball Player\nDataset").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5);
+      }
+
+  })
+  .on("pointerout", ()=>{
+    console.log("pointer out");
+    if(this.hoverWindow){
+      this.hoverWindow.destroy();
+      this.hoverWindowText?.destroy();
+      this.hoverWindow = undefined;
+      this.hoverWindowText = undefined;
+    }
+  })
+  .on("pointerdown", ()=>{
+    if(this.selectedDataset !== 'baseball'){
+      this.selectedDataset = "baseball";
+      this.selectedText?.destroy();
+      this.kidneyBtn.setDepth(1010);
+    this.selectedText = this.add.text(0, 425, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
+    this.baseBallBtn.setDepth(998);
+    
+    } else {
+      this.selectedDataset = "none";
+      this.selectedText?.destroy();
+      this.baseBallBtn.setDepth(1010);
+      
+    }
+  });
+
+    this.add.text(0, 280, 'Start\nSimulation')
+      .setScrollFactor(0)
+      .setDepth(1002)
+      .setAlpha(1)
+      .setFontSize(12.5) // Increased font size
+      .setColor('#ffffff')
+      .setOrigin(0.5, 0.5);
+
+      this.add.text(0, 375, 'Choose\nA Dataset')
+      .setScrollFactor(0)
+      .setDepth(1002)
+      .setAlpha(1)
+      .setFontSize(12.5) // Increased font size
+      .setColor('#ffffff')
+      .setOrigin(0.5, 0.5);
+    this.add.rectangle(0, 400, 100, 290, 0x000000).setScrollFactor(0).setDepth(999).setAlpha(0.5).setStrokeStyle(2, 0xffffff).disableInteractive();
+    
+    this.kidneyBtn = this.add
+    .image(0, 485, 'kidney')
+    .setScrollFactor(0)
+    .setDepth(1010)
+    .setInteractive()
+    .setAlpha(1)
+    .setScale(1.5)
+    .on("pointerover", (pointer:any)=>{
+        console.log("pointer over");
+        if(!this.hoverWindow){
+        this.hoverWindow = this
+          .add
+          .rectangle(pointer.x, pointer.y, 135, 50, 0x000000)
+          .setScrollFactor(0)
+          .setDepth(1011)
+          .setAlpha(1)
+          .setStrokeStyle(2, 0xffffff);
+        this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Kidney Treatments\nDataset").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5);
+          
+      }
+
+
+    })
+    .on("pointerout", ()=>{
+      console.log("pointer out");
+      if(this.hoverWindow){
+        this.hoverWindow.destroy();
+        this.hoverWindowText?.destroy();
+        this.hoverWindow = undefined;
+        this.hoverWindowText = undefined;
+      }
+    })
+    .on("pointerdown", ()=>{
+      if(this.selectedDataset !== 'kidney'){
+        this.selectedDataset = "kidney";
+        this.selectedText?.destroy();
+        this.baseBallBtn.setDepth(1010);
+      this.selectedText = this.add.text(0, 485, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
+      this.kidneyBtn.setDepth(998);
+      
+      } else {
+        this.selectedDataset = "none";
+        this.selectedText?.destroy();
+        this.kidneyBtn.setDepth(1010);
+        
+      }
+    });
+
 
           // this.debateStartLabel = this.add
           //   .text(35, 320, 'Start Workflow', {
@@ -517,18 +653,6 @@ return result;
           //   })
           //   .setScrollFactor(0)
           //   .setDepth(1002);
-
-          this.restartBtn = this.add
-          .image(50, 400, 'restart')
-          .setScrollFactor(0)
-          .setDepth(1001)
-          .setAlpha(0.75)
-          .setScale(1.5) // Increase the size of the image by scaling it
-          .setInteractive()
-
-    this.restartBtn.on('pointerdown', (pointer: any) => {
-      this.scene.restart();
-    })
 
     this.debateStartBtn.on('pointerdown', async () => {
       this.registry.set('isWorkflowRunning', true);
@@ -554,9 +678,9 @@ return result;
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
         
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:937, y:330}, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 250, y: 350}, {x:520, y:320}, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:320}, this.parallelZones);
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:950, y:350}, this.routeZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 275, y: 350}, {x:550, y:345}, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:350}, this.parallelZones);
 
         // await generateImage("generate a cute girl");
         // const imageGenerated = await generateChartImage();
@@ -741,5 +865,7 @@ return result;
     this.startWorkflowBtn.on("pointerdown", newEvent);
     this.startWorkflowLabel.setText(eventName);
   }
+
+  // Ensure this code is inside the `create` method after initializing `this.baseBallBtn`
 
 }

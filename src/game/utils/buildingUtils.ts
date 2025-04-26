@@ -174,15 +174,6 @@ export function buildRoomFromArray(
     worldLayer.setCollisionByProperty({ collides: true });
     aboveLayer.setCollisionByProperty({ collides: true });
   
-    if (debugGraphics) {
-      debugGraphics.clear();
-      worldLayer.renderDebug(debugGraphics, {
-        tileColor: null,
-        collidingTileColor: new Phaser.Display.Color(255, 0, 0, 255),
-        faceColor: new Phaser.Display.Color(0, 255, 0, 255),
-      });
-    }
-  
     console.log(`Bi-level rooms are accomplished by array creation!Starting (${startX}, ${startY})`);
   }
 

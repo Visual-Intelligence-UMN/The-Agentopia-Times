@@ -17,7 +17,7 @@ export function TilemapDebug(props: Props) {
 
   scene.input.keyboard!.on('keydown-SHIFT', () => {
     isDebug = !isDebug;
-    graphics.setAlpha(isDebug ? 0.75 : 0);
+    graphics.setAlpha(isDebug ? 0 : 0);
   });
 
   // Create worldLayer collision graphic above the player, but below the help text
@@ -29,14 +29,5 @@ export function TilemapDebug(props: Props) {
     });
   }
 
-  return (
-    <Graphics
-      alpha={0}
-      depth={Depth.AboveWorld}
-      ref={(gameobject) => {
-        graphics = gameobject;
-        renderDebug();
-      }}
-    />
-  );
+  return null;
 }
