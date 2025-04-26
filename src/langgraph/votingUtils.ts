@@ -31,8 +31,15 @@ export async function parallelVotingExecutor(
 
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(`[Debug] Agent ${agent.getName()} is submitting vote to LLM...`);
+
+
+        let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
+        if(scene.registry.get('currentDataset')==='kidney'){
+            datasetDescription = `The kidney stone treatment dataset is a renowned real-world example illustrating Simpson’s Paradox, where aggregated data can lead to conclusions that contradict those derived from subgroup analyses. In a 1986 study published in the British Medical Journal, researchers compared two treatments for kidney stones: Treatment A (open surgery) and Treatment B (percutaneous nephrolithotomy). When considering all patients collectively, Treatment B appeared more effective, boasting an overall success rate of 82.6% compared to 78.0% for Treatment A. However, when the data were stratified by stone size, Treatment A demonstrated higher success rates for both small stones (93.1% vs. 86.7%) and large stones (73.0% vs. 68.8%) . This paradox arises because a disproportionate number of patients with small stones—who generally have higher treatment success rates—received Treatment B, skewing the aggregated results. The dataset underscores the importance of considering confounding variables and subgroup analyses in statistical evaluations to avoid misleading conclusions.`;
+        }
+
         const llmPromise = llm.invoke(
-            `Vote for: ${votingTopic}. Please select only one option as your final decision. ${agent.getBias()}`
+            `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`
         );
         console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
         const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");
@@ -72,10 +79,8 @@ export function createAggregator(
 
         console.log("[Debug] Submitting aggregated votes to LLM...");
         const decision = await llm.invoke(`
-            aggregate vote: ${llmInput}; 
-            return the final result from this voting as the decision
-            If the final decision is Baseball, return "baseball"
-            If the final decision is Kidney Stone Treatment, return "kidney"
+            aggregate data: ${llmInput}; 
+            return the aggreated result in one title, don't add any other information or quotation marks.
         `);
         console.log("[Debug] Received final decision from LLM.");
 
