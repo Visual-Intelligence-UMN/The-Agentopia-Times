@@ -5,10 +5,12 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 import { getStoredOpenAIKey } from '../utils/openai';
+import { marked } from "marked";
 
 
-const kidneyPath: string = "./data/kidney.csv";
-const baseballPath: string = "./data/baseball.csv";
+
+export const kidneyPath: string = "./data/kidney.csv";
+export const baseballPath: string = "./data/baseball.csv";
 
 let cachedOpenAI: OpenAI | null = null;
 
@@ -113,8 +115,8 @@ export function createJournalist(
             Does this confirm who was the better hitter in each individual year?
         `;
 
-        if(!state.votingToChaining) {
-            if(state.votingToChaining.includes("Kidney")){
+        if(state.votingToChaining) {
+            if(scene.registry.get('currentDataset')==='kidney'){
                 // datasetPath = ucbPath;
                 datasetPath = kidneyPath;
                 researchQuestions = `
@@ -127,9 +129,11 @@ export function createJournalist(
         const res = await fetch(datasetPath);
         const csvRaw = await res.text();
         console.log("csvRaw", csvRaw);
+
+        agent.setAgentState("work");
         
-        await updateStateIcons(zones, "work", 0);
-        await updateStateIcons(scene.chainingZones, "work");
+        // await updateStateIcons(zones, "work", 0);
+        // await updateStateIcons(scene.chainingZones, "work");
 
         const message = [
             {
@@ -148,12 +152,12 @@ export function createJournalist(
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
 
-        await updateStateIcons(zones, "mail", 0);
+        // await updateStateIcons(zones, "mail", 0);
 
         await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Send Message");
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
-        await updateStateIcons(zones, "idle", 0);
+        // await updateStateIcons(zones, "idle", 0);
 
         return { chainFormattedText: msg.content };
     };
@@ -171,7 +175,8 @@ export function createWriter(
     return async function writer(state: typeof GeneralStateAnnotation.State){
         console.log("writer state: ", state.chainFormattedText);
 
-        await updateStateIcons(zones, "work", 1);
+        agent.setAgentState("work");
+        // await updateStateIcons(zones, "work", 1);
 
         const message = [
             {
@@ -184,31 +189,52 @@ export function createWriter(
                 `
                         you should follow the following format:
                         # Title: write a compelling title for the news article
-                        ## Intro: write an engaging short intro for the news article
+                        ## Intro:write an engaging short intro for the news article
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
                     state.chainFormattedText
             },
+            // {
+            //     role: "user", 
+            //     content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+            //     `
+            //             you should follow the following format:
+            //             # Title: write a compelling title for the news article
+            //             ## Intro: write an engaging short intro for the news article
+            //             ## Section 1: xxxx(you can use a customized sub-title for a description)
+            //             Then, write a detailed description/story of the first section.
+            //         ` + 
+            //         state.chainFormattedText
+            // },
         ];
 
         const msg = await getLLM().invoke(message);
+
+        const rawText = msg.content as string;
+        const htmlContent = marked.parse(rawText);
+        
         
         
         console.log("writer msg: ", msg.content);
 
         const reportMessage = `
-        \n\n${msg.content}
+        <div class="report-body">
+            ${htmlContent}
+        </div>
         `;
-    
 
+        // const reportMessage = `
+        // \n\n${msg.content}
+        // `;
+    
         EventBus.emit("final-report", { report: reportMessage, department: "chaining" });
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;
 
-        await updateStateIcons(zones, "mail", 1);
-        await updateStateIcons(scene.chainingZones, "mail");     
+        // await updateStateIcons(zones, "mail", 1);
+        // await updateStateIcons(scene.chainingZones, "mail");     
         
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await createReport(scene, "chaining", destination.x, destination.y);
@@ -219,8 +245,8 @@ export function createWriter(
         await transmitReport(scene, report, 767, 330);
         // agent return to original location
 
-        await updateStateIcons(scene.chainingZones, "idle");
-        await updateStateIcons(zones, "idle", 1);
+        // await updateStateIcons(scene.chainingZones, "idle");
+        // await updateStateIcons(zones, "idle", 1);
 
         return { chainingToRouting: msg.content };
     }

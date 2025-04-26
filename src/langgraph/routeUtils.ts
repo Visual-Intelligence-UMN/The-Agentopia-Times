@@ -4,11 +4,14 @@ import { initializeLLM } from "./chainingUtils";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { EventBus } from "../game/EventBus";
-import { createReport, GeneralStateAnnotation } from "./agents";
+import { baseballPath, createReport, GeneralStateAnnotation, kidneyPath } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
 import { generateImage } from "./dalleUtils";
 import { d3Script } from "./const";
+import { marked } from "marked";
+import { baseball, kidney } from "../game/assets/sprites";
+
 
 // const RouteAnnotation = Annotation.Root({
 //     input: Annotation<string>,
@@ -39,19 +42,20 @@ const sampleSystemPrompts = [
 
 
 async function testBranchWork(
+    scene: any,
     command: string, 
     state: any, 
     content: string, 
     agent: any,
     scoreText: Phaser.GameObjects.Text,
 ){
-    let datasetPath = covidPath;
+    let datasetPath = baseballPath;
 
     console.log("state route", state);
 
         if(!state.votingToChaining) {
-            if(state.votingToChaining.includes("UCB")){
-                datasetPath = ucbPath;
+            if(scene.registry.get('currentDataset')==='kidney'){
+                datasetPath = kidneyPath;
             }
         }
 
@@ -63,17 +67,6 @@ async function testBranchWork(
     console.log("command", command);
     
     if(command === "visualization"){
-        // const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        // console.log("cgartId1", chartId1)
-        // const visCode1 = await generateChartImage(chartId1, csvRaw);
-        // console.log("visCode", visCode1);
-        // EventBus.emit("d3-code", { d3Code: visCode1, id: chartId1});
-
-        // const chartId2 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        // console.log("cgartId2", chartId2)
-        // const visCode2 = await generateChartImage(chartId2, csvRaw);
-        // console.log("visCode", visCode2);
-        // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
         console.log("entered visualization branch")
 
         const chartData = await generateChartImage(csvRaw, agent, state);
@@ -86,71 +79,309 @@ async function testBranchWork(
         // EventBus.emit("final-report", { report: content, department: "routing" });
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
         console.log("URL", URL)
-
-        
-
         console.log("d3code", d3Code)
+        const markdownFromLLM = await createHighlighter(content) as any;
+      // let dynamicTitle = "Generated Report Summary";
+      // let markdownCleaned = markdownFromLLM;
 
-        // eval(d3Script)
-
-        let reportMessage = (await createHighlighter(content)) as any;
-
-        reportMessage = `\n\n\n\n${reportMessage}
-        \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        \n\n## Visualization I
-        \n\n<div id="test-chart" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        \n\n<div id="test-chart1" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        \n\n<div id="test-chart2" style="
-            width: 100%; 
-            height: auto;
-            display: flex;
-            justify-content: center; 
-            align-items: center; 
-            margin-top: 20px;">
-        </div>
-        <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        `;
+      // const markdownTitleLine = markdownFromLLM
+      //   .split('\n')
+      //   .find((line: string) =>
+      //     line.trim().startsWith('#') && line.toLowerCase().includes('title:')
+      //   );
 
 
-        const comments = await extractTSArray(await createVisualizationJudge(d3Code));
-        console.log("comments from routes", comments, d3Code);
+      // if (markdownTitleLine) {
+      //   dynamicTitle = markdownTitleLine.replace(/^#+\s*Title:\s*/i, '').trim();
+      //   markdownCleaned = markdownFromLLM.replace(markdownTitleLine, '');
+      // } else {
+      //   const h1Match = markdownFromLLM.match(/<h1[^>]*>(.*?)<\/h1>/i);
+      //   if (h1Match) {
+      //     dynamicTitle = h1Match[1].replace(/^Title:\s*/i, '').trim();
+      //     markdownCleaned = markdownFromLLM.replace(h1Match[0], '');
+      //   }
+      // }
 
-        if(comments){
-            reportMessage += `\n\n## Comments on Visualization`;
-            for (let i = 0; i < comments.length; i++){
-                reportMessage += `\n\n- ${comments[i]}`;
-            }
-        }
 
-        console.log("reportMessage before stringnify", reportMessage)
 
-        
+      // // let dynamicIntro = "Generated Report Intro";
 
-        console.log("reportMessage after stringnify", reportMessage)
+      // // 提取 ## Intro: 段落（直到下一个 ## 或 # 或结尾）
+      // const introRegex = /##\s*Intro:(.*?)(?=\n#{1,2}\s|\n$)/is;
+      // const introMatch = markdownCleaned.match(introRegex);
 
-        const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+      // if (introMatch) {
+      //   dynamicIntro = introMatch[1].trim(); // 去掉前缀并保留内容
+      //   markdownCleaned = markdownCleaned.replace(introMatch[0], ''); // 从正文中移除 Intro 段落
+      // }
 
-        if(writingComments){
-            reportMessage += `\n\n## Comments on Writing`;
-            for (let i = 1; i < writingComments.length; i++){
-                reportMessage += `\n\n- ${writingComments[i]}`;
-            }
-            scoreText.setText(writingComments[0]);
-        }
+      // const highlightedText = marked.parse(markdownCleaned);
+
+
+
+
+
+      // let dynamicIntro = "Generated Report Intro";
+
+      // const markdownIntroLine = markdownCleaned
+      //   .split('\n')
+      //   .find((line: string) =>
+      //     line.trim().startsWith('##') && line.toLowerCase().includes('Intro:')
+      //   );
+
+
+      // if (markdownIntroLine) {
+      //   dynamicTitle = markdownIntroLine.replace(/^##+\s*Intro:\s*/i, '').trim();
+      //   markdownCleaned = markdownFromLLM.replace(markdownIntroLine, '');
+      // } else {
+      //   const h2Match = markdownFromLLM.match(/<h2[^>]*>(.*?)<\/21>/i);
+      //   if (h2Match) {
+      //     dynamicIntro = h2Match[1].replace(/^:\s*/i, '').trim();
+      //     markdownCleaned = markdownFromLLM.replace(h2Match[0], '');
+      //   }
+      // }
+
+      // const highlightedText = marked.parse(markdownCleaned);
+
+      let dynamicTitle = "Generated Report Summary";
+      let dynamicIntro = "Generated Report Intro";
+      let contentWithoutHeaders = markdownFromLLM;
+      
+      // 1. Extract and remove titles
+      const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
+      if (titleMatch) {
+        dynamicTitle = titleMatch[1].trim();
+        contentWithoutHeaders = contentWithoutHeaders.replace(titleMatch[0], '');
+      }
+      
+      // 2. Extract and remove Intro
+      const introMatch = contentWithoutHeaders.match(/^##\s*Intro:\s*(.+)$/im);
+      if (introMatch) {
+        dynamicIntro = introMatch[1].trim();
+        contentWithoutHeaders = contentWithoutHeaders.replace(introMatch[0], '');
+      }
+      
+      // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
+      const highlightedText = marked.parse(contentWithoutHeaders.trim());
+
+
+
+      
+
+
+
+
+
+const style = `
+<style>
+  .newspaper {
+    font-family: "Georgia", serif;
+    background-color: #f9f6ef;
+    color: #000;
+    padding: 40px;
+    max-width: 960px;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  }
+
+  .newspaper-title {
+    font-size: 36px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0;
+    text-transform: uppercase;
+  }
+
+  .authors {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  .headline {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+  }
+
+  .intro-text {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 20px 0 30px 0;
+    text-align: justify;
+  }
+
+  .newspaper-body {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .article-text {
+    flex: 1;
+    font-size: 16px;
+    line-height: 1.6;
+    min-width: 350px;
+  }
+
+  .article-graphic {
+    flex: 1;
+    max-width: 40%;
+    text-align: center;
+  }
+
+  .article-graphic img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 50px auto 20px auto;
+  }
+
+  .vis-above {
+    width: 100%;
+    height: 260px;
+    border-radius: 8px;
+    margin-top: 80px;
+    margin-bottom: 20px;
+  }
+
+  .visualization-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 30px 0;
+  }
+
+  .vis-box {
+    flex: 1 1 40%;
+    height: auto;
+    width: 100%;
+    min-width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 6px;
+    background-color: #f9f6ef;
+  }
+
+  .comment-section {
+    margin-top: 30px;
+  }
+  .comment-section h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .comment-section ul {
+    padding-left: 20px;
+  }
+  .comment-section li {
+    margin-bottom: 5px;
+  }
+</style>
+
+`;
+
+const comments = await extractTSArray(await createVisualizationJudge(d3Code));
+const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+
+let commentsHTML = "";
+
+if (comments?.length > 0) {
+  commentsHTML += `
+    <div class="comment-section">
+      <h3>Comments on Visualization</h3>
+      <ul>
+        ${comments.map(c => `<li>${c}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+if (writingComments?.length > 1) {
+  commentsHTML += `
+    <div class="comment-section">
+      <h3>Comments on Writing</h3>
+      <ul>
+        ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
+      </ul>
+    </div>
+  `;
+  scoreText.setText(writingComments[0]);
+}
+
+const body = `
+  <div class="newspaper">
+    <h1 class="newspaper-title">The Agentopia Times</h1>
+    <p class="authors">Written by Professional LLM Journalists</p>
+    <hr />
+    <h2 class="headline">${dynamicTitle}</h2>
+    <hr />
+
+  <div class="newspaper-body">
+    <div class="article-text">
+      ${highlightedText}
+    </div>
+    <div class="article-graphic">
+      <div id="test-chart" class="vis-above"></div>
+    </div>
+  </div>
+
+  <h3 style="text-align: center;">Visualization I</h3>
+  <div class="visualization-row">
+    <div id="test-chart1" class="vis-box"></div>
+    <div id="test-chart2" class="vis-box"></div>
+  </div>
+
+  <hr style="margin: 30px 0;" />
+  ${commentsHTML}
+</div>
+
+`;
+
+let reportMessage = `${style}${body}`;
+
+// const comments = await extractTSArray(await createVisualizationJudge(d3Code));
+// console.log("comments from routes", comments, d3Code);
+
+// if (comments && comments.length > 0) {
+//   reportMessage += `
+//     <div class="comment-section">
+//       <h3>Comments on Visualization</h3>
+//       <ul>
+//         ${comments.map(c => `<li>${c}</li>`).join('')}
+//       </ul>
+//     </div>
+//   `;
+// }
+
+// console.log("reportMessage before stringnify", reportMessage);
+
+// // === Comments Section - Writing ===
+// const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+
+// if (writingComments && writingComments.length > 1) {
+//   reportMessage += `
+//     <div class="comment-section">
+//       <h3>Comments on Writing</h3>
+//       <ul>
+//         ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
+//       </ul>
+//     </div>
+//   `;
+//   scoreText.setText(writingComments[0]);
+// }
+
+// console.log("reportMessage after stringnify", reportMessage);
+
+
 
         // Scene.scoreText = writingComments[0];
         
@@ -232,19 +463,26 @@ export function createLeaf(
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
         
-        testBranchWork(state.routeDecision, state, state.chainingToRouting, agent, scoreText);
+        testBranchWork(
+            scene, 
+            state.routeDecision, 
+            state, 
+            state.chainingToRouting, 
+            agent, 
+            scoreText
+        );
 
-        await updateStateIcons(zones, "mail");
+        // await updateStateIcons(zones, "mail");
 
         await autoControlAgent(scene, agent, tilemap, 767, 330, "Send report to final location"); //ERROR
         // create the report from routing graph
-        const report = await createReport(scene, "routing", 767, 330);
+        const report = await createReport(scene, "routing", 767, 345);
         // transmit the report to the final location
         await transmitReport(scene, report, destination.x, destination.y);
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
 
-        await updateStateIcons(zones, "idle");
+        // await updateStateIcons(zones, "idle");
 
         return { routeOutput: state.chainingToRouting };
     };
@@ -367,7 +605,8 @@ export function createRouter(
 
         console.log("checking for data", state)
 
-        await updateStateIcons(zones, "work");
+        // await updateStateIcons(zones, "work");
+        
 
         const decision = await routeLLM.invoke([
             {

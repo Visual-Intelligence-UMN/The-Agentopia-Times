@@ -1,6 +1,8 @@
 const atlas = {
   player: 'player',
   bias: 'biasAtlas',
+  workPlayer: 'workPlayer',
+  workBias: 'workBias',
 } as const;
 
 const image = {
@@ -10,6 +12,9 @@ const image = {
   coin: 'coin',
   bird: 'bird',
   coinIcon: 'coinIcon',
+  baseball: 'baseball',
+  kidney: 'kidney',
+  restart: 'restart',
   office: 'office',
   room_builder_office: 'room_builder_office',
   interior: 'interior',

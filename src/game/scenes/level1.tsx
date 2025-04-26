@@ -128,7 +128,7 @@ export class Level1 extends ParentScene {
 
     
 
-    render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
+    // render(<TilemapDebug tilemapLayer={this.worldLayer} />, this);
 
     const squareSize = 50;
     const spacing = 20;

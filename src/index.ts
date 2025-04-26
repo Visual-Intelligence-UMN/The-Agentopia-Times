@@ -19,9 +19,9 @@ new Phaser.Game({
   ],
   physics: {
     default: 'arcade',
-    arcade: {
-      debug: import.meta.env.DEV,
-    },
+    // arcade: {
+    //   // debug: import.meta.env.DEV,
+    // },
   },
   disableContextMenu: import.meta.env.PROD,
   backgroundColor: '#000',

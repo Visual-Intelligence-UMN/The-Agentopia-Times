@@ -15,8 +15,6 @@ export class Menu extends Scene {
 
     render(
       <>
-        <Overlay />
-
         <Button
           center
           fixed

@@ -147,51 +147,76 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     parallelZone.body.setAllowGravity(false);
     parallelZone.body.setImmovable(true);
 
-    const background = scene.add.rectangle(centerX, centerY + 20, 75, 15, 0x000000, 0.5)
-      .setOrigin(0.5).setDepth(1000);
+    // const background = scene.add.rectangle(centerX, centerY + 20, 75, 15, 0x000000, 0.5)
+    //   .setOrigin(0.5).setDepth(1000);
 
-    let task = "Voting for Decision";
+    let yOffset = 90;
+    let task = "Discussion for Title";
 
-    if(zoneName === "parallel") {
-      if(i===0)task = "Data Analysis";
-      else task = "Writing Report";
-    } else if(zoneName === "routing") {
+    if (zoneName === "parallel") {
+      if (i === 0) {
+        task = "Analytics Room";
+        yOffset = -55;
+      } else {
+        task = "Writing Room";
+        yOffset = -50;
+      }
+    } else if (zoneName === "routing") {
       task = "Visualization";
-    } else if(zoneName === "chaining"){
+    } else if (zoneName === "chaining") {
       task = "Report Writing";
     }
 
-    const statusText = scene.add.text(centerX, centerY + 20, task, {
-      fontSize: "10px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      align: "center"
-    }).setOrigin(0.5).setDepth(1001);
+    const backgroundY = centerY + yOffset;
+    const labelY = centerY + yOffset;
+
+  //   const background = scene.add.rectangle(centerX, backgroundY, 75, 15, 0x000000, 0.5)
+  //   .setOrigin(0.5).setDepth(1000);
+
+  //   const statusText = scene.add.text(centerX, labelY, task, {
+  //     fontSize: "10px",
+  //     color: "#ffffff",
+  //   }).setOrigin(0.5).setDepth(1001);
+
+  const background = scene.add.rectangle(centerX, backgroundY, 95, 20, 0x111122, 0.7)
+  .setOrigin(0.5)
+  .setDepth(1000)
+  .setStrokeStyle(2, 0x5d6ac1, 0.5);
+
+  const statusText = scene.add.text(centerX, labelY, task, {
+  fontSize: "10px",
+  fontFamily: "Arial",
+  color: "#F0F0FF",
+  stroke: "#707ed5",
+  strokeThickness: 1,
+  fontWeight: "bold"
+  }).setOrigin(0.5).setDepth(1001);
+
+  scene.tweens.add({
+  targets: [background, statusText],
+  scale: 1.1,
+  alpha: { from: 0.9, to: 1 },
+  duration: 1000,
+  yoyo: true,
+  repeat: -1,
+  ease: "Sine.easeInOut"
+  });
+
+    
+
+    // const statusText = scene.add.text(centerX, centerY + 20, task, {
+    //   fontSize: "10px",
+    //   color: "#ffffff",
+    //   fontFamily: "Arial",
+    //   align: "center"
+    // }).setOrigin(0.5).setDepth(1001);
+
+    // const statusText = scene.add.text(centerX, labelY, task, {
+    //   fontSize: "10px",
+    //   color: "#ffffff",
+    // }).setOrigin(0.5).setDepth(1001);
 
     scene.roomStatusTexts.push(statusText);
-
-    if (parallelZoneData.name !== "chaining") {
-      const hiringBtn = scene.add.image(centerX - 52.5, centerY + 20, "hiring")
-        .setDepth(1002).setInteractive();
-
-      hiringBtn.on("pointerdown", () => {
-        const bounds = getZoneBounds(parallelZone);
-        const { x: agentX, y: agentY } = generateNonCollidingAgentPosition(scene.controllableCharacters, bounds);
-        const agent = new Agent(scene, agentX, agentY, "player", "misa-front", "Agent " + scene.controllableCharacters.length);
-
-        scene.agentGroup.add(agent);
-        scene.controllableCharacters.push(agent);
-        scene.agentList.set(agent.getName(), agent);
-
-        zones.forEach(zone => {
-          if (zone.zone === parallelZone) {
-            zone.agentsInside.add(agent);
-          }
-        });
-
-        console.log("New agent added at", agentX, agentY);
-      });
-    }
 
     const stateIcon = scene.add.image(centerX + 35, centerY + 20, "idle").setDepth(1001).setScale(1);
 
@@ -434,37 +459,6 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.tilemap.heightInPixels,
   );
 
-  const squareSize = 50;
-  const spacing = 20;
-  const startX = 75;
-  const startY = 520;
-  // addAgentPanelHUD.call(this, startX, startY, squareSize, spacing);
-
-  // const mssgBtn = this.add
-  //   .rectangle(50, 400, 50, 50, 0x000000)
-  //   .setDepth(1002)
-  //   .setStrokeStyle(2, 0xffffff)
-  //   .setInteractive()
-  //   .setScrollFactor(0)
-  //   .setAlpha(0.5);
-
-  // const mssgBtnText = this.add
-  //   .text(30, 390, 'History \nMessage', {
-  //     fontSize: '10px',
-  //     color: '#ffffff',
-  //   })
-  //   .setScrollFactor(0)
-  //   .setDepth(1003);
-
-    // Add them to hudElements
-  //   if (this.hudElements) {
-  //     this.hudElements.push(mssgBtn, mssgBtnText);
-  //   }
-
-  // mssgBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-  //   EventBus.emit("open-constitution");
-  // });
-
   this.controlMapping = [
     { activateIndex: 0, triggerKey: Phaser.Input.Keyboard.KeyCodes.ONE },
     { activateIndex: 1, triggerKey: Phaser.Input.Keyboard.KeyCodes.TWO },
@@ -472,22 +466,6 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
   ];
 
   this.keyMap = setupKeyListeners(this.controlMapping, this.input);
-
-  // for (let i = 0; i < 3; i++) {
-  //   const text = this.add.text(
-  //     startX + i * (squareSize + spacing) - 15,
-  //     startY - 15,
-  //     `empty`,
-  //     {
-  //       fontSize: '10px',
-  //       color: '#ffffff',
-  //       wordWrap: { width: squareSize, useAdvancedWrap: true },
-  //     },
-  //   );
-  //   this.promptTexts.push(text);
-  //   text.setScrollFactor(0);
-  //   text.setDepth(1000);
-  // }
 
   
 }

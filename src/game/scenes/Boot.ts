@@ -30,6 +30,9 @@ export class Boot extends Scene {
     this.load.image(key.image.interior, assets.tilesets.interior);
     this.load.image(key.image.exterior, assets.tilesets.exterior);
     this.load.image(key.image.coinIcon, assets.sprites.coinIcon);
+    this.load.image(key.image.baseball, assets.sprites.baseball);
+    this.load.image(key.image.kidney, assets.sprites.kidney);
+    this.load.image(key.image.restart, assets.sprites.restart);
     this.load.image(key.image.start, assets.sprites.start);
     this.load.image(key.image.logo, assets.sprites.logo);
     this.load.image(key.image.mail, assets.sprites.mail);
@@ -44,6 +47,9 @@ export class Boot extends Scene {
 
     this.load.atlas(key.atlas.player, assets.atlas.image, assets.atlas.data);
     this.load.atlas(key.atlas.bias, assets.atlas.biasImage, assets.atlas.biasData);
+
+    this.load.atlas(key.atlas.workPlayer, assets.atlas.workImage, assets.atlas.workData);
+    this.load.atlas(key.atlas.workBias, assets.atlas.workBiasImage, assets.atlas.workBiasData);
 
     // remove it during deployment
     // this.scene.start('level2');
