@@ -4,12 +4,13 @@ import { initializeLLM } from "./chainingUtils";
 import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { EventBus } from "../game/EventBus";
-import { createReport, GeneralStateAnnotation } from "./agents";
+import { baseballPath, createReport, GeneralStateAnnotation, kidneyPath } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
 import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
 import { generateImage } from "./dalleUtils";
 import { d3Script } from "./const";
 import { marked } from "marked";
+import { baseball, kidney } from "../game/assets/sprites";
 
 
 // const RouteAnnotation = Annotation.Root({
@@ -41,19 +42,20 @@ const sampleSystemPrompts = [
 
 
 async function testBranchWork(
+    scene: any,
     command: string, 
     state: any, 
     content: string, 
     agent: any,
     scoreText: Phaser.GameObjects.Text,
 ){
-    let datasetPath = covidPath;
+    let datasetPath = baseballPath;
 
     console.log("state route", state);
 
         if(!state.votingToChaining) {
-            if(state.votingToChaining.includes("UCB")){
-                datasetPath = ucbPath;
+            if(scene.registry.get('currentDataset')==='kidney'){
+                datasetPath = kidneyPath;
             }
         }
 
@@ -65,17 +67,6 @@ async function testBranchWork(
     console.log("command", command);
     
     if(command === "visualization"){
-        // const chartId1 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        // console.log("cgartId1", chartId1)
-        // const visCode1 = await generateChartImage(chartId1, csvRaw);
-        // console.log("visCode", visCode1);
-        // EventBus.emit("d3-code", { d3Code: visCode1, id: chartId1});
-
-        // const chartId2 = `chart-${Math.random().toString(36).substr(2, 9)}`;
-        // console.log("cgartId2", chartId2)
-        // const visCode2 = await generateChartImage(chartId2, csvRaw);
-        // console.log("visCode", visCode2);
-        // EventBus.emit("d3-code", { d3Code: visCode2, id: chartId2});
         console.log("entered visualization branch")
 
         const chartData = await generateChartImage(csvRaw, agent, state);
@@ -88,54 +79,8 @@ async function testBranchWork(
         // EventBus.emit("final-report", { report: content, department: "routing" });
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
         console.log("URL", URL)
-
-        
-
         console.log("d3code", d3Code)
-
-        // eval(d3Script)
-
-        // let reportMessage = (await createHighlighter(content)) as any;
-
-        // reportMessage = `\n\n\n\n${reportMessage}
-        // \n\n<img src="${URL}" style="max-width: 50%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        // \n\n## Visualization I
-        // \n\n<div id="test-chart" style="
-        //     width: 100%; 
-        //     height: auto;
-        //     display: flex;
-        //     justify-content: center; 
-        //     align-items: center; 
-        //     margin-top: 20px;">
-        // </div>
-        // \n\n<div id="test-chart1" style="
-        //     width: 100%; 
-        //     height: auto;
-        //     display: flex;
-        //     justify-content: center; 
-        //     align-items: center; 
-        //     margin-top: 20px;">
-        // </div>
-        // \n\n<div id="test-chart2" style="
-        //     width: 100%; 
-        //     height: auto;
-        //     display: flex;
-        //     justify-content: center; 
-        //     align-items: center; 
-        //     margin-top: 20px;">
-        // </div>
-        // <hr style="width: 100%; height: 3px; background-color: #333; border: none; margin: 20px 0;">
-        // `;
-
         const markdownFromLLM = await createHighlighter(content) as any;
-        
-
-        // const h1Match = markdownFromLLM.match(/<h1[^>]*>(.*?)<\/h1>/i);
-        // const dynamicTitle = h1Match ? h1Match[1].replace(/^Title:\s*/i, '') : "Generated Report Summary";
-
-        // const markdownCleaned = markdownFromLLM.replace(/<h1[^>]*>.*?<\/h1>/i, '');
-        // const highlightedText = marked.parse(markdownCleaned);
-
         let dynamicTitle = "Generated Report Summary";
 let markdownCleaned = markdownFromLLM;
 
@@ -447,7 +392,14 @@ export function createLeaf(
         // move the agent to the destination
         console.log("destination from leaf: ", destination);
         
-        testBranchWork(state.routeDecision, state, state.chainingToRouting, agent, scoreText);
+        testBranchWork(
+            scene, 
+            state.routeDecision, 
+            state, 
+            state.chainingToRouting, 
+            agent, 
+            scoreText
+        );
 
         await updateStateIcons(zones, "mail");
 

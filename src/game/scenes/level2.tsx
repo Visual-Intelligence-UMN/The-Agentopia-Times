@@ -112,6 +112,7 @@ export class Level2 extends ParentScene {
     // register a global variable for pattern choosing
     // currentPattern === "" -> no pattern is chosen
     this.registry.set('currentPattern', "");
+    this.registry.set('currentDataset', 'baseball');
 
     console.log("isWorkflowRunning", this.registry.get('isWorkflowRunning'));
 
@@ -570,6 +571,8 @@ return result;
       this.kidneyBtn.setDepth(1010);
     this.selectedText = this.add.text(0, 425, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
     this.baseBallBtn.setDepth(998);
+    this.registry.set('currentDataset', 'baseball');
+
     
     } else {
       this.selectedDataset = "none";
@@ -635,6 +638,7 @@ return result;
         this.baseBallBtn.setDepth(1010);
       this.selectedText = this.add.text(0, 485, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
       this.kidneyBtn.setDepth(998);
+      this.registry.set('currentDataset', 'kidney');
       
       } else {
         this.selectedDataset = "none";

@@ -9,8 +9,8 @@ import { marked } from "marked";
 
 
 
-const kidneyPath: string = "./data/kidney.csv";
-const baseballPath: string = "./data/baseball.csv";
+export const kidneyPath: string = "./data/kidney.csv";
+export const baseballPath: string = "./data/baseball.csv";
 
 let cachedOpenAI: OpenAI | null = null;
 
@@ -116,7 +116,7 @@ export function createJournalist(
         `;
 
         if(state.votingToChaining) {
-            if(state.votingToChaining.includes("Kidney")){
+            if(scene.registry.get('currentDataset')==='kidney'){
                 // datasetPath = ucbPath;
                 datasetPath = kidneyPath;
                 researchQuestions = `
