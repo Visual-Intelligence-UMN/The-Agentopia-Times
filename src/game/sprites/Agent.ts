@@ -23,7 +23,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   selector: Phaser.Physics.Arcade.StaticBody;
   name: string;
 
-  private nameTag: Phaser.GameObjects.Text;
+  // private nameTag: Phaser.GameObjects.Text;
   private memory: Memory[] = [];
   private persona: string = "a helpful AI assistant";
   private instruction: string = "";
@@ -56,15 +56,15 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     this.name = name;
     this.persona = persona;
 
-    this.nameTag = scene.add.text(x, y - 20, name, {
-        fontSize: '14px',
-        color: '#ffffff',
-        backgroundColor: '#00000088',
-        padding: { x: 4, y: 2 },
-        align: 'center',
-      }).setOrigin(0.5, 1); 
+    // this.nameTag = scene.add.text(x, y - 20, name, {
+    //     fontSize: '14px',
+    //     color: '#ffffff',
+    //     backgroundColor: '#00000088',
+    //     padding: { x: 4, y: 2 },
+    //     align: 'center',
+    //   }).setOrigin(0.5, 1); 
 
-    this.nameTag.setDepth(10);
+    // this.nameTag.setDepth(10);
     
     // Add the sprite to the scene
     scene.add.existing(this);
@@ -107,7 +107,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
       if (gameObject === this) {
         this.x = dragX;
         this.y = dragY;
-        this.nameTag.setPosition(this.x, this.y - 25); 
+        // this.nameTag.setPosition(this.x, this.y - 25); 
       }
     });
 
@@ -125,7 +125,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    this.nameTag.setPosition(this.x, this.y - 25);
+    // this.nameTag.setPosition(this.x, this.y - 25);
   }
 
   public getName(){
@@ -142,7 +142,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   }
 
   public changeNameTagColor(color: string){
-    this.nameTag.setColor(color);
+    // this.nameTag.setColor(color);
   } 
 
   public storeMemory(system: string, user: string, gpt: string, currentPrompts: string[], result: boolean) {
@@ -223,7 +223,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           // update to biased agent
           // choose the designated bias by occupation
           this.name = "Biased " + this.name;
-          this.nameTag.setText(this.name);
+          // this.nameTag.setText(this.name);
           this.isBiased = true;
           
           this.setTexture(key.atlas.bias);
@@ -232,7 +232,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
         } else {
           // update to unbiased agent
           this.name = this.name.split(' ').slice(-1).join(' ');
-          this.nameTag.setText(this.name);
+          // this.nameTag.setText(this.name);
           this.isBiased = false;
 
           this.setTexture(key.atlas.player);

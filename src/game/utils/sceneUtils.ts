@@ -147,26 +147,74 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     parallelZone.body.setAllowGravity(false);
     parallelZone.body.setImmovable(true);
 
-    const background = scene.add.rectangle(centerX, centerY + 20, 75, 15, 0x000000, 0.5)
-      .setOrigin(0.5).setDepth(1000);
+    // const background = scene.add.rectangle(centerX, centerY + 20, 75, 15, 0x000000, 0.5)
+    //   .setOrigin(0.5).setDepth(1000);
 
+    let yOffset = 90;
     let task = "Voting for Decision";
 
-    if(zoneName === "parallel") {
-      if(i===0)task = "Data Analysis";
-      else task = "Writing Report";
-    } else if(zoneName === "routing") {
+    if (zoneName === "parallel") {
+      if (i === 0) {
+        task = "Data Analysis";
+        yOffset = -55;
+      } else {
+        task = "Writing Report";
+        yOffset = -50;
+      }
+    } else if (zoneName === "routing") {
       task = "Visualization";
-    } else if(zoneName === "chaining"){
+    } else if (zoneName === "chaining") {
       task = "Report Writing";
     }
 
-    const statusText = scene.add.text(centerX, centerY + 20, task, {
-      fontSize: "10px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      align: "center"
-    }).setOrigin(0.5).setDepth(1001);
+    const backgroundY = centerY + yOffset;
+    const labelY = centerY + yOffset;
+
+  //   const background = scene.add.rectangle(centerX, backgroundY, 75, 15, 0x000000, 0.5)
+  //   .setOrigin(0.5).setDepth(1000);
+
+  //   const statusText = scene.add.text(centerX, labelY, task, {
+  //     fontSize: "10px",
+  //     color: "#ffffff",
+  //   }).setOrigin(0.5).setDepth(1001);
+
+  const background = scene.add.rectangle(centerX, backgroundY, 95, 20, 0x111122, 0.7)
+  .setOrigin(0.5)
+  .setDepth(1000)
+  .setStrokeStyle(2, 0x5d6ac1, 0.5);
+
+  const statusText = scene.add.text(centerX, labelY, task, {
+  fontSize: "10px",
+  fontFamily: "Arial",
+  color: "#F0F0FF",
+  stroke: "#707ed5",
+  strokeThickness: 1,
+  fontWeight: "bold"
+  }).setOrigin(0.5).setDepth(1001);
+
+  scene.tweens.add({
+  targets: [background, statusText],
+  scale: 1.1,
+  alpha: { from: 0.9, to: 1 },
+  duration: 1000,
+  yoyo: true,
+  repeat: -1,
+  ease: "Sine.easeInOut"
+  });
+
+    
+
+    // const statusText = scene.add.text(centerX, centerY + 20, task, {
+    //   fontSize: "10px",
+    //   color: "#ffffff",
+    //   fontFamily: "Arial",
+    //   align: "center"
+    // }).setOrigin(0.5).setDepth(1001);
+
+    // const statusText = scene.add.text(centerX, labelY, task, {
+    //   fontSize: "10px",
+    //   color: "#ffffff",
+    // }).setOrigin(0.5).setDepth(1001);
 
     scene.roomStatusTexts.push(statusText);
 
