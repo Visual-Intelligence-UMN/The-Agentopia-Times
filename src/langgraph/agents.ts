@@ -10,7 +10,7 @@ import { marked } from "marked";
 
 
 export const kidneyPath: string = "./data/kidney.csv";
-export const baseballPath: string = "./data/baseball.csv";
+export const baseballPath: string = "./data/baseball_cleaned.csv";
 
 let cachedOpenAI: OpenAI | null = null;
 

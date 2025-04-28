@@ -115,7 +115,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
           Your code should start like this(PARAMETER: means you can change the number on that line): 
 
           const spec = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "description": write your description here,
             "background": "#f9f6ef",
             "data": {
@@ -124,10 +124,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
                 "type": "csv"
               }
             },
-            "mark": write your mark here,
-            "encoding": {
-              write your encoding here
-            }
+            ......
           };
 
           const specSubgroup1 = {
@@ -138,9 +135,24 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
             ......
           }
 
-          vegaEmbed('#test-chart', spec);
-          vegaEmbed('#test-chart1', specSubgroup1);
-          vegaEmbed('#test-chart2', specSubgroup2);
+          
+          vegaEmbed('#test-chart', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
+
+          vegaEmbed('#test-chart1', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
+
+          vegaEmbed('#test-chart2', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
 
 
           Here is a part of the data, which helps you better implement the visualization:
