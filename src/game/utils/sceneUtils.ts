@@ -186,19 +186,19 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   //     color: "#ffffff",
   //   }).setOrigin(0.5).setDepth(1001);
 
-  const background = scene.add.rectangle(centerX, backgroundY, 95, 20, 0x111122, 0.7)
+  const background = scene.add.rectangle(centerX, backgroundY, 115, 20, 0x111122, 0.7)
   .setOrigin(0.5)
   .setDepth(1000)
   .setStrokeStyle(2, 0x5d6ac1, 0.5);
 
   const statusText = scene.add.text(centerX, labelY, task, {
-  fontSize: "10px",
+  fontSize: "12px",
   fontFamily: "Arial",
   color: "#F0F0FF",
   stroke: "#707ed5",
   strokeThickness: 1,
   fontWeight: "bold"
-  }).setOrigin(0.5).setDepth(1001);
+  }).setOrigin(0.5).setDepth(1001).setStyle({ fontFamily: 'Verdana'});
 
   scene.tweens.add({
   targets: [background, statusText],
