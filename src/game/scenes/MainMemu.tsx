@@ -40,8 +40,8 @@ export class MainMenu extends Scene {
     this.backgroundImage.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
     // Add header image to the top half of the page
-    this.titleImage = this.add.image(centerX, centerY - 130, 'title');
-    this.titleImage.setScale(0.85);
+    this.titleImage = this.add.image(centerX, centerY - 110, 'title');
+    this.titleImage.setScale(0.75);
 
     // Add reminder text
     this.messageText = this.add.text(centerX, centerY + 20, 'Enter OpenAI API Key to Start the Game', {

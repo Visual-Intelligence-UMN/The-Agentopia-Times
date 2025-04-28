@@ -21,6 +21,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "public/assets/bitmapFont"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
