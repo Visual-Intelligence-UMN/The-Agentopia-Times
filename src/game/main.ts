@@ -29,6 +29,9 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   pixelArt: true,
+  // render: {
+  //   resolution: 2,
+  // }
 }
 
 const StartGame = (parent: string) => {
