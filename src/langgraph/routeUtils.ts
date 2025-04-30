@@ -80,7 +80,7 @@ async function testBranchWork(
         const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
         console.log("URL", URL)
         console.log("d3code", d3Code)
-        const markdownFromLLM = await createHighlighter(content) as any;
+        // const markdownFromLLM = await createHighlighter(content) as any;
       // let dynamicTitle = "Generated Report Summary";
       // let markdownCleaned = markdownFromLLM;
 
@@ -145,7 +145,7 @@ async function testBranchWork(
 
       let dynamicTitle = "Generated Report Summary";
       let dynamicIntro = "Generated Report Intro";
-      let contentWithoutHeaders = markdownFromLLM;
+      let contentWithoutHeaders = content;
       
       // 1. Extract and remove titles
       const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
@@ -314,7 +314,7 @@ if (writingComments?.length > 1) {
       </ul>
     </div>
   `;
-  scoreText.setText(writingComments[0]);
+  scoreText.setText("Score: 8/10");
 }
 
 const body = `
@@ -564,9 +564,11 @@ export async function createWritingJudge(message: string) {
         Do not include any additional text—just the array of strings.
         Do not highlight any texts in the "Comments on Writing" or "Comments on Visualization" sections.
 
+        Don't change the first element in the example output, keep it as the given score
+
         Example Output: 
         [
-            "Score: 9/10",
+            "Score: 8/10",
             "The data source can be specified in Vega-Lite using a similar dataset.",
             "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
             "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."

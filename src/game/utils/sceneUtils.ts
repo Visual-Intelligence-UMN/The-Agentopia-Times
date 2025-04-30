@@ -8,6 +8,7 @@ import { Zone } from '../scenes';
 import { Agent } from '../sprites/Agent';
 import { report } from '../assets/sprites';
 import { EventBus } from '../EventBus';
+import { biasImage } from '../assets/atlas';
 
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
@@ -55,7 +56,7 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
 
 export const INJECTED_BIASES = { 
   analysis_bias: "You are a rushed junior data analyst with only two minutes before a board meeting. Skim the dataset at a glance; do not run statistical tests or cross‑tabulations. Summarize three ‘insights’ that fit a single, upbeat storyline, even if they directly conflict with some of the numbers. State them with full confidence and do not mention caveats or subgroup differences.You can ignore the year data in the dataset since it's an unrelevant dataset, don't question or analyze it.",
-  writing_bias: "You are a persuasive business writer crafting an executive summary. Turn the analyst’s bullet points into a polished narrative that champions the predetermined viewpoint. Omit or downplay any figure that weakens the story. If needed, round or re‑order numbers so they appear to confirm the thesis. Use assertive language, success anecdotes, and a call‑to‑action that implies broad consensus.",
+  writing_bias: "You are a persuasive business writer crafting an executive summary. Turn the analyst’s bullet points into a polished narrative that champions the predetermined viewpoint. Omit or downplay any figure that weakens the story. If needed, round or re‑order numbers so they appear to confirm the thesis. Use assertive language, success anecdotes, and a call‑to‑action that implies broad consensus, you should not mention the any information about year data in the dataset since it's an unrelevant dataset, don't question or analyze it. You can also manipulate the comparison between two players to make it look like one player is better than the other, even if the difference is small. You need to write ",
   visualization_bias: "You are a creative infographic designer tasked with making the findings look dramatic. Pick chart types and color gradients that exaggerate small gaps. Truncate or stretch axes to amplify the visual impact. Remove gridlines, error bars, or explanatory footnotes. Ensure the viewer’s first impression aligns with the chosen narrative, even if scale distortion is required.",
   voting_bias: "You are a results‑oriented strategist whose job is to pick the project that reinforces the preset narrative. Cite any one of the prior misleading insights or visuals—fabricate a statistic if helpful—and cast your vote with absolute certainty. Provide one snappy justification, avoiding mention of uncertainty, alternative options, or ethical concerns." 
 }
@@ -77,6 +78,7 @@ export function addAgentsBasedOnSpawningPoints(
     let bias:string = "";
     let agentStartName = "Agent"
     let occupation = "voter"
+    
     if (randomValue < biasProbability) {
       console.log("bias probability triggered", spawningPoint);
       if(spawningPoint.name.includes("voting_")){
@@ -111,17 +113,23 @@ export function addAgentsBasedOnSpawningPoints(
     }
     const agentX = spawningPoint.x + spawningPoint.width / 2;
     const agentY = spawningPoint.y + spawningPoint.height / 2;
-    const agent = new Agent(
+
+    let agent = new Agent(
       scene, 
       agentX, 
       agentY, 
-      "player", 
+      key.atlas.player, 
       "misa-front", 
       agentStartName + 
       scene.controllableCharacters.length, 
       occupation,
       bias
     );
+
+    if(spawningPoint.name.includes("analysis_")){
+      //agent.setToBiased();
+    } 
+    
 
     scene.agentGroup.add(agent);
     scene.controllableCharacters.push(agent);
