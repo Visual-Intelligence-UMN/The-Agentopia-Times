@@ -475,12 +475,12 @@ export function createLeaf(
         // await updateStateIcons(zones, "mail");
 
         await autoControlAgent(scene, agent, tilemap, 767, 330, "Send report to final location"); //ERROR
+        // move the agent back to the original position
+        await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "");
         // create the report from routing graph
         const report = await createReport(scene, "routing", 767, 345);
         // transmit the report to the final location
         await transmitReport(scene, report, destination.x, destination.y);
-        // move the agent back to the original position
-        await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "Returned");
 
         // await updateStateIcons(zones, "idle");
 

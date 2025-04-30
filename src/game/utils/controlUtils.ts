@@ -287,7 +287,7 @@ export async function transmitReport(
             }
         });
 
-        await popupEvent(scene, x, y, "Send Report to Next Department");
+        await popupEvent(scene, report.x, report.y, "Send Report to Next Department");
     });
 }
 
