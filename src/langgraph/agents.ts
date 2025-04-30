@@ -239,7 +239,7 @@ export function createWriter(
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
         await createReport(scene, "chaining", destination.x, destination.y);
         const report = await createReport(scene, "voting", destination.x, destination.y);
-        await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "Return to Office");
+        await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "");
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
         await transmitReport(scene, report, 767, 330);
