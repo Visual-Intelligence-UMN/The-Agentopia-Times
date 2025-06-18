@@ -25,6 +25,9 @@ const image = {
   report: 'report',
   hiring: "hiring",
   start: "start",
+  sequential: "sequential",
+  voting: "voting",
+  single_agent: "single_agent",
 } as const;
 
 const scene = {

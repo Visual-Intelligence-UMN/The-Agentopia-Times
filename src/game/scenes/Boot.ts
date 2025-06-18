@@ -40,6 +40,9 @@ export class Boot extends Scene {
     this.load.image(key.image.work, assets.sprites.work);
     this.load.image(key.image.report, assets.sprites.report);
     this.load.image(key.image.hiring, assets.sprites.hiring);
+    this.load.image(key.image.sequential, assets.sprites.sequential);
+    this.load.image(key.image.voting, assets.sprites.voting);
+    this.load.image(key.image.single_agent, assets.sprites.single_agent);
     
 
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);

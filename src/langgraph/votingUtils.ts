@@ -104,7 +104,7 @@ export function createAggregator(
 
 
         console.log("[Debug] Returning to office...");
-        await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
+        await autoControlAgent(scene, agents[agents.length-1], tilemap, originalAgent1X, originalAgent1Y, "");
         console.log("[Debug] Returned to office.");
 
         // await autoControlAgent(scene, report, tilemap, 765, 265, "Send Report to Next Department");

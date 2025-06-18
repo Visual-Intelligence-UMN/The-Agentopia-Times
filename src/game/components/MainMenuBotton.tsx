@@ -15,7 +15,7 @@ export class MainMenuButton {
   ) {
     // Creating a Button Background
     this.buttonBackground = scene.add
-      .rectangle(x, y, width, height, 0x007bff)
+      .rectangle(x, y, width, height, 0xff7f2a)
       .setInteractive()
       .setOrigin(0.5, 0.5)
       .setDepth(1000);
@@ -38,7 +38,7 @@ export class MainMenuButton {
     });
 
     this.buttonBackground.on('pointerout', () => {
-      this.buttonBackground.setFillStyle(0x007bff);  // Turns to blue on mouseover
+      this.buttonBackground.setFillStyle(0xff7f2a);  // Turns to blue on mouseover
     });
   }
 }

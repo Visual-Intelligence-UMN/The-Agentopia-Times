@@ -10,6 +10,8 @@ enum Animation {
   Down = 'player_down',
 }
 
+
+
 interface Memory {
   system: string;
   user: string;
@@ -29,6 +31,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private instruction: string = "";
   private bias: string = "";
   private isBiased: boolean = false;
+  private isDrag: boolean = false;
 
   public assignToWorkplace: boolean = false;
   private activationFunction: (state: any) => any = (state: any) => {
@@ -45,8 +48,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     scene: Phaser.Scene,
     x: number,
     y: number,
-    texture = key.atlas.player,
-    frame = 'misa-front',
+    texture:any = key.atlas.player,
+    frame:any = 'misa-front',
     name: string = "Agent",
     persona: string = "a helpful AI assistant",
     bias: string = ""
@@ -99,12 +102,14 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     // 监听拖拽事件
     scene.input.on('dragstart', (pointer:any, gameObject:any) => {
       if (gameObject === this) {
+        this.isDrag = true; // 设置拖拽状态
         this.setTint(0xff0000); // 拖拽开始时变红
       }
     });
 
     scene.input.on('drag', (pointer:any, gameObject:any, dragX:number, dragY:number) => {
       if (gameObject === this) {
+        this.isDrag = true; // 设置拖拽状态
         this.x = dragX;
         this.y = dragY;
         // this.nameTag.setPosition(this.x, this.y - 25); 
@@ -113,13 +118,18 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
     scene.input.on('dragend', (pointer:any, gameObject:any) => {
       if (gameObject === this) {
+         // 重置拖拽状态
         this.clearTint(); // 结束拖A拽后恢复原色
+        setTimeout(() => {
+          this.isDrag = false;
+        }, 50); 
       }
     });
 
-    this.on('pointerdown', (pointer:any) => {
-      this.onClick(pointer, this);
-    });
+    // this.on('pointerup', (pointer:any) => {
+    //   if(this.isDrag)return;
+    //   this.onClick(pointer, this);
+    // });
     
 
   }
@@ -240,6 +250,20 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           // this.play("player_down");
         }
       }
+    }
+
+    public setToBiased(){
+        console.log(`Agent ${this.name} clicked!`);
+        // this.changeNameTagColor('#ff00ff'); 
+          // update to biased agent
+          // choose the designated bias by occupation
+          this.name = "Biased " + this.name;
+          // this.nameTag.setText(this.name);
+          this.isBiased = true;
+          
+          this.setTexture(key.atlas.bias);
+          this.createAnimations(key.atlas.bias);          
+          // this.play("player_down");
     }
 
     private createWorkAnimations(atlasKey: string) {

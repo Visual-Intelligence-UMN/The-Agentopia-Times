@@ -20,6 +20,7 @@ import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils
 import { constructRouteGraph } from '../../langgraph/routeUtils';
 import { restart } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
+// import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
 
@@ -92,6 +93,8 @@ export class Level2 extends ParentScene {
   }
 
   create() {
+
+    //this.load.bitmapFont('myFont', '/assets/bitmapFont/minogramFont.png', '/assets/bitmapFont/minogramFont.xml');
 
     // for testing
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -516,6 +519,8 @@ return result;
     setZonesExitingDecoration(this.chainingZones, this.agentGroup);
     setZonesExitingDecoration(this.routeZones, this.agentGroup);
 
+    // this.load.bitmapFont('myFont', minogramPng, minogramXml);
+
   if(
     (areAllZonesOccupied(this.parallelZones)
      && !this.isWorkflowAvailable
@@ -551,7 +556,14 @@ return result;
         .setDepth(1011)
         .setAlpha(1)
         .setStrokeStyle(2, 0xffffff);
-      this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Baseball Player\nDataset").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5);
+      this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Baseball Player\nDataset")
+      .setScrollFactor(0)
+      .setDepth(1012)
+      .setAlpha(1)
+      .setFontSize(14)
+      .setColor('#ffffff')
+      .setOrigin(0.5, 0.5)  
+      .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' });
       }
 
   })
@@ -569,7 +581,18 @@ return result;
       this.selectedDataset = "baseball";
       this.selectedText?.destroy();
       this.kidneyBtn.setDepth(1010);
-    this.selectedText = this.add.text(0, 425, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
+    this.selectedText = this.add.text(0, 425, "SELECTED")
+    .setScrollFactor(0)
+    .setDepth(1012)
+    .setAlpha(1)
+    // .setFontSize(12.5)
+    // .setColor('#ffffff')
+    .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+    .setLetterSpacing(2)
+    .setResolution(20)
+    .setOrigin(0.5, 0.5)
+    .setStroke('#ebebec', 2)
+    .disableInteractive();
     this.baseBallBtn.setDepth(998);
     this.registry.set('currentDataset', 'baseball');
 
@@ -582,20 +605,42 @@ return result;
     }
   });
 
-    this.add.text(0, 280, 'Start\nSimulation')
-      .setScrollFactor(0)
-      .setDepth(1002)
-      .setAlpha(1)
-      .setFontSize(12.5) // Increased font size
-      .setColor('#ffffff')
-      .setOrigin(0.5, 0.5);
+  this.add.text(0, 280, 'Start\nSimulation')
+  .setScrollFactor(0)
+  .setDepth(1002)
+  .setAlpha(1)
+  .setFontSize(20)
+  .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+  .setLetterSpacing(2)
+  .setResolution(2)
+  .setOrigin(0.5, 0.5);
+
+
+
+  // this.add.bitmapText(0, 375, 'myFont', 'Choose\nA Dataset', 12.5)
+  //  .setScrollFactor(0)
+  //  .setDepth(1002)
+  //  .setAlpha(1)
+  //  .setLetterSpacing(2)
+  // // .setResolution(2)
+  //  .setOrigin(0.5, 0.5);
+
+
+
+
+
+
+
 
       this.add.text(0, 375, 'Choose\nA Dataset')
       .setScrollFactor(0)
       .setDepth(1002)
       .setAlpha(1)
-      .setFontSize(12.5) // Increased font size
-      .setColor('#ffffff')
+      .setFontSize(13) // Increased font size
+      .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+      .setLetterSpacing(2)
+      .setResolution(20)
+      .setStroke('#000000', 2)
       .setOrigin(0.5, 0.5);
     this.add.rectangle(0, 400, 100, 290, 0x000000).setScrollFactor(0).setDepth(999).setAlpha(0.5).setStrokeStyle(2, 0xffffff).disableInteractive();
     
@@ -616,7 +661,14 @@ return result;
           .setDepth(1011)
           .setAlpha(1)
           .setStrokeStyle(2, 0xffffff);
-        this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Kidney Treatments\nDataset").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5);
+        this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Kidney Treatments\nDataset")
+        .setScrollFactor(0)
+        .setDepth(1012)
+        .setAlpha(1)
+        .setFontSize(12.5)
+        .setColor('#ffffff')
+        .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+        .setOrigin(0.5, 0.5);
           
       }
 
@@ -636,7 +688,18 @@ return result;
         this.selectedDataset = "kidney";
         this.selectedText?.destroy();
         this.baseBallBtn.setDepth(1010);
-      this.selectedText = this.add.text(0, 485, "SELECTED").setScrollFactor(0).setDepth(1012).setAlpha(1).setFontSize(12.5).setColor('#ffffff').setOrigin(0.5, 0.5).disableInteractive();
+      this.selectedText = this.add.text(0, 485, "SELECTED")
+      .setScrollFactor(0)
+      .setDepth(1012)
+      .setAlpha(1)
+      .setFontSize(12.5)
+      .setStroke('#000000', 2)
+      // .setColor('#ffffff')
+      .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+      .setLetterSpacing(2)
+      .setResolution(20)
+      .setOrigin(0.5, 0.5)
+      .disableInteractive();
       this.kidneyBtn.setDepth(998);
       this.registry.set('currentDataset', 'kidney');
       
