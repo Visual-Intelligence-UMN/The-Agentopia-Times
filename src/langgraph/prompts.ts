@@ -12,7 +12,7 @@ Requirements:
 - Ensure the chart is interactive and responsive.
 - Treat 'player' as nominal, 'year' as ordinal, and 'is_hit' as nominal.
 - Focus on clearly visualizing the proportion of hits and misses for each player per year.
-You can use the following code as an example:
+You can just directly copy the code and return them:
 : 
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v6.json",

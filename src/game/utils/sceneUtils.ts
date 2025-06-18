@@ -200,6 +200,118 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   fontWeight: "bold"
   }).setOrigin(0.5).setDepth(1001).setStyle({ fontFamily: 'Verdana'});
 
+  // deciding the strategy based on zoneName
+  let strategy:string = 'voting';
+  if (zoneName === "chaining") {
+    strategy = "sequential";
+  } else if (zoneName === "routing") {
+    strategy = "single_agent";
+  } else if (zoneName === "parallel") {
+    strategy = "voting";
+  }
+
+
+  let btn = null;
+  let selectionPanel:any = null;
+  let uiGroup:any = null;
+
+  // adding strategy UI
+  if(task !== "Analytics Room" && task !== "Writing Room") {
+  btn = scene.add.image(centerX - 160, centerY + 30, strategy)
+    .setDepth(1001)
+    .setScale(1.5)
+    .setOrigin(0.5)
+    .setInteractive()
+    .setScrollFactor(0);
+  }
+
+  // adding interaction
+  if(btn!== null) {
+    btn.on("pointerdown", () => {
+
+      console.log("zoneName", zoneName, "strategy", strategy);
+      if(uiGroup === null) {
+        console.log("adding selection panel", zoneName, "strategy", strategy);
+        // adding UI group
+        uiGroup = scene.add.group();
+
+        // adding selection panel
+        selectionPanel = scene.add.rectangle(centerX - 75, centerY + 125, 200, 100, 0x000000, 0.5)
+        .setDepth(1001)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, 0xffffff);
+
+        let panelTitle = scene.add.text(centerX - 75, centerY + 125 - 40, "Select a Strategy")
+        .setScrollFactor(0)
+        .setDepth(1002)
+        .setAlpha(1)
+        .setFontSize(13) // Increased font size
+        .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+        .setLetterSpacing(2)
+        .setResolution(20)
+        .setStroke('#000000', 2)
+        .setOrigin(0.5, 0.5);
+
+        // adding strategy icons
+        const strategyIconXOffset = 150;
+        const strategyMargin = 15;
+        const sequentialIcon = scene.add.image(centerX - strategyIconXOffset + strategyMargin, centerY + 125, "sequential")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        const votingIcon = scene.add.image(centerX - strategyIconXOffset + 75, centerY + 125, "voting")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        const singleAgentIcon = scene.add.image(centerX - strategyIconXOffset + 150 - strategyMargin, centerY + 125, "single_agent")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        
+
+        // adding UI cpmponents to the group
+        uiGroup.add(selectionPanel);
+        uiGroup.add(sequentialIcon);
+        uiGroup.add(votingIcon);
+        uiGroup.add(singleAgentIcon);
+        uiGroup.add(panelTitle);
+
+
+        let hoveredWindow: any = null;
+        // adding interactions for icons
+        sequentialIcon
+        .on("pointerover", (pointer: any)=>{
+
+        })
+        .on("pointerout", (pointer: any)=>{
+
+        })
+        .on("pointerdown", (pointer: any)=>{
+
+        })
+
+
+      } else {
+        console.log("removing selection panel", zoneName, "strategy", strategy);
+        // removing selection panel
+        uiGroup.clear(true, true);
+        uiGroup = null;
+        selectionPanel = null;
+      }
+    });
+  }
+
+
+
   scene.tweens.add({
   targets: [background, statusText],
   scale: 1.1,
