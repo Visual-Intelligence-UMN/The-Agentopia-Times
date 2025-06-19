@@ -172,6 +172,7 @@ export function constructVotingGraph(
     return votingGraph.compile();
 }
 
+
 export const votingExample = `
 You are an employee in a news company.
 You are assigned to vote for the best theme for next news publication.

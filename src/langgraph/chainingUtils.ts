@@ -91,6 +91,7 @@ export function constructLangGraph(
     scene: any,
     tilemap: any,
     destination: any,
+    nextRoomDestination: any,
     zones: any
 ){
     const langgraph = new StateGraph(GeneralStateAnnotation);
@@ -123,6 +124,7 @@ export function constructLangGraph(
                         scene, 
                         tilemap, 
                         destination, 
+                        nextRoomDestination,
                         zones, 
                         (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
                     )
@@ -154,8 +156,5 @@ export function constructLangGraph(
     return langgraph.compile();
 
 }
-
-
-
 
 

@@ -749,10 +749,11 @@ return result;
         const reportEndingPosition = {x: 900, y: 320};
         const votingEndingPosition = {x: 275, y: 350};
         const chainingEndingPosition = {x: 520, y: 350};
+        const routingEndingPosition = {x: 770, y: 330};
 
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, reportEndingPosition, this.routeZones);
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, routingEndingPosition, reportEndingPosition, this.routeZones);
         const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, votingEndingPosition, chainingEndingPosition, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, chainingEndingPosition, this.parallelZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, chainingEndingPosition, routingEndingPosition, this.parallelZones);
 
         console.log("langgraph from game", langgraph);
 

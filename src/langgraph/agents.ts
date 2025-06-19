@@ -169,6 +169,7 @@ export function createWriter(
     scene: any,
     tilemap: any,
     destination: any,
+    nextRoomDestination: any,
     zones: any,
     task: keyof typeof promptTable
 ){ 
@@ -242,7 +243,7 @@ export function createWriter(
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "");
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
-        await transmitReport(scene, report, 767, 330);
+        await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
         // agent return to original location
 
         // await updateStateIcons(scene.chainingZones, "idle");

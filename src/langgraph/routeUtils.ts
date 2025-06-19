@@ -347,46 +347,6 @@ const body = `
 `;
 
 let reportMessage = `${style}${body}`;
-
-// const comments = await extractTSArray(await createVisualizationJudge(d3Code));
-// console.log("comments from routes", comments, d3Code);
-
-// if (comments && comments.length > 0) {
-//   reportMessage += `
-//     <div class="comment-section">
-//       <h3>Comments on Visualization</h3>
-//       <ul>
-//         ${comments.map(c => `<li>${c}</li>`).join('')}
-//       </ul>
-//     </div>
-//   `;
-// }
-
-// console.log("reportMessage before stringnify", reportMessage);
-
-// // === Comments Section - Writing ===
-// const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
-
-// if (writingComments && writingComments.length > 1) {
-//   reportMessage += `
-//     <div class="comment-section">
-//       <h3>Comments on Writing</h3>
-//       <ul>
-//         ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
-//       </ul>
-//     </div>
-//   `;
-//   scoreText.setText(writingComments[0]);
-// }
-
-// console.log("reportMessage after stringnify", reportMessage);
-
-
-
-        // Scene.scoreText = writingComments[0];
-        
-
-        
     
 
         EventBus.emit("final-report", { report: reportMessage, department: "routing" });
@@ -450,6 +410,7 @@ export function createLeaf(
     agent: any,
     scene: any,
     tilemap: any,
+    thisRoomDestination: any,
     destination: any,
     systemPrompt: string = "",
     zones: any,
@@ -474,11 +435,11 @@ export function createLeaf(
 
         // await updateStateIcons(zones, "mail");
 
-        await autoControlAgent(scene, agent, tilemap, 767, 330, "Send report to final location"); //ERROR
+        await autoControlAgent(scene, agent, tilemap, thisRoomDestination.x, thisRoomDestination.y, "Send report to final location"); //ERROR
         // move the agent back to the original position
         await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "");
         // create the report from routing graph
-        const report = await createReport(scene, "routing", 767, 345);
+        const report = await createReport(scene, "routing", thisRoomDestination.x, thisRoomDestination.y);
         // transmit the report to the final location
         await transmitReport(scene, report, destination.x, destination.y);
 
@@ -651,6 +612,7 @@ export function constructRouteGraph(
     agents: Agent[],
     scene: any,
     tilemap: any,
+    thisRoomDestination: any,
     destination: any,
     zones: any
 ){
@@ -665,7 +627,7 @@ export function constructRouteGraph(
         if(i < 2){
             routeGraph.addNode(
                 sampleSystemPrompts[i].role, 
-                createLeaf(agents[i], scene, tilemap, destination, sampleSystemPrompts[i].prompt, zones, scene.creditsText)
+                createLeaf(agents[i], scene, tilemap, thisRoomDestination, destination, sampleSystemPrompts[i].prompt, zones, scene.creditsText)
             );
             remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
         }
