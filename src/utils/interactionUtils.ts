@@ -1,69 +1,60 @@
-// import Phaser from 'phaser';
-// import { Rectangle, render } from 'phaser-jsx';
+export function createHoveredWindow(
+    scene: any,
+    pointer: any,
+    width: number,
+    height: number,
+    windowContextText: string,
+) {
+    const hoveredWindowGroup = scene.add.group();
+    const rectX = pointer.x + width / 2;
+    const rectY = pointer.y - height / 2;
+    const hoverWindow = scene.add
+        .rectangle(rectX, rectY, width, height, 0x000000)
+        .setScrollFactor(0)
+        .setDepth(1011)
+        .setAlpha(0.5)
+        .setStrokeStyle(2, 0xffffff);
+    const hoverWindowText = scene.add
+        .text(rectX, rectY, windowContextText)
+        .setScrollFactor(0)
+        .setDepth(1012)
+        .setAlpha(1)
+        .setFontSize(12.5)
+        .setColor('#ffffff')
+        .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+        .setOrigin(0.5, 0.5)
+        .setStroke('#000000', 2);
 
-// import { Button, TilemapDebug, Typewriter } from '../components';
-// import {
-//   Depth,
-//   key,
-//   TilemapLayer,
-//   TilemapObject,
-//   TILESET_NAME,
-// } from '../constants';
-// import { Player } from '../sprites';
-// import { state } from '../state';
-// import { NPC } from '../sprites/NPC';
-// import { Agent } from '../sprites/Agent';
-// import { fetchChatCompletion } from '../server/server';
-// import * as ts from 'typescript';
-// import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
+    hoveredWindowGroup.add(hoverWindow);
+    hoveredWindowGroup.add(hoverWindowText);
+    return hoveredWindowGroup;
+}
 
-// interface Sign {
-//   text: string;
-// }
-// import { setupKeyListeners } from '../utils/controlUtils';
-// import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-// import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-// import { createItem } from '../utils/sceneUtils';
-// import { debateWithJudging } from '../server/simulations/debate';
+export function removeHoveredWindow(hoveredWindowGroup: any) {
+    if (hoveredWindowGroup) {
+        hoveredWindowGroup.clear(true, true);
+    }
+}
 
-
-
-
-// export function addPlayerSignInteraction(
-//     this: any
-// ) {
-//     const sign = this.tilemap.findObject(
-//       TilemapLayer.Objects,
-//       (obj: { name: string }) => obj.name === TilemapObject.Sign,
-//     )!;
-
-//     this.sign = this.physics.add.staticBody(
-//       sign.x!,
-//       sign.y!,
-//       sign.width,
-//       sign.height,
-//     );
-//     this.sign.text = sign.properties[0].value;
-
-//     type ArcadeColliderType = Phaser.Types.Physics.Arcade.ArcadeColliderType;
-
-//     this.physics.add.overlap(
-//       this.sign as unknown as ArcadeColliderType,
-//       this.player.selector as unknown as ArcadeColliderType,
-//       (sign: any) => {
-//         if (this.player.cursors.space.isDown && !state.isTypewriting) {
-//           state.isTypewriting = true;
-
-//           render(
-//             <Typewriter
-//               text={(sign as unknown as Sign).text!}
-//               onEnd={() => (state.isTypewriting = false)}
-//             />,
-//             this,
-//           );
-//         }
-//       },
-//       undefined,
-//       this,
-//     );
-// }
+export function addEventToStrategy(
+    scene: any,
+    icon: any,
+    strategyDescription: string,
+) {
+    let hoveredWindow: any = null;
+    // adding interactions for icons
+    icon.on('pointerover', (pointer: any) => {
+        hoveredWindow = createHoveredWindow(
+            scene,
+            pointer,
+            275,
+            100,
+            strategyDescription,
+        );
+    })
+        .on('pointerout', (pointer: any) => {
+            removeHoveredWindow(hoveredWindow);
+            hoveredWindow = null;
+        })
+        .on('pointerdown', (pointer: any) => {});
+}

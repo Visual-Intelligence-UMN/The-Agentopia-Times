@@ -9,6 +9,7 @@ import { Agent } from '../sprites/Agent';
 import { report } from '../assets/sprites';
 import { EventBus } from '../EventBus';
 import { biasImage } from '../assets/atlas';
+import { addEventToStrategy, createHoveredWindow, removeHoveredWindow } from '../../utils/interactionUtils';
 
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
@@ -178,14 +179,6 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     const backgroundY = centerY + yOffset;
     const labelY = centerY + yOffset;
 
-  //   const background = scene.add.rectangle(centerX, backgroundY, 75, 15, 0x000000, 0.5)
-  //   .setOrigin(0.5).setDepth(1000);
-
-  //   const statusText = scene.add.text(centerX, labelY, task, {
-  //     fontSize: "10px",
-  //     color: "#ffffff",
-  //   }).setOrigin(0.5).setDepth(1001);
-
   const background = scene.add.rectangle(centerX, backgroundY, 115, 20, 0x111122, 0.7)
   .setOrigin(0.5)
   .setDepth(1000)
@@ -285,21 +278,9 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
         uiGroup.add(singleAgentIcon);
         uiGroup.add(panelTitle);
 
-
-        let hoveredWindow: any = null;
-        // adding interactions for icons
-        sequentialIcon
-        .on("pointerover", (pointer: any)=>{
-
-        })
-        .on("pointerout", (pointer: any)=>{
-
-        })
-        .on("pointerdown", (pointer: any)=>{
-
-        })
-
-
+        addEventToStrategy(scene, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.");
+        addEventToStrategy(scene, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.");
+        addEventToStrategy(scene, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.");
       } else {
         console.log("removing selection panel", zoneName, "strategy", strategy);
         // removing selection panel
