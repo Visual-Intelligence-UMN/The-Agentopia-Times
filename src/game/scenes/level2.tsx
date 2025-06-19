@@ -745,34 +745,24 @@ return result;
         const datamap2 = transformDataMap(this.votingZones, this.controllableCharacters);
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
-        
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, {x:900, y:320}, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, {x: 275, y: 350}, {x:520, y:350}, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, {x:520, y:350}, this.parallelZones);
+        // set all positions here: 
+        const reportEndingPosition = {x: 900, y: 320};
+        const votingEndingPosition = {x: 275, y: 350};
+        const chainingEndingPosition = {x: 520, y: 350};
 
-        // await generateImage("generate a cute girl");
-        // const imageGenerated = await generateChartImage();
-        // console.log("imageGenerated", imageGenerated);
-
-
+        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, reportEndingPosition, this.routeZones);
+        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, votingEndingPosition, chainingEndingPosition, this.votingZones);
+        const langgraph = constructLangGraph(datamap, this, this.tilemap, chainingEndingPosition, this.parallelZones);
 
         console.log("langgraph from game", langgraph);
-        // const llmOutput = await langgraph.invoke({chainInput: testInput});
-        // const finalDecision = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
-        // const finalDecision2 = await routingGraph.invoke({routeInput: testInput});
 
         const firstOutput = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
         const secondOutput = await langgraph.invoke({votingToChaining: firstOutput.votingToChaining, chainFormattedText: firstOutput.votingToChaining});
         const finalOutput = await routingGraph.invoke({chainingToRouting: secondOutput.chainingToRouting, votingToChaining: firstOutput.votingToChaining});
 
-
         console.log("first output", firstOutput);
         console.log("finalDecision", secondOutput);
         console.log("finalDecision2", finalOutput);
-
-        // console.log("llmOutput", llmOutput, finalDecision, finalDecision2);
-        // testChain(agent1, agent2, this, this.tilemap, this.parallelZones);
-
 
         eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
     });

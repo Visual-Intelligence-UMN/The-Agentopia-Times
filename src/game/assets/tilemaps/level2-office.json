@@ -333,6 +333,30 @@
                  "width":0,
                  "x":761.5,
                  "y":340.5
+                }, 
+                {
+                 "height":0,
+                 "id":31,
+                 "name":"manager",
+                 "point":true,
+                 "rotation":0,
+                 "type":"agent",
+                 "visible":true,
+                 "width":0,
+                 "x":527,
+                 "y":310
+                }, 
+                {
+                 "height":0,
+                 "id":32,
+                 "name":"",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":319,
+                 "y":-275
                 }],
          "offsetx":-1,
          "offsety":-2,
@@ -343,7 +367,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":31,
+ "nextobjectid":33,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
