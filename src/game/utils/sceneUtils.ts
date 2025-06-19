@@ -282,9 +282,9 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
         uiGroup.add(singleAgentIcon);
         uiGroup.add(panelTitle);
 
-        addEventToStrategy(scene, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.", zoneIndex, "sequential");
-        addEventToStrategy(scene, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.", zoneIndex, "voting");
-        addEventToStrategy(scene, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.", zoneIndex, "single_agent");
+        addEventToStrategy(scene, btn, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.", zoneIndex, "sequential");
+        addEventToStrategy(scene, btn, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.", zoneIndex, "voting");
+        addEventToStrategy(scene, btn, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.", zoneIndex, "single_agent");
       } else {
         console.log("removing selection panel", zoneName, "strategy", strategy);
         // removing selection panel

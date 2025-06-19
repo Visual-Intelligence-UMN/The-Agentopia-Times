@@ -38,6 +38,7 @@ export function removeHoveredWindow(hoveredWindowGroup: any) {
 
 export function addEventToStrategy(
     scene: any,
+    btn: any,
     icon: any,
     strategyDescription: string,
     index: number,
@@ -63,6 +64,7 @@ export function addEventToStrategy(
             const tempConfig = scene.registry.get("workflowConfig");
             tempConfig[index] = strategy;
             scene.registry.set("workflowConfig", tempConfig);
+            btn.setTexture(strategy);
             console.log("Updated workflowConfig:", scene.registry.get("workflowConfig"));
         });
 }
