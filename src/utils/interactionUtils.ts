@@ -40,6 +40,8 @@ export function addEventToStrategy(
     scene: any,
     icon: any,
     strategyDescription: string,
+    index: number,
+    strategy: string
 ) {
     let hoveredWindow: any = null;
     // adding interactions for icons
@@ -56,5 +58,11 @@ export function addEventToStrategy(
             removeHoveredWindow(hoveredWindow);
             hoveredWindow = null;
         })
-        .on('pointerdown', (pointer: any) => {});
+        .on('pointerdown', (pointer: any) => {
+            console.log(`Strategy ${index} clicked: ${strategy}`);
+            const tempConfig = scene.registry.get("workflowConfig");
+            tempConfig[index] = strategy;
+            scene.registry.set("workflowConfig", tempConfig);
+            console.log("Updated workflowConfig:", scene.registry.get("workflowConfig"));
+        });
 }

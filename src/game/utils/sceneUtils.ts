@@ -195,12 +195,16 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
 
   // deciding the strategy based on zoneName
   let strategy:string = 'voting';
+  let zoneIndex = 0;
   if (zoneName === "chaining") {
     strategy = "sequential";
+    zoneIndex = 1;
   } else if (zoneName === "routing") {
     strategy = "single_agent";
+    zoneIndex = 2;
   } else if (zoneName === "parallel") {
     strategy = "voting";
+    zoneIndex = 0;
   }
 
 
@@ -278,9 +282,9 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
         uiGroup.add(singleAgentIcon);
         uiGroup.add(panelTitle);
 
-        addEventToStrategy(scene, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.");
-        addEventToStrategy(scene, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.");
-        addEventToStrategy(scene, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.");
+        addEventToStrategy(scene, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.", zoneIndex, "sequential");
+        addEventToStrategy(scene, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.", zoneIndex, "voting");
+        addEventToStrategy(scene, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.", zoneIndex, "single_agent");
       } else {
         console.log("removing selection panel", zoneName, "strategy", strategy);
         // removing selection panel

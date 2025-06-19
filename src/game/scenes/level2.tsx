@@ -116,6 +116,7 @@ export class Level2 extends ParentScene {
     // currentPattern === "" -> no pattern is chosen
     this.registry.set('currentPattern', "");
     this.registry.set('currentDataset', 'baseball');
+    this.registry.set("workflowConfig", ['voting', 'sequential', 'single_agent']);
 
     console.log("isWorkflowRunning", this.registry.get('isWorkflowRunning'));
 
