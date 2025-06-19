@@ -1,73 +1,69 @@
-import { StateGraph, Annotation, START, END } from "@langchain/langgraph/web";
-import { z } from "zod";
-import { initializeLLM } from "./chainingUtils";
-import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
-import { Agent } from "openai/_shims/index.mjs";
-import { EventBus } from "../game/EventBus";
-import { baseballPath, createReport, GeneralStateAnnotation, kidneyPath } from "./agents";
-import { updateStateIcons } from "../game/utils/sceneUtils";
-import { cleanUpD3Code, generateChartImage } from "./visualizationGenerate";
-import { generateImage } from "./dalleUtils";
-import { d3Script } from "./const";
-import { marked } from "marked";
-import { baseball, kidney } from "../game/assets/sprites";
+import { StateGraph, Annotation, START, END } from '@langchain/langgraph/web';
+import { z } from 'zod';
+import { initializeLLM } from './chainingUtils';
+import { autoControlAgent, transmitReport } from '../game/utils/controlUtils';
+import { Agent } from 'openai/_shims/index.mjs';
+import { EventBus } from '../game/EventBus';
+import {
+    baseballPath,
+    createReport,
+    GeneralStateAnnotation,
+    kidneyPath,
+} from './agents';
+import { updateStateIcons } from '../game/utils/sceneUtils';
+import { cleanUpD3Code, generateChartImage } from './visualizationGenerate';
+import { generateImage } from './dalleUtils';
+import { d3Script } from './const';
+import { marked } from 'marked';
+import { baseball, kidney } from '../game/assets/sprites';
 
-
-// const RouteAnnotation = Annotation.Root({
-//     input: Annotation<string>,
-//     decision: Annotation<string>,
-//     output: Annotation<string>,
-// });
-
-
-const ucbPath: string = "./data/simulated_ucb.csv"
-const covidPath: string = "./data/simulated_covid.csv"
+const ucbPath: string = './data/simulated_ucb.csv';
+const covidPath: string = './data/simulated_covid.csv';
 
 const routeSchema = z.object({
-    step: z.enum(["visualization", "illustration"]).describe(
-      "The next step in the routing process"
-    ),
+    step: z
+        .enum(['visualization', 'illustration'])
+        .describe('The next step in the routing process'),
 });
 
 const sampleSystemPrompts = [
     {
-        role: "visualization", 
-        prompt: "write a short report(<100words) about weather in New York City"
+        role: 'visualization',
+        prompt: 'write a short report(<100words) about weather in New York City',
     },
     {
-        role: "illustration", 
-        prompt: "write a short report(<100words) about social trends among teenagers in the US"
+        role: 'illustration',
+        prompt: 'write a short report(<100words) about social trends among teenagers in the US',
     },
 ];
 
-
 async function testBranchWork(
     scene: any,
-    command: string, 
-    state: any, 
-    content: string, 
+    command: string,
+    state: any,
+    content: string,
     agent: any,
     scoreText: Phaser.GameObjects.Text,
-){
+) {
     let datasetPath = baseballPath;
 
-    console.log("state route", state);
+    console.log('state route', state);
 
-        if(!state.votingToChaining) {
-            if(scene.registry.get('currentDataset')==='kidney'){
-                datasetPath = kidneyPath;
-            }
+    if (!state.votingToChaining) {
+        if (scene.registry.get('currentDataset') === 'kidney') {
+            datasetPath = kidneyPath;
         }
+    }
 
-        const res = await fetch(datasetPath);
-        const csvRaw = await res.text();
-        console.log("csvRaw", csvRaw);
+    const res = await fetch(datasetPath);
+    const csvRaw = await res.text();
+    console.log('csvRaw', csvRaw);
 
-    command = "visualization";
-    console.log("command", command);
-    
-    if(command === "visualization"){
-        console.log("entered visualization branch")
+    command = 'visualization';
+    console.log('command', command);
+
+    if (command === 'visualization') {
+        console.log('entered visualization branch');
 
         const chartData = await generateChartImage(csvRaw, agent, state);
 
@@ -77,102 +73,40 @@ async function testBranchWork(
         const d3Code = chartData.d3Code;
 
         // EventBus.emit("final-report", { report: content, department: "routing" });
-        const URL = await generateImage(`please give me an image based on the following describ or coonect with it: ${content}`);
-        console.log("URL", URL)
-        console.log("d3code", d3Code)
-        // const markdownFromLLM = await createHighlighter(content) as any;
-      // let dynamicTitle = "Generated Report Summary";
-      // let markdownCleaned = markdownFromLLM;
+        const URL = await generateImage(
+            `please give me an image based on the following describ or coonect with it: ${content}`,
+        );
+        console.log('URL', URL);
+        console.log('d3code', d3Code);
+        let dynamicTitle = 'Generated Report Summary';
+        let dynamicIntro = 'Generated Report Intro';
+        let contentWithoutHeaders = content;
 
-      // const markdownTitleLine = markdownFromLLM
-      //   .split('\n')
-      //   .find((line: string) =>
-      //     line.trim().startsWith('#') && line.toLowerCase().includes('title:')
-      //   );
+        // 1. Extract and remove titles
+        const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
+        if (titleMatch) {
+            dynamicTitle = titleMatch[1].trim();
+            contentWithoutHeaders = contentWithoutHeaders.replace(
+                titleMatch[0],
+                '',
+            );
+        }
 
+        // 2. Extract and remove Intro
+        const introMatch =
+            contentWithoutHeaders.match(/^##\s*Intro:\s*(.+)$/im);
+        if (introMatch) {
+            dynamicIntro = introMatch[1].trim();
+            contentWithoutHeaders = contentWithoutHeaders.replace(
+                introMatch[0],
+                '',
+            );
+        }
 
-      // if (markdownTitleLine) {
-      //   dynamicTitle = markdownTitleLine.replace(/^#+\s*Title:\s*/i, '').trim();
-      //   markdownCleaned = markdownFromLLM.replace(markdownTitleLine, '');
-      // } else {
-      //   const h1Match = markdownFromLLM.match(/<h1[^>]*>(.*?)<\/h1>/i);
-      //   if (h1Match) {
-      //     dynamicTitle = h1Match[1].replace(/^Title:\s*/i, '').trim();
-      //     markdownCleaned = markdownFromLLM.replace(h1Match[0], '');
-      //   }
-      // }
+        // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
+        const highlightedText = marked.parse(contentWithoutHeaders.trim());
 
-
-
-      // // let dynamicIntro = "Generated Report Intro";
-
-      // // 提取 ## Intro: 段落（直到下一个 ## 或 # 或结尾）
-      // const introRegex = /##\s*Intro:(.*?)(?=\n#{1,2}\s|\n$)/is;
-      // const introMatch = markdownCleaned.match(introRegex);
-
-      // if (introMatch) {
-      //   dynamicIntro = introMatch[1].trim(); // 去掉前缀并保留内容
-      //   markdownCleaned = markdownCleaned.replace(introMatch[0], ''); // 从正文中移除 Intro 段落
-      // }
-
-      // const highlightedText = marked.parse(markdownCleaned);
-
-
-
-
-
-      // let dynamicIntro = "Generated Report Intro";
-
-      // const markdownIntroLine = markdownCleaned
-      //   .split('\n')
-      //   .find((line: string) =>
-      //     line.trim().startsWith('##') && line.toLowerCase().includes('Intro:')
-      //   );
-
-
-      // if (markdownIntroLine) {
-      //   dynamicTitle = markdownIntroLine.replace(/^##+\s*Intro:\s*/i, '').trim();
-      //   markdownCleaned = markdownFromLLM.replace(markdownIntroLine, '');
-      // } else {
-      //   const h2Match = markdownFromLLM.match(/<h2[^>]*>(.*?)<\/21>/i);
-      //   if (h2Match) {
-      //     dynamicIntro = h2Match[1].replace(/^:\s*/i, '').trim();
-      //     markdownCleaned = markdownFromLLM.replace(h2Match[0], '');
-      //   }
-      // }
-
-      // const highlightedText = marked.parse(markdownCleaned);
-
-      let dynamicTitle = "Generated Report Summary";
-      let dynamicIntro = "Generated Report Intro";
-      let contentWithoutHeaders = content;
-      
-      // 1. Extract and remove titles
-      const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
-      if (titleMatch) {
-        dynamicTitle = titleMatch[1].trim();
-        contentWithoutHeaders = contentWithoutHeaders.replace(titleMatch[0], '');
-      }
-      
-      // 2. Extract and remove Intro
-      const introMatch = contentWithoutHeaders.match(/^##\s*Intro:\s*(.+)$/im);
-      if (introMatch) {
-        dynamicIntro = introMatch[1].trim();
-        contentWithoutHeaders = contentWithoutHeaders.replace(introMatch[0], '');
-      }
-      
-      // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
-      const highlightedText = marked.parse(contentWithoutHeaders.trim());
-
-
-
-      
-
-
-
-
-
-const style = `
+        const style = `
 <style>
   .newspaper {
     font-family: "Georgia", serif;
@@ -289,35 +223,42 @@ const style = `
 
 `;
 
-const comments = await extractTSArray(await createVisualizationJudge(d3Code));
-const writingComments = await extractTSArray(await createWritingJudge(state.chainingToRouting));
+        const comments = await extractTSArray(
+            await createVisualizationJudge(d3Code),
+        );
+        const writingComments = await extractTSArray(
+            await createWritingJudge(state.chainingToRouting),
+        );
 
-let commentsHTML = "";
+        let commentsHTML = '';
 
-if (comments?.length > 0) {
-  commentsHTML += `
+        if (comments?.length > 0) {
+            commentsHTML += `
     <div class="comment-section">
       <h3>Comments on Visualization</h3>
       <ul>
-        ${comments.map(c => `<li>${c}</li>`).join('')}
+        ${comments.map((c) => `<li>${c}</li>`).join('')}
       </ul>
     </div>
   `;
-}
+        }
 
-if (writingComments?.length > 1) {
-  commentsHTML += `
+        if (writingComments?.length > 1) {
+            commentsHTML += `
     <div class="comment-section">
       <h3>Comments on Writing</h3>
       <ul>
-        ${writingComments.slice(1).map(c => `<li>${c}</li>`).join('')}
+        ${writingComments
+            .slice(1)
+            .map((c) => `<li>${c}</li>`)
+            .join('')}
       </ul>
     </div>
   `;
-  scoreText.setText("Score: 8/10");
-}
+            scoreText.setText('Score: 8/10');
+        }
 
-const body = `
+        const body = `
   <div class="newspaper">
     <h1 class="newspaper-title">The Agentopia Times</h1>
     <p class="authors">Written by Professional LLM Journalists</p>
@@ -346,27 +287,31 @@ const body = `
 
 `;
 
-let reportMessage = `${style}${body}`;
-    
+        let reportMessage = `${style}${body}`;
 
-        EventBus.emit("final-report", { report: reportMessage, department: "routing" });
-    }else{
-        console.log("entered illustration branch")
-        const URL = await generateImage("please give me an image of a man");
-        console.log("URL", URL)
-        
+        EventBus.emit('final-report', {
+            report: reportMessage,
+            department: 'routing',
+        });
+    } else {
+        console.log('entered illustration branch');
+        const URL = await generateImage('please give me an image of a man');
+        console.log('URL', URL);
+
         // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
-        
+
         const reportMessage = `${content}
             \n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
         `;
-        
-        EventBus.emit("final-report", { report: reportMessage, department: "routing" });
+
+        EventBus.emit('final-report', {
+            report: reportMessage,
+            department: 'routing',
+        });
     }
 
     return content;
 }
-
 
 async function createHighlighter(message: string) {
     const llm = initializeLLM();
@@ -389,22 +334,20 @@ async function createHighlighter(message: string) {
         but don't change any other texts in the message.
     `;
 
-
-    console.log("message before highlighter", message)
+    console.log('message before highlighter', message);
     const comment = await llm.invoke(systemMssg);
-    console.log("message after highligher: ", comment.content);
+    console.log('message after highligher: ', comment.content);
 
-    console.log("comments from routes llm: ", comment.content);
+    console.log('comments from routes llm: ', comment.content);
 
     return comment.content;
 }
 
 async function extractTSArray(raw: any): Promise<string[]> {
     //const trimmed = raw.map((str) => str.trim());
-    const clean = raw.replace(/^```typescript\s*|```$/g, "");
+    const clean = raw.replace(/^```typescript\s*|```$/g, '');
     return JSON.parse(clean);
-  }
-  
+}
 
 export function createLeaf(
     agent: any,
@@ -412,34 +355,53 @@ export function createLeaf(
     tilemap: any,
     thisRoomDestination: any,
     destination: any,
-    systemPrompt: string = "",
+    systemPrompt: string = '',
     zones: any,
-    scoreText: Phaser.GameObjects.Text
-){
+    scoreText: Phaser.GameObjects.Text,
+) {
     return async function leaf(state: typeof GeneralStateAnnotation.State) {
         // store the original position
         const originalAgentX = agent.x;
         const originalAgentY = agent.y;
 
         // move the agent to the destination
-        console.log("destination from leaf: ", destination);
-        
+        console.log('destination from leaf: ', destination);
+
         testBranchWork(
-            scene, 
-            state.routeDecision, 
-            state, 
-            state.chainingToRouting, 
-            agent, 
-            scoreText
+            scene,
+            state.routeDecision,
+            state,
+            state.chainingToRouting,
+            agent,
+            scoreText,
         );
 
         // await updateStateIcons(zones, "mail");
 
-        await autoControlAgent(scene, agent, tilemap, thisRoomDestination.x, thisRoomDestination.y, "Send report to final location"); //ERROR
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            thisRoomDestination.x,
+            thisRoomDestination.y,
+            'Send report to final location',
+        ); //ERROR
         // move the agent back to the original position
-        await autoControlAgent(scene, agent, tilemap, originalAgentX, originalAgentY, "");
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            originalAgentX,
+            originalAgentY,
+            '',
+        );
         // create the report from routing graph
-        const report = await createReport(scene, "routing", thisRoomDestination.x, thisRoomDestination.y);
+        const report = await createReport(
+            scene,
+            'routing',
+            thisRoomDestination.x,
+            thisRoomDestination.y,
+        );
         // transmit the report to the final location
         await transmitReport(scene, report, destination.x, destination.y);
 
@@ -449,10 +411,9 @@ export function createLeaf(
     };
 }
 
-
 export async function createVisualizationJudge(message: string) {
     const llm = initializeLLM();
-    console.log("message before vis judge", message)
+    console.log('message before vis judge', message);
     const systemMssg: string = `
         You are a visualization grammar expert.
 
@@ -487,22 +448,24 @@ Follow this reasoning process:
 
     const comment = await llm.invoke(systemMssg);
 
-    console.log("comments from routes llm: ", comment.content);
+    console.log('comments from routes llm: ', comment.content);
 
-    console.log("message after vis judge", comment.content)
+    console.log('message after vis judge', comment.content);
 
     try {
         // Try parsing response as a JSON array
         return comment.content;
     } catch (e) {
-        console.error("Failed to parse comment as string[]:", e);
-        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+        console.error('Failed to parse comment as string[]:', e);
+        return [
+            `Error: LLM response is not a valid string[]: ${comment.content}`,
+        ];
     }
 }
 
 export async function createWritingJudge(message: string) {
     const llm = initializeLLM();
-    console.log("message before writing judge", message)
+    console.log('message before writing judge', message);
     const systemMssg: string = `
         You are a bias detection expert.
         Carefully evaluate the following text and identify any potential biases or misleading statements.
@@ -538,27 +501,29 @@ export async function createWritingJudge(message: string) {
 
     const comment = await llm.invoke(systemMssg);
 
-    console.log("comments from routes llm: ", comment.content);
+    console.log('comments from routes llm: ', comment.content);
 
-    console.log("message after writing judge", comment.content)
+    console.log('message after writing judge', comment.content);
 
     try {
         // Try parsing response as a JSON array
         return comment.content;
     } catch (e) {
-        console.error("Failed to parse comment as string[]:", e);
-        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+        console.error('Failed to parse comment as string[]:', e);
+        return [
+            `Error: LLM response is not a valid string[]: ${comment.content}`,
+        ];
     }
 }
 
 // we also need input locations for agents on the branches
 export function createRouter(
-    scene: any, 
-    tilemap: any, 
-    routeAgent: Agent, 
+    scene: any,
+    tilemap: any,
+    routeAgent: Agent,
     agentsOnBranches: any[],
-    zones: any
-){
+    zones: any,
+) {
     return async function router(state: typeof GeneralStateAnnotation.State) {
         const llm = initializeLLM();
         const routeLLM = llm.withStructuredOutput(routeSchema);
@@ -566,45 +531,58 @@ export function createRouter(
         const originalAgentX = routeAgent.x;
         const originalAgentY = routeAgent.y;
 
-        console.log("checking for data", state)
+        console.log('checking for data', state);
 
         // await updateStateIcons(zones, "work");
-        
 
         const decision = await routeLLM.invoke([
             {
-              role: "system",
-              content: "Route the input to visualization or illustration based on the user's request."
+                role: 'system',
+                content:
+                    "Route the input to visualization or illustration based on the user's request.",
             },
             {
-              role: "user",
-              content: state.chainingToRouting
+                role: 'user',
+                content: state.chainingToRouting,
             },
-          ]);
+        ]);
 
-          console.log("router decision: ", decision.step);
+        console.log('router decision: ', decision.step);
 
-          // find agent on the branch
-            const agent = agentsOnBranches.find((agent) => agent.branchName === decision.step);
+        // find agent on the branch
+        const agent = agentsOnBranches.find(
+            (agent) => agent.branchName === decision.step,
+        );
 
         // send the data to the next agent
-        await autoControlAgent(scene, routeAgent, tilemap, agent.agent.x, agent.agent.y, "Send report to final location");
+        await autoControlAgent(
+            scene,
+            routeAgent,
+            tilemap,
+            agent.agent.x,
+            agent.agent.y,
+            'Send report to final location',
+        );
 
-        
         // agent back to original location
-        await autoControlAgent(scene, routeAgent, tilemap, originalAgentX, originalAgentY, "Returned");
+        await autoControlAgent(
+            scene,
+            routeAgent,
+            tilemap,
+            originalAgentX,
+            originalAgentY,
+            'Returned',
+        );
 
-        
-          return { routeDecision: decision.step };        
+        return { routeDecision: decision.step };
     };
 }
 
-export function routeDecision(state: typeof GeneralStateAnnotation.State){
-    if (state.routeDecision === "visualization"){
-        return "visualization";
-    }
-    else if (state.routeDecision === "illustration"){
-        return "illustration";
+export function routeDecision(state: typeof GeneralStateAnnotation.State) {
+    if (state.routeDecision === 'visualization') {
+        return 'visualization';
+    } else if (state.routeDecision === 'illustration') {
+        return 'illustration';
     }
 }
 
@@ -614,38 +592,52 @@ export function constructRouteGraph(
     tilemap: any,
     thisRoomDestination: any,
     destination: any,
-    zones: any
-){
+    zones: any,
+) {
     const routeGraph = new StateGraph(GeneralStateAnnotation);
 
     let startNode = START;
 
     let remainAgents: any[] = [];
-    
+
     // add nodes
-    for (let i = 0; i < agents.length; i++){
-        if(i < 2){
+    for (let i = 0; i < agents.length; i++) {
+        if (i < 2) {
             routeGraph.addNode(
-                sampleSystemPrompts[i].role, 
-                createLeaf(agents[i], scene, tilemap, thisRoomDestination, destination, sampleSystemPrompts[i].prompt, zones, scene.creditsText)
+                sampleSystemPrompts[i].role,
+                createLeaf(
+                    agents[i],
+                    scene,
+                    tilemap,
+                    thisRoomDestination,
+                    destination,
+                    sampleSystemPrompts[i].prompt,
+                    zones,
+                    scene.creditsText,
+                ),
             );
-            remainAgents.push({agent: agents[i], branchName: sampleSystemPrompts[i].role});
+            remainAgents.push({
+                agent: agents[i],
+                branchName: sampleSystemPrompts[i].role,
+            });
         }
     }
 
-    routeGraph.addNode("router", createRouter(scene, tilemap, agents[2], remainAgents, zones) as any);
-    routeGraph.addEdge(startNode as any, "router" as any);
-    
+    routeGraph.addNode(
+        'router',
+        createRouter(scene, tilemap, agents[2], remainAgents, zones) as any,
+    );
+    routeGraph.addEdge(startNode as any, 'router' as any);
+
     // add conditional edge
-    routeGraph
-        .addConditionalEdges(
-            "router" as any, 
-            routeDecision as any, 
-            ["visualization", "illustration"] as any
-        );
+    routeGraph.addConditionalEdges(
+        'router' as any,
+        routeDecision as any,
+        ['visualization', 'illustration'] as any,
+    );
 
     // add edges
-    for(let i = 0; i < sampleSystemPrompts.length; i++){
+    for (let i = 0; i < sampleSystemPrompts.length; i++) {
         routeGraph.addEdge(sampleSystemPrompts[i].role as any, END);
     }
 
@@ -653,7 +645,6 @@ export function constructRouteGraph(
 }
 
 export const testingPrompts = [
-    "Give me the latest weather update for New York City.",
-    "Tell me about the latest social trends among teenagers in the US.",
+    'Give me the latest weather update for New York City.',
+    'Tell me about the latest social trends among teenagers in the US.',
 ];
-
