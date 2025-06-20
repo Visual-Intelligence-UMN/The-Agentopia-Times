@@ -337,7 +337,7 @@
                 {
                  "height":0,
                  "id":31,
-                 "name":"manager",
+                 "name":"manager_agent",
                  "point":true,
                  "rotation":0,
                  "type":"agent",
@@ -357,6 +357,28 @@
                  "width":0,
                  "x":319,
                  "y":-275
+                }, 
+                {
+                 "height":60.6666666666666,
+                 "id":34,
+                 "name":"parallel",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":100,
+                 "x":475,
+                 "y":302
+                }, 
+                {
+                 "height":0,
+                 "id":35,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":463,
+                 "y":-82.6666666666667
                 }],
          "offsetx":-1,
          "offsety":-2,
@@ -367,7 +389,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":33,
+ "nextobjectid":36,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

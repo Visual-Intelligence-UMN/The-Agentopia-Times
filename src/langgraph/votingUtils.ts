@@ -46,7 +46,7 @@ export async function parallelVotingExecutor(
 
         const llmPromise = llm.invoke(
             `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`
-        );
+        );// prompt_change
         console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
         const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");
 
@@ -87,7 +87,7 @@ export function createAggregator(
         const decision = await llm.invoke(`
             aggregate data: ${llmInput}; 
             return the aggreated result in one title, don't add any other information or quotation marks.
-        `);
+        `);// prompt_change
         console.log("[Debug] Received final decision from LLM.");
 
         let originalAgent1X = agents[agents.length-1].x;

@@ -100,9 +100,7 @@ export function createJournalist(
     agent: any,
     destination: any,
     scene: any,
-    tilemap: any,
-    zones: any,
-    task: keyof typeof promptTable
+    tilemap: any
 ) {
     return async function journalist(state: typeof GeneralStateAnnotation.State) {
         console.log("journalist state:", state.votingToChaining);
@@ -153,11 +151,47 @@ export function createJournalist(
         const originalAgent1Y = agent.y;
 
         // await updateStateIcons(zones, "mail", 0);
-
-        await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Send Message");
+        console.log("debug agent pos", destination.x, destination.y);
+        await autoControlAgent(scene, agent, tilemap, (destination.x as number), (destination.y as number), "Send Message");
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
         // await updateStateIcons(zones, "idle", 0);
+
+        return { chainFormattedText: msg.content };
+    };
+}
+
+export function createManager(agent: any, scene: any, destination: any, nextRoomDestination: any) {
+    return async function Manager(state: typeof GeneralStateAnnotation.State) {
+        console.log("journalist state:", state.votingToChaining);
+
+        agent.setAgentState("work");
+        
+        // await updateStateIcons(zones, "work", 0);
+        // await updateStateIcons(scene.chainingZones, "work");
+
+        const message = [
+            {
+                role: "system", 
+                content: "You are a manager responsible for fact-checking." + agent.getBias()
+            },
+            {
+                role: "user", 
+                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.chainFormattedText
+            }
+        ];
+
+        const msg = await getLLM().invoke(message);
+
+        console.log("manager msg:", msg.content);
+        // await updateStateIcons(zones, "idle", 0);
+        await agent.setAgentState("idle");
+
+        await createReport(scene, "chaining", destination.x, destination.y);
+        const report = await createReport(scene, "voting", destination.x, destination.y);
+        await console.log("report in agent", report);
+        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
+        await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
 
         return { chainFormattedText: msg.content };
     };
@@ -168,10 +202,7 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any,
-    nextRoomDestination: any,
-    zones: any,
-    task: keyof typeof promptTable
+    destination: any
 ){ 
     return async function writer(state: typeof GeneralStateAnnotation.State){
         console.log("writer state: ", state.chainFormattedText);
@@ -238,12 +269,9 @@ export function createWriter(
         // await updateStateIcons(scene.chainingZones, "mail");     
         
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
-        await createReport(scene, "chaining", destination.x, destination.y);
-        const report = await createReport(scene, "voting", destination.x, destination.y);
+        
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "");
-        await console.log("report in agent", report);
-        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
-        await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
+        
         // agent return to original location
 
         // await updateStateIcons(scene.chainingZones, "idle");

@@ -3,7 +3,7 @@
 import { Agent } from "openai/_shims/index.mjs";
 import { Zone } from "../game/scenes";
 import { END, START, StateGraph } from "@langchain/langgraph/web";
-import { createJournalist, createWriter, GeneralStateAnnotation } from "./agents";
+import { createJournalist, createManager, createWriter, GeneralStateAnnotation } from "./agents";
 import { ChatOpenAI } from "@langchain/openai";
 
 // TODO:
@@ -87,35 +87,31 @@ export interface EdgeType{
 // we can use a data structure to constrcut a graph for information representation
 // another problem: how we assign execution role in a single department? 
 export function constructLangGraph(
-    transformDataMap:subgraph[],
+    agents:Agent[],
     scene: any,
     tilemap: any,
     destination: any,
-    nextRoomDestination: any,
-    zones: any
+    nextRoomDestination: any
 ){
     const langgraph = new StateGraph(GeneralStateAnnotation);
     const agentNames: string[] = [];
-    // add nodes into graph
-    for(let i = 0; i < transformDataMap.length; i++){
-        const subgraph = transformDataMap[i];
-        for(let j = 0; j < subgraph.agents.length; j++){
-            const agent = subgraph.agents[j];
+        for(let j = 0; j < agents.length; j++){
+            const agent = agents[j];
+            let name = agent.getName();
+            console.log("constructLangGraph: ", agent.getName());
             // langgraph.addNode(agent.getName(), agent.activate());
-            if(i===0 && j===0){
+            if(j===0){
                 langgraph.addNode(
                     agent.getName(), 
                     createJournalist(
                         agent, 
-                        transformDataMap[1].agents[0], 
+                        agents[1], 
                         scene, 
-                        tilemap, 
-                        zones, 
-                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                        tilemap
                     )
                 );
             }
-            if(i===1 && j===0){
+            else if(j===1){
                 console.log("create agent", agent)
                 langgraph.addNode(
                     agent.getName(), 
@@ -123,18 +119,21 @@ export function constructLangGraph(
                         agent, 
                         scene, 
                         tilemap, 
-                        destination, 
-                        nextRoomDestination,
-                        zones, 
-                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                        destination
                     )
                 );
             }
+            else if(j===2){
+                langgraph.addNode(
+                    "manager", 
+                    createManager(agent, scene, destination, nextRoomDestination)
+                );
+                name = 'manager'
+            }
             // else langgraph.addNode(agent.getName(), agent.activate());
             console.log("add a node", agent.getName(), agent.activate());
-            agentNames.push(agent.getName());
+            agentNames.push(name);
         }
-    }
 
     // temp (REMOVE LATER) - construct virtual edges for testing purpose
     const edges: EdgeType[] = [];

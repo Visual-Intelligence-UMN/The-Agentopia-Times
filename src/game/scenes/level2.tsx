@@ -616,23 +616,6 @@ return result;
   .setResolution(2)
   .setOrigin(0.5, 0.5);
 
-
-
-  // this.add.bitmapText(0, 375, 'myFont', 'Choose\nA Dataset', 12.5)
-  //  .setScrollFactor(0)
-  //  .setDepth(1002)
-  //  .setAlpha(1)
-  //  .setLetterSpacing(2)
-  // // .setResolution(2)
-  //  .setOrigin(0.5, 0.5);
-
-
-
-
-
-
-
-
       this.add.text(0, 375, 'Choose\nA Dataset')
       .setScrollFactor(0)
       .setDepth(1002)
@@ -712,16 +695,6 @@ return result;
       }
     });
 
-
-          // this.debateStartLabel = this.add
-          //   .text(35, 320, 'Start Workflow', {
-          //     fontSize: '10px',
-          //     color: '#ffffff',
-          //     wordWrap: { width: 50, useAdvancedWrap: true },
-          //   })
-          //   .setScrollFactor(0)
-          //   .setDepth(1002);
-
     this.debateStartBtn.on('pointerdown', async () => {
       this.registry.set('isWorkflowRunning', true);
       console.log("btn pre-start zones data", this.parallelZones);
@@ -741,8 +714,8 @@ return result;
 
         const topic = randomAssignTopic();
 
-        const datamap = transformDataMap(this.parallelZones, this.controllableCharacters);
-        const datamap2 = transformDataMap(this.votingZones, this.controllableCharacters);
+        const datamap = transformDataMap(this.votingZones, this.controllableCharacters);
+        const datamap2 = transformDataMap(this.parallelZones, this.controllableCharacters);
         const datamap3 = transformDataMap(this.routeZones, this.controllableCharacters);
 
         // set all positions here: 
@@ -751,15 +724,73 @@ return result;
         const chainingEndingPosition = {x: 520, y: 350};
         const routingEndingPosition = {x: 770, y: 330};
 
-        const routingGraph = constructRouteGraph(datamap3[0].agents, this, this.tilemap, routingEndingPosition, reportEndingPosition, this.routeZones);
-        const votingGraph = constructVotingGraph(datamap2[0].agents, this, this.tilemap, votingEndingPosition, chainingEndingPosition, this.votingZones);
-        const langgraph = constructLangGraph(datamap, this, this.tilemap, chainingEndingPosition, routingEndingPosition, this.parallelZones);
+        const allPositions = [votingEndingPosition, chainingEndingPosition, routingEndingPosition, reportEndingPosition];
 
-        console.log("langgraph from game", langgraph);
+        const workflowConfig = this.registry.get("workflowConfig");
+        const datamaps = [datamap, datamap2, datamap3];
+        // TEST: if workflowConfig has different parameters
+         
+        
+        console.log("init workflowConfig", workflowConfig);
 
-        const firstOutput = await votingGraph.invoke({votingTopic: votingExample, votingVotes: []});
-        const secondOutput = await langgraph.invoke({votingToChaining: firstOutput.votingToChaining, chainFormattedText: firstOutput.votingToChaining});
-        const finalOutput = await routingGraph.invoke({chainingToRouting: secondOutput.chainingToRouting, votingToChaining: firstOutput.votingToChaining});
+        // Initialize graphs array
+        let graphs: any[] = [];
+        // Initialize agent prompts
+        let agentPrompts: any[] = ["1", "2", "3"];
+
+        for( let i=0; i<workflowConfig.length; i++){
+          // fetching movement positions
+          const firstPosition = allPositions[i];
+          const secondPosition = allPositions[i+1];
+
+          // fetching agents from datamaps - index-1 room need special handling
+          let agentsParameter = null;
+          if(i!=1){
+            agentsParameter = datamaps[i][0].agents;
+          } else{
+            const datamap = datamaps[i];
+            // tranform the datamap to get the agents
+            console.log("datamap2", datamap);
+            agentsParameter = datamap.map((zone: any) => {
+              return zone.agents[0];
+            });
+
+          }
+          console.log("agentsParameter", i, agentsParameter);
+          // fetching agent prompts
+          console.log("agent prompts", agentPrompts[i]);
+          // Insert prompts into the graphs below:
+          if(workflowConfig[i] === "voting"){
+            console.log("construct voting graph");
+            const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, this.votingZones);
+            graphs.push(graph);
+          } else if(workflowConfig[i] === "sequential") {
+            console.log("construct lang graph");
+            const graph = constructLangGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            graphs.push(graph);
+          } else if(workflowConfig[i] === "single_agent") {
+            console.log("construct routing graph");
+            const graph = constructRouteGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, this.routeZones);
+            graphs.push(graph);
+          }
+        }
+
+        let firstOutput:any = null;
+        let secondOutput:any = null;
+        let finalOutput:any = null;
+
+        for(let i=0; i<graphs.length; i++){
+          if(workflowConfig[i] === "voting"){
+            console.log("invoke voting graph");
+            firstOutput = await graphs[i].invoke({votingTopic: votingExample, votingVotes: [], agentName: agentPrompts[i]});
+          } else if(workflowConfig[i] === "sequential") {
+            console.log("invoke lang graph");
+            secondOutput = await graphs[i].invoke({votingToChaining: firstOutput.votingToChaining, chainFormattedText: firstOutput.votingToChaining, agentName: agentPrompts[i]});
+          } else if(workflowConfig[i] === "single_agent") {
+            console.log("invoke routing graph");
+            finalOutput = await graphs[i].invoke({chainingToRouting: secondOutput.chainingToRouting, votingToChaining: firstOutput.votingToChaining, agentName: agentPrompts[i]});
+          }
+        }
 
         console.log("first output", firstOutput);
         console.log("finalDecision", secondOutput);
