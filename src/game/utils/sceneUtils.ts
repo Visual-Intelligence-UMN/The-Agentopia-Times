@@ -348,6 +348,7 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
       zone: parallelZone,
       agentsInside: new Set(),
       name: parallelZoneData.name,
+      class: parallelZoneData.type,
       ui: {
         background,
         text: statusText,

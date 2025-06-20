@@ -51,7 +51,7 @@ export function transformDataMap(zones: Zone[], agents: Agent[]){
         let subgraph:subgraph = {
             agents: [],
             location: zones[i].name,
-            task: zones[i].task
+            task: zones[i].class
         };
         const zone = zones[i];
         const insideAgents = Array.from(zone.agentsInside);

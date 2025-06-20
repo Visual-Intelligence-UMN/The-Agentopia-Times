@@ -752,6 +752,7 @@ return result;
             // tranform the datamap to get the agents
             console.log("datamap2", datamap);
             agentsParameter = datamap.map((zone: any) => {
+              console.log("datamap zone", zone);
               return zone.agents[0];
             });
 

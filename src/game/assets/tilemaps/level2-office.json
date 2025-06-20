@@ -188,7 +188,7 @@
                  "id":14,
                  "name":"parallel",
                  "rotation":0,
-                 "type":"",
+                 "type":"1",
                  "visible":true,
                  "width":124.5,
                  "x":409.5,
@@ -199,7 +199,7 @@
                  "id":15,
                  "name":"parallel",
                  "rotation":0,
-                 "type":"",
+                 "type":"2",
                  "visible":true,
                  "width":126.5,
                  "x":540.5,
@@ -363,11 +363,11 @@
                  "id":34,
                  "name":"parallel",
                  "rotation":0,
-                 "type":"",
+                 "type":"3",
                  "visible":true,
                  "width":100,
                  "x":475,
-                 "y":302
+                 "y":320
                 }, 
                 {
                  "height":0,
