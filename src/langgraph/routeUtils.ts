@@ -355,8 +355,6 @@ export function createLeaf(
     tilemap: any,
     thisRoomDestination: any,
     destination: any,
-    systemPrompt: string = '',
-    zones: any,
     scoreText: Phaser.GameObjects.Text,
 ) {
     return async function leaf(state: typeof GeneralStateAnnotation.State) {
@@ -521,8 +519,7 @@ export function createRouter(
     scene: any,
     tilemap: any,
     routeAgent: Agent,
-    agentsOnBranches: any[],
-    zones: any,
+    agentsOnBranches: any[]
 ) {
     return async function router(state: typeof GeneralStateAnnotation.State) {
         const llm = initializeLLM();
@@ -591,8 +588,7 @@ export function constructRouteGraph(
     scene: any,
     tilemap: any,
     thisRoomDestination: any,
-    destination: any,
-    zones: any,
+    destination: any
 ) {
     const routeGraph = new StateGraph(GeneralStateAnnotation);
 
@@ -611,8 +607,6 @@ export function constructRouteGraph(
                     tilemap,
                     thisRoomDestination,
                     destination,
-                    sampleSystemPrompts[i].prompt,
-                    zones,
                     scene.creditsText,
                 ),
             );
@@ -625,7 +619,7 @@ export function constructRouteGraph(
 
     routeGraph.addNode(
         'router',
-        createRouter(scene, tilemap, agents[2], remainAgents, zones) as any,
+        createRouter(scene, tilemap, agents[2], remainAgents) as any,
     );
     routeGraph.addEdge(startNode as any, 'router' as any);
 

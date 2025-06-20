@@ -86,12 +86,12 @@ export interface EdgeType{
 // mainly in the interaction level
 // we can use a data structure to constrcut a graph for information representation
 // another problem: how we assign execution role in a single department? 
-export function constructLangGraph(
+export function constructSequentialGraph(
     agents:Agent[],
     scene: any,
     tilemap: any,
     destination: any,
-    nextRoomDestination: any
+    nextRoomDestination: any,
 ){
     const langgraph = new StateGraph(GeneralStateAnnotation);
     const agentNames: string[] = [];

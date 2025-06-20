@@ -11,8 +11,6 @@ export async function parallelVotingExecutor(
     scene: any,
     tilemap: any,
     destination: any,
-    zones: any,
-    votingTopic: string
 ) {
     console.log("[Debug] Starting parallelVotingExecutor...");
     const originalPositions = agents.map(agent => ({ x: agent.x, y: agent.y }));
@@ -72,7 +70,6 @@ export function createAggregator(
     agents: any[], 
     tilemap: any, 
     finalDestination: any,
-    zones: any
 ) {
     return async function aggregator(state: typeof GeneralStateAnnotation.State) {
         console.log("[Debug] Starting aggregator...");
@@ -126,7 +123,6 @@ export function constructVotingGraph(
     tilemap: any,
     destination: any,
     finalDestination: any,
-    zones: any
 ) {
     console.log("[Debug] Starting to construct voting graph...");
     const votingGraph = new StateGraph(GeneralStateAnnotation as any);
@@ -140,8 +136,6 @@ export function constructVotingGraph(
                 scene,
                 tilemap,
                 destination,
-                zones,
-                state.votingTopic
             );
             console.log("[Debug] Voting phase completed.");
             return { ...state, votingVotes: votes };
@@ -157,7 +151,6 @@ export function constructVotingGraph(
                 agents,
                 tilemap,
                 finalDestination,
-                zones
             )(state);
             console.log("[Debug] Aggregator phase completed.");
             return { ...state, votingToChaining: decision.votingToChaining };

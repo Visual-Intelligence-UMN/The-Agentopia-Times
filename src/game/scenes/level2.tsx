@@ -14,7 +14,7 @@ import { areAllZonesOccupied, createItem, getAllAgents, setupScene, setZonesColl
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, eventTargetBus, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
-import { constructLangGraph, transformDataMap } from '../../langgraph/chainingUtils';
+import { constructLangGraph, constructSequentialGraph, transformDataMap } from '../../langgraph/chainingUtils';
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
@@ -726,10 +726,10 @@ return result;
 
         const allPositions = [votingEndingPosition, chainingEndingPosition, routingEndingPosition, reportEndingPosition];
 
-        const workflowConfig = this.registry.get("workflowConfig");
+        let workflowConfig = this.registry.get("workflowConfig");
         const datamaps = [datamap, datamap2, datamap3];
         // TEST: if workflowConfig has different parameters
-         
+        // workflowConfig = ['sequential', 'single_agent', 'voting'];
         
         console.log("init workflowConfig", workflowConfig);
 
@@ -763,15 +763,15 @@ return result;
           // Insert prompts into the graphs below:
           if(workflowConfig[i] === "voting"){
             console.log("construct voting graph");
-            const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, this.votingZones);
+            const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           } else if(workflowConfig[i] === "sequential") {
             console.log("construct lang graph");
-            const graph = constructLangGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            const graph = constructSequentialGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           } else if(workflowConfig[i] === "single_agent") {
             console.log("construct routing graph");
-            const graph = constructRouteGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, this.routeZones);
+            const graph = constructRouteGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           }
         }
