@@ -113,7 +113,7 @@ export function createAggregator(
         // await updateStateIcons(zones, "idle");
         console.log("[Debug] Aggregator completed.");
 
-        return { ...state, votingToChaining: decision.content };
+        return { ...state, firstRoomOutput: decision.content };
     };
 }
 
@@ -153,7 +153,7 @@ export function constructVotingGraph(
                 finalDestination,
             )(state);
             console.log("[Debug] Aggregator phase completed.");
-            return { ...state, votingToChaining: decision.votingToChaining };
+            return { ...state, firstRoomOutput: decision.firstRoomOutput };
         }
     );
 

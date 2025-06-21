@@ -49,7 +49,7 @@ async function testBranchWork(
 
     console.log('state route', state);
 
-    if (!state.votingToChaining) {
+    if (!state.firstRoomOutput) {
         if (scene.registry.get('currentDataset') === 'kidney') {
             datasetPath = kidneyPath;
         }
@@ -227,7 +227,7 @@ async function testBranchWork(
             await createVisualizationJudge(d3Code),
         );
         const writingComments = await extractTSArray(
-            await createWritingJudge(state.chainingToRouting),
+            await createWritingJudge(state.secondRoomOutput),
         );
 
         let commentsHTML = '';
@@ -369,7 +369,7 @@ export function createLeaf(
             scene,
             state.routeDecision,
             state,
-            state.chainingToRouting,
+            state.secondRoomOutput,
             agent,
             scoreText,
         );
@@ -405,7 +405,7 @@ export function createLeaf(
 
         // await updateStateIcons(zones, "idle");
 
-        return { routeOutput: state.chainingToRouting };
+        return { thirdRoomOutput: state.secondRoomOutput };
     };
 }
 
@@ -540,7 +540,7 @@ export function createRouter(
             },
             {
                 role: 'user',
-                content: state.chainingToRouting,
+                content: state.secondRoomOutput,
             },
         ]);
 

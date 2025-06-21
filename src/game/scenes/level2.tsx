@@ -781,16 +781,21 @@ return result;
         let secondOutput:any = null;
         let finalOutput:any = null;
 
+
+        // we need unified interface for all graphs
         for(let i=0; i<graphs.length; i++){
           if(workflowConfig[i] === "voting"){
             console.log("invoke voting graph");
-            firstOutput = await graphs[i].invoke({votingTopic: votingExample, votingVotes: [], agentName: agentPrompts[i]});
+            firstOutput = await graphs[i].invoke({firstRoomInput: votingExample, votingVotes: [], agentName: agentPrompts[i]});
+          
           } else if(workflowConfig[i] === "sequential") {
             console.log("invoke lang graph");
-            secondOutput = await graphs[i].invoke({votingToChaining: firstOutput.votingToChaining, chainFormattedText: firstOutput.votingToChaining, agentName: agentPrompts[i]});
+            secondOutput = await graphs[i].invoke({firstRoomOutput: firstOutput.firstRoomOutput, secondRoomInput: firstOutput.firstRoomOutput, agentName: agentPrompts[i]});
+          
           } else if(workflowConfig[i] === "single_agent") {
             console.log("invoke routing graph");
-            finalOutput = await graphs[i].invoke({chainingToRouting: secondOutput.chainingToRouting, votingToChaining: firstOutput.votingToChaining, agentName: agentPrompts[i]});
+            finalOutput = await graphs[i].invoke({secondRoomOutput: secondOutput.secondRoomOutput, firstRoomOutput: firstOutput.firstRoomOutput, agentName: agentPrompts[i]});
+          
           }
         }
 

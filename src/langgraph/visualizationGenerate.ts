@@ -54,7 +54,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
   let dataPath = "./data/baseball.csv";
 
   
-  if(state.votingToChaining.includes("Kidney")){
+  if(state.firstRoomOutput.includes("Kidney")){
     dataSample = kidneySample;
     dataPath = "./data/kidney.csv";
   }
