@@ -6,6 +6,8 @@ import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
+import { SequentialGraphStateAnnotation } from "./states";
+import { sequential } from "../game/assets/sprites";
 
 
 
@@ -56,24 +58,6 @@ export function getLLM() {
   return cachedLLM;
 }
 
-// const llm = new ChatOpenAI({
-//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-//     modelName: "gpt-4o-mini",
-// });
-
-export const GeneralStateAnnotation = Annotation.Root({
-    votingVotes: Annotation<string[]>({
-        default: () => [],
-        reducer: (x, y) => x.concat(y),
-    }), // graph internal state
-    firstRoomInput: Annotation<string>, // external state
-    firstRoomOutput: Annotation<string>,  // external state
-    secondRoomInput: Annotation<string>,  // external state
-    secondRoomOutput: Annotation<string>, // external state
-    thirdRoomOutput: Annotation<string>,  // external state, thirdroom is visualization room, no input needed
-});
-
-
 export async function createReport(
     scene: any, 
     zoneName: string, 
@@ -100,8 +84,8 @@ export function createJournalist(
     scene: any,
     tilemap: any
 ) {
-    return async function journalist(state: typeof GeneralStateAnnotation.State) {
-        console.log("journalist state:", state.firstRoomOutput);
+    return async function journalist(state: typeof SequentialGraphStateAnnotation.State) {
+        console.log("journalist state:", state.sequentialInput);
 
         // let datasetPath = covidPath;
         let datasetPath = baseballPath;
@@ -111,7 +95,7 @@ export function createJournalist(
             Does this confirm who was the better hitter in each individual year?
         `;
 
-        if(state.firstRoomOutput) {
+        if(state.sequentialInput) {
             if(scene.registry.get('currentDataset')==='kidney'){
                 // datasetPath = ucbPath;
                 datasetPath = kidneyPath;
@@ -155,13 +139,13 @@ export function createJournalist(
 
         // await updateStateIcons(zones, "idle", 0);
 
-        return { secondRoomInput: msg.content };
+        return { sequentialFirstAgentOutput: msg.content };
     };
 }
 
 export function createManager(agent: any, scene: any, destination: any, nextRoomDestination: any) {
-    return async function Manager(state: typeof GeneralStateAnnotation.State) {
-        console.log("journalist state:", state.firstRoomOutput);
+    return async function Manager(state: typeof SequentialGraphStateAnnotation.State) {
+        console.log("journalist state:", state.sequentialInput);
 
         agent.setAgentState("work");
         
@@ -175,7 +159,7 @@ export function createManager(agent: any, scene: any, destination: any, nextRoom
             },
             {
                 role: "user", 
-                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.secondRoomInput
+                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
             }
         ];
 
@@ -191,7 +175,7 @@ export function createManager(agent: any, scene: any, destination: any, nextRoom
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
         await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
 
-        return { secondRoomInput: msg.content };
+        return { sequentialOutput: msg.content };
     };
 }
 
@@ -202,8 +186,8 @@ export function createWriter(
     tilemap: any,
     destination: any
 ){ 
-    return async function writer(state: typeof GeneralStateAnnotation.State){
-        console.log("writer state: ", state.secondRoomInput);
+    return async function writer(state: typeof SequentialGraphStateAnnotation.State){
+        console.log("writer state: ", state.sequentialFirstAgentOutput);
 
         agent.setAgentState("work");
         // await updateStateIcons(zones, "work", 1);
@@ -223,7 +207,7 @@ export function createWriter(
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
-                    state.secondRoomInput
+                    state.sequentialFirstAgentOutput
             }
         ];
 
@@ -263,6 +247,6 @@ export function createWriter(
         // await updateStateIcons(scene.chainingZones, "idle");
         // await updateStateIcons(zones, "idle", 1);
 
-        return { secondRoomOutput: msg.content };
+        return { sequentialSecondAgentOutput: msg.content };
     }
 }

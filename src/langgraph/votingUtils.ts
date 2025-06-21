@@ -3,8 +3,9 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { initializeLLM } from "./chainingUtils";
 import { EventBus } from "../game/EventBus";
-import { createReport, GeneralStateAnnotation } from "./agents";
+import { createReport } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
+import { VotingGraphStateAnnotation } from "./states";
 
 export async function parallelVotingExecutor(
     agents: any[],
@@ -69,9 +70,10 @@ export function createAggregator(
     scene: any, 
     agents: any[], 
     tilemap: any, 
+    destination: any,
     finalDestination: any,
 ) {
-    return async function aggregator(state: typeof GeneralStateAnnotation.State) {
+    return async function aggregator(state: typeof VotingGraphStateAnnotation.State) {
         console.log("[Debug] Starting aggregator...");
         console.log("aggregator state: ", state.votingVotes);
         let votes = state.votingVotes;
@@ -96,8 +98,8 @@ export function createAggregator(
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         console.log("[Debug] Decision sent to final location.");
 
-        const report = await createReport(scene, "voting", 250, 350);
-        await createReport(scene, "voting", 250, 350);
+        const report = await createReport(scene, "voting", destination.x, destination.y);
+        await createReport(scene, "voting", destination.x, destination.y);
 
 
         console.log("[Debug] Returning to office...");
@@ -113,7 +115,7 @@ export function createAggregator(
         // await updateStateIcons(zones, "idle");
         console.log("[Debug] Aggregator completed.");
 
-        return { ...state, firstRoomOutput: decision.content };
+        return { ...state, votingOutput: decision.content };
     };
 }
 
@@ -125,7 +127,7 @@ export function constructVotingGraph(
     finalDestination: any,
 ) {
     console.log("[Debug] Starting to construct voting graph...");
-    const votingGraph = new StateGraph(GeneralStateAnnotation as any);
+    const votingGraph = new StateGraph(VotingGraphStateAnnotation as any);
 
     votingGraph.addNode(
         "votingPhase",
@@ -150,10 +152,11 @@ export function constructVotingGraph(
                 scene,
                 agents,
                 tilemap,
+                destination,
                 finalDestination,
             )(state);
             console.log("[Debug] Aggregator phase completed.");
-            return { ...state, firstRoomOutput: decision.firstRoomOutput };
+            return { ...state, votingOutput: decision.votingOutput };
         }
     );
 

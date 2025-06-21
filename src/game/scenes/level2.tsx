@@ -18,7 +18,7 @@ import { constructLangGraph, constructSequentialGraph, transformDataMap } from '
 import { testInput } from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
-import { restart } from '../assets/sprites';
+import { restart, sequential } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { constructSingleAgentGraph } from '../../langgraph/singleAgentUtils';
 // import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
@@ -730,7 +730,7 @@ return result;
         let workflowConfig = this.registry.get("workflowConfig");
         const datamaps = [datamap, datamap2, datamap3];
         // TEST: if workflowConfig has different parameters
-        // workflowConfig = ['sequential', 'single_agent', 'voting'];
+        workflowConfig = ['sequential', 'single_agent', 'voting'];
         
         console.log("init workflowConfig", workflowConfig);
 
@@ -781,21 +781,29 @@ return result;
         let secondOutput:any = null;
         let finalOutput:any = null;
 
+        // dynamic data structures
+        let terminalPoints: string[] = [
+          'firstRoomOutput',
+          'secondRoomInput',
+        ];
 
-        // we need unified interface for all graphs
+        let cycleOutputs:any[] = [votingExample];
+
+
+        // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
         for(let i=0; i<graphs.length; i++){
           if(workflowConfig[i] === "voting"){
             console.log("invoke voting graph");
-            firstOutput = await graphs[i].invoke({firstRoomInput: votingExample, votingVotes: [], agentName: agentPrompts[i]});
-          
+            let output = await graphs[i].invoke({votingInput: cycleOutputs[0], votingVotes: []});
+            cycleOutputs.push(output.votingOutput);
           } else if(workflowConfig[i] === "sequential") {
             console.log("invoke lang graph");
-            secondOutput = await graphs[i].invoke({firstRoomOutput: firstOutput.firstRoomOutput, secondRoomInput: firstOutput.firstRoomOutput, agentName: agentPrompts[i]});
-          
+            let output = await graphs[i].invoke({sequentialInput: cycleOutputs[i]});
+            cycleOutputs.push(output.sequentialOutput);
           } else if(workflowConfig[i] === "single_agent") {
             console.log("invoke routing graph");
-            finalOutput = await graphs[i].invoke({secondRoomOutput: secondOutput.secondRoomOutput, firstRoomOutput: firstOutput.firstRoomOutput, agentName: agentPrompts[i]});
-          
+            let output = await graphs[i].invoke({singleAgentInput: cycleOutputs[i]});
+            cycleOutputs.push(output.singleAgentOutput);
           }
         }
 

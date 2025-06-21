@@ -46,7 +46,7 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(dataSheet: any, agent: any, state: any) {
+export async function generateChartImage(scene: any, dataSheet: any, agent: any, state: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -54,7 +54,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
   let dataPath = "./data/baseball.csv";
 
   
-  if(state.firstRoomOutput.includes("Kidney")){
+  if(scene.registry.get('currentDataset').includes("Kidney")){
     dataSample = kidneySample;
     dataPath = "./data/kidney.csv";
   }

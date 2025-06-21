@@ -2,8 +2,8 @@
 
 import { Agent } from "openai/_shims/index.mjs";
 import { Zone } from "../game/scenes";
-import { END, START, StateGraph } from "@langchain/langgraph/web";
-import { createJournalist, createManager, createWriter, GeneralStateAnnotation } from "./agents";
+import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
+import { createJournalist, createManager, createWriter } from "./agents";
 import { ChatOpenAI } from "@langchain/openai";
 
 // TODO:
@@ -13,6 +13,7 @@ import { ChatOpenAI } from "@langchain/openai";
 // DONE: 4. write a tranformation function here to convert the data map into a langgraph Graph
 
 import { getStoredOpenAIKey } from '../utils/openai';
+import { SequentialGraphStateAnnotation } from "./states";
 
 const apiKey = getStoredOpenAIKey() || undefined;
 
@@ -79,8 +80,6 @@ export interface EdgeType{
     to: any,
 }
 
-
-
 // we only add nodes information right now
 // further discussion is needed to determine the relationship between agents and locations
 // mainly in the interaction level
@@ -93,7 +92,7 @@ export function constructSequentialGraph(
     destination: any,
     nextRoomDestination: any,
 ){
-    const langgraph = new StateGraph(GeneralStateAnnotation);
+    const langgraph = new StateGraph(SequentialGraphStateAnnotation);
     const agentNames: string[] = [];
         for(let j = 0; j < agents.length; j++){
             const agent = agents[j];
