@@ -730,7 +730,7 @@ return result;
         let workflowConfig = this.registry.get("workflowConfig");
         const datamaps = [datamap, datamap2, datamap3];
         // TEST: if workflowConfig has different parameters
-        workflowConfig = ['sequential', 'single_agent', 'voting'];
+        // workflowConfig = ['sequential', 'single_agent', 'voting'];
         
         console.log("init workflowConfig", workflowConfig);
 

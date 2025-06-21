@@ -90,7 +90,7 @@ export function constructSequentialGraph(
     scene: any,
     tilemap: any,
     destination: any,
-    nextRoomDestination: any,
+    nextRoomDestination: any
 ){
     const langgraph = new StateGraph(SequentialGraphStateAnnotation);
     const agentNames: string[] = [];

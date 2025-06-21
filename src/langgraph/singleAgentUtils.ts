@@ -81,6 +81,8 @@ export function createLeaf(
             originalAgentY,
             '',
         );
+
+        await createReport(scene, 'routing', thisRoomDestination.x, thisRoomDestination.y);
         // create the report from routing graph
         const report = await createReport(
             scene,
