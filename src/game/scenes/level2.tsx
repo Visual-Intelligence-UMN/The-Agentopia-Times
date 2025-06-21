@@ -20,6 +20,7 @@ import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils
 import { constructRouteGraph } from '../../langgraph/routeUtils';
 import { restart } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
+import { constructSingleAgentGraph } from '../../langgraph/singleAgentUtils';
 // import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
@@ -766,12 +767,12 @@ return result;
             const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           } else if(workflowConfig[i] === "sequential") {
-            console.log("construct lang graph");
+            console.log("construct sequential graph");
             const graph = constructSequentialGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           } else if(workflowConfig[i] === "single_agent") {
-            console.log("construct routing graph");
-            const graph = constructRouteGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            console.log("construct single agent graph");
+            const graph = constructSingleAgentGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
             graphs.push(graph);
           }
         }
