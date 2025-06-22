@@ -8,6 +8,7 @@ import { d3Script } from './const';
 import * as vega from 'vega';
 import * as vegaLite from 'vega-lite';
 import vegaEmbed from 'vega-embed';
+import { BASEBALL_PROMPT } from './prompts';
 
 (window as any).vega = vega;
 (window as any).vegaLite = vegaLite;
@@ -45,7 +46,7 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(dataSheet: any, agent: any, state: any) {
+export async function generateChartImage(scene: any, dataSheet: any, agent: any, state: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -53,7 +54,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
   let dataPath = "./data/baseball.csv";
 
   
-  if(state.votingToChaining.includes("Kidney")){
+  if(scene.registry.get('currentDataset').includes("Kidney")){
     dataSample = kidneySample;
     dataPath = "./data/kidney.csv";
   }
@@ -104,15 +105,17 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
       { role: "system", content: `
           You are a vegalite and visualization expert.
           You need to generate three charts based on the given dataset.
-          You should have one visualization that gives a general overview of the data,
+          You should have one visualization that gives a general overview of the data(for is_hit and success, you need to show the number of hits or success, don't just aggregate them show the number of record).,
+          When visualizing fields like is_hit or success, always aggregate by sum, not by count, unless otherwise specified. Treat them as numeric counts.
           You should have another two visualizations that focus on each subgroup of the data(you should visualize each data points in the subgroup).
           For example, if the data is about baseball players, you can have one visualization that shows the overall performance of all players, 
           and another two visualizations show the performance of each player(first visualization is an overview, second is Jeter, third is Justice).
           Generate only the JavaScript code for a visualization we need created for a given dataset, 
+          ${BASEBALL_PROMPT}
           Your code should start like this(PARAMETER: means you can change the number on that line): 
 
           const spec = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
             "description": write your description here,
             "background": "#f9f6ef",
             "data": {
@@ -121,10 +124,7 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
                 "type": "csv"
               }
             },
-            "mark": write your mark here,
-            "encoding": {
-              write your encoding here
-            }
+            ......
           };
 
           const specSubgroup1 = {
@@ -135,9 +135,24 @@ export async function generateChartImage(dataSheet: any, agent: any, state: any)
             ......
           }
 
-          vegaEmbed('#test-chart', spec);
-          vegaEmbed('#test-chart1', specSubgroup1);
-          vegaEmbed('#test-chart2', specSubgroup2);
+          
+          vegaEmbed('#test-chart', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
+
+          vegaEmbed('#test-chart1', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
+
+          vegaEmbed('#test-chart2', spec, {
+            renderer: "canvas",
+            actions: true,
+            scaleFactor: 2
+          });
 
 
           Here is a part of the data, which helps you better implement the visualization:

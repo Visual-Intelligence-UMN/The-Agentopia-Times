@@ -93,3 +93,121 @@ d3.csv("./data/ghibli.csv", d3.autoType).then((data) => {
     .on("mouseout", hideTooltip);
 });
 `;
+
+export const webStyle = `
+<style>
+  .newspaper {
+    font-family: "Georgia", serif;
+    background-color: #f9f6ef;
+    color: #000;
+    padding: 40px;
+    max-width: 960px;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  }
+
+  .newspaper-title {
+    font-size: 36px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0;
+    text-transform: uppercase;
+  }
+
+  .authors {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  .headline {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+  }
+
+  .intro-text {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 20px 0 30px 0;
+    text-align: justify;
+  }
+
+  .newspaper-body {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+
+  .article-text {
+    flex: 1;
+    font-size: 16px;
+    line-height: 1.6;
+    min-width: 350px;
+  }
+
+  .article-graphic {
+    flex: 1;
+    max-width: 40%;
+    text-align: center;
+  }
+
+  .article-graphic img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 50px auto 20px auto;
+  }
+
+  .vis-above {
+    width: 100%;
+    height: 260px;
+    border-radius: 8px;
+    margin-top: 80px;
+    margin-bottom: 20px;
+  }
+
+  .visualization-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 30px 0;
+  }
+
+  .vis-box {
+    flex: 1 1 40%;
+    height: auto;
+    width: 100%;
+    min-width: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 6px;
+    background-color: #f9f6ef;
+  }
+
+  .comment-section {
+    margin-top: 30px;
+  }
+  .comment-section h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .comment-section ul {
+    padding-left: 20px;
+  }
+  .comment-section li {
+    margin-bottom: 5px;
+  }
+</style>
+
+`;
+

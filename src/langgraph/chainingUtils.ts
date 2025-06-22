@@ -2,8 +2,8 @@
 
 import { Agent } from "openai/_shims/index.mjs";
 import { Zone } from "../game/scenes";
-import { END, START, StateGraph } from "@langchain/langgraph/web";
-import { createJournalist, createWriter, GeneralStateAnnotation } from "./agents";
+import { Annotation, END, START, StateGraph } from "@langchain/langgraph/web";
+import { createJournalist, createManager, createWriter } from "./agents";
 import { ChatOpenAI } from "@langchain/openai";
 
 // TODO:
@@ -13,6 +13,7 @@ import { ChatOpenAI } from "@langchain/openai";
 // DONE: 4. write a tranformation function here to convert the data map into a langgraph Graph
 
 import { getStoredOpenAIKey } from '../utils/openai';
+import { SequentialGraphStateAnnotation } from "./states";
 
 const apiKey = getStoredOpenAIKey() || undefined;
 
@@ -51,7 +52,7 @@ export function transformDataMap(zones: Zone[], agents: Agent[]){
         let subgraph:subgraph = {
             agents: [],
             location: zones[i].name,
-            task: zones[i].task
+            task: zones[i].class
         };
         const zone = zones[i];
         const insideAgents = Array.from(zone.agentsInside);
@@ -79,42 +80,37 @@ export interface EdgeType{
     to: any,
 }
 
-
-
 // we only add nodes information right now
 // further discussion is needed to determine the relationship between agents and locations
 // mainly in the interaction level
 // we can use a data structure to constrcut a graph for information representation
 // another problem: how we assign execution role in a single department? 
-export function constructLangGraph(
-    transformDataMap:subgraph[],
+export function constructSequentialGraph(
+    agents:Agent[],
     scene: any,
     tilemap: any,
     destination: any,
-    zones: any
+    nextRoomDestination: any
 ){
-    const langgraph = new StateGraph(GeneralStateAnnotation);
+    const langgraph = new StateGraph(SequentialGraphStateAnnotation);
     const agentNames: string[] = [];
-    // add nodes into graph
-    for(let i = 0; i < transformDataMap.length; i++){
-        const subgraph = transformDataMap[i];
-        for(let j = 0; j < subgraph.agents.length; j++){
-            const agent = subgraph.agents[j];
+        for(let j = 0; j < agents.length; j++){
+            const agent = agents[j];
+            let name = agent.getName();
+            console.log("constructLangGraph: ", agent.getName());
             // langgraph.addNode(agent.getName(), agent.activate());
-            if(i===0 && j===0){
+            if(j===0){
                 langgraph.addNode(
                     agent.getName(), 
                     createJournalist(
                         agent, 
-                        transformDataMap[1].agents[0], 
+                        agents[1], 
                         scene, 
-                        tilemap, 
-                        zones, 
-                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                        tilemap
                     )
                 );
             }
-            if(i===1 && j===0){
+            else if(j===1){
                 console.log("create agent", agent)
                 langgraph.addNode(
                     agent.getName(), 
@@ -122,17 +118,21 @@ export function constructLangGraph(
                         agent, 
                         scene, 
                         tilemap, 
-                        destination, 
-                        zones, 
-                        (transformDataMap[1].task as "extraction" | "summary" | "analysis" | "validation" | "voting")
+                        destination
                     )
                 );
             }
+            else if(j===2){
+                langgraph.addNode(
+                    "manager", 
+                    createManager(agent, scene, destination, nextRoomDestination)
+                );
+                name = 'manager'
+            }
             // else langgraph.addNode(agent.getName(), agent.activate());
             console.log("add a node", agent.getName(), agent.activate());
-            agentNames.push(agent.getName());
+            agentNames.push(name);
         }
-    }
 
     // temp (REMOVE LATER) - construct virtual edges for testing purpose
     const edges: EdgeType[] = [];
@@ -154,8 +154,5 @@ export function constructLangGraph(
     return langgraph.compile();
 
 }
-
-
-
 
 

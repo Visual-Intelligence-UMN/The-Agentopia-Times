@@ -8,6 +8,8 @@ import { Zone } from '../scenes';
 import { Agent } from '../sprites/Agent';
 import { report } from '../assets/sprites';
 import { EventBus } from '../EventBus';
+import { biasImage } from '../assets/atlas';
+import { addEventToStrategy, createHoveredWindow, removeHoveredWindow } from '../../utils/interactionUtils';
 
 export function getAllAgents(zones: Zone[]) {
   return zones.map((zone:Zone) => ({
@@ -54,10 +56,11 @@ export function setZonesExitingDecoration(zones: any, agents: any) {
 }
 
 export const INJECTED_BIASES = { 
-  analysis_bias: "You are a rushed junior data analyst with only two minutes before a board meeting. Skim the dataset at a glance; do not run statistical tests or cross‑tabulations. Summarize three ‘insights’ that fit a single, upbeat storyline, even if they directly conflict with some of the numbers. State them with full confidence and do not mention caveats or subgroup differences.",
-  writing_bias: "You are a persuasive business writer crafting an executive summary. Turn the analyst’s bullet points into a polished narrative that champions the predetermined viewpoint. Omit or downplay any figure that weakens the story. If needed, round or re‑order numbers so they appear to confirm the thesis. Use assertive language, success anecdotes, and a call‑to‑action that implies broad consensus.",
+  analysis_bias: "You are a rushed junior data analyst with only two minutes before a board meeting. Skim the dataset at a glance; do not run statistical tests or cross‑tabulations. Summarize three ‘insights’ that fit a single, upbeat storyline, even if they directly conflict with some of the numbers. State them with full confidence and do not mention caveats or subgroup differences.You can ignore the year data in the dataset since it's an unrelevant dataset, don't question or analyze it.",
+  writing_bias: "You are a persuasive business writer crafting an executive summary. Turn the analyst’s bullet points into a polished narrative that champions the predetermined viewpoint. Omit or downplay any figure that weakens the story. If needed, round or re‑order numbers so they appear to confirm the thesis. Use assertive language, success anecdotes, and a call‑to‑action that implies broad consensus, you should not mention the any information about year data in the dataset since it's an unrelevant dataset, don't question or analyze it. You can also manipulate the comparison between two players to make it look like one player is better than the other, even if the difference is small. You need to write ",
   visualization_bias: "You are a creative infographic designer tasked with making the findings look dramatic. Pick chart types and color gradients that exaggerate small gaps. Truncate or stretch axes to amplify the visual impact. Remove gridlines, error bars, or explanatory footnotes. Ensure the viewer’s first impression aligns with the chosen narrative, even if scale distortion is required.",
-  voting_bias: "You are a results‑oriented strategist whose job is to pick the project that reinforces the preset narrative. Cite any one of the prior misleading insights or visuals—fabricate a statistic if helpful—and cast your vote with absolute certainty. Provide one snappy justification, avoiding mention of uncertainty, alternative options, or ethical concerns." 
+  voting_bias: "You are a results‑oriented strategist whose job is to pick the project that reinforces the preset narrative. Cite any one of the prior misleading insights or visuals—fabricate a statistic if helpful—and cast your vote with absolute certainty. Provide one snappy justification, avoiding mention of uncertainty, alternative options, or ethical concerns." ,
+  fact_checking_bias: "You are a fact‑checker who is tasked with verifying the accuracy of the information presented in the report. You should focus on identifying any inconsistencies or inaccuracies in the data, and provide a clear and concise summary of your findings. You should not question or analyze the year data in the dataset since it's an unrelevant dataset, don't question or analyze it."
 }
   
   
@@ -71,12 +74,15 @@ export function addAgentsBasedOnSpawningPoints(
 
   console.log("start spawning points", spawningPoints);
 
+  let idx = 0;
+
   spawningPoints.forEach((spawningPoint: any) => {
 
     const randomValue = Math.random();
     let bias:string = "";
     let agentStartName = "Agent"
     let occupation = "voter"
+    
     if (randomValue < biasProbability) {
       console.log("bias probability triggered", spawningPoint);
       if(spawningPoint.name.includes("voting_")){
@@ -91,6 +97,9 @@ export function addAgentsBasedOnSpawningPoints(
       } else if(spawningPoint.name.includes("vis_")){
         bias = INJECTED_BIASES["visualization_bias"];
         occupation = "visualizer"
+      } else if(spawningPoint.name.includes("manager")){
+        bias = INJECTED_BIASES["fact_checking_bias"];
+        occupation = "manager"
       }
       else {bias = "";}
       console.log("bias: ", bias);
@@ -111,17 +120,30 @@ export function addAgentsBasedOnSpawningPoints(
     }
     const agentX = spawningPoint.x + spawningPoint.width / 2;
     const agentY = spawningPoint.y + spawningPoint.height / 2;
-    const agent = new Agent(
+
+    let candidateName = agentStartName + idx + " - " + occupation;
+    while (scene.agentList.has(candidateName)) {
+      idx++;
+      candidateName = agentStartName + idx + " - " + occupation;
+    }
+
+    let agent = new Agent(
       scene, 
       agentX, 
       agentY, 
-      "player", 
+      key.atlas.player, 
       "misa-front", 
-      agentStartName + 
-      scene.controllableCharacters.length, 
+      candidateName, 
       occupation,
       bias
     );
+
+    if(spawningPoint.name.includes("analysis_")){
+      //agent.setToBiased();
+    } 
+
+    idx++;
+    
 
     scene.agentGroup.add(agent);
     scene.controllableCharacters.push(agent);
@@ -153,12 +175,15 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     let yOffset = 90;
     let task = "Discussion for Title";
 
-    if (zoneName === "parallel") {
+    if (zoneName.includes("parallel")) {
       if (i === 0) {
         task = "Analytics Room";
         yOffset = -55;
-      } else {
+      } else if(i=== 1) {
         task = "Writing Room";
+        yOffset = -50;
+      } else{
+        task = "Manager Room";
         yOffset = -50;
       }
     } else if (zoneName === "routing") {
@@ -170,13 +195,6 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     const backgroundY = centerY + yOffset;
     const labelY = centerY + yOffset;
 
-  //   const background = scene.add.rectangle(centerX, backgroundY, 75, 15, 0x000000, 0.5)
-  //   .setOrigin(0.5).setDepth(1000);
-
-  //   const statusText = scene.add.text(centerX, labelY, task, {
-  //     fontSize: "10px",
-  //     color: "#ffffff",
-  //   }).setOrigin(0.5).setDepth(1001);
 
   const background = scene.add.rectangle(centerX, backgroundY, 115, 20, 0x111122, 0.7)
   .setOrigin(0.5)
@@ -191,6 +209,108 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   strokeThickness: 1,
   fontWeight: "bold"
   }).setOrigin(0.5).setDepth(1001).setStyle({ fontFamily: 'Verdana'});
+  // deciding the strategy based on zoneName
+  let strategy:string = 'voting';
+  let zoneIndex = 0;
+  if (zoneName === "chaining") {
+    strategy = "sequential";
+    zoneIndex = 1;
+  } else if (zoneName === "routing") {
+    strategy = "single_agent";
+    zoneIndex = 2;
+  } else if (zoneName === "parallel") {
+    strategy = "voting";
+    zoneIndex = 0;
+  }
+
+
+  let btn = null;
+  let selectionPanel:any = null;
+  let uiGroup:any = null;
+
+  // adding strategy UI
+  if(task !== "Analytics Room" && task !== "Writing Room" && task !== "Manager Room") {
+  btn = scene.add.image(centerX - 160, centerY + 30, strategy)
+    .setDepth(1001)
+    .setScale(1.5)
+    .setOrigin(0.5)
+    .setInteractive()
+    .setScrollFactor(0);
+  }
+
+  // adding interaction
+  if(btn!== null) {
+    btn.on("pointerdown", () => {
+
+      console.log("zoneName", zoneName, "strategy", strategy);
+      if(uiGroup === null) {
+        console.log("adding selection panel", zoneName, "strategy", strategy);
+        // adding UI group
+        uiGroup = scene.add.group();
+
+        // adding selection panel
+        selectionPanel = scene.add.rectangle(centerX - 75, centerY + 125, 200, 100, 0x000000, 0.5)
+        .setDepth(1001)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, 0xffffff);
+
+        let panelTitle = scene.add.text(centerX - 75, centerY + 125 - 40, "Select a Strategy")
+        .setScrollFactor(0)
+        .setDepth(1002)
+        .setAlpha(1)
+        .setFontSize(13) // Increased font size
+        .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
+        .setLetterSpacing(2)
+        .setResolution(20)
+        .setStroke('#000000', 2)
+        .setOrigin(0.5, 0.5);
+
+        // adding strategy icons
+        const strategyIconXOffset = 150;
+        const strategyMargin = 15;
+        const sequentialIcon = scene.add.image(centerX - strategyIconXOffset + strategyMargin, centerY + 125, "sequential")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        const votingIcon = scene.add.image(centerX - strategyIconXOffset + 75, centerY + 125, "voting")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        const singleAgentIcon = scene.add.image(centerX - strategyIconXOffset + 150 - strategyMargin, centerY + 125, "single_agent")
+          .setDepth(1001)
+          .setScale(1.5)
+          .setOrigin(0.5)
+          .setInteractive()
+          .setScrollFactor(0);
+
+        
+
+        // adding UI cpmponents to the group
+        uiGroup.add(selectionPanel);
+        uiGroup.add(sequentialIcon);
+        uiGroup.add(votingIcon);
+        uiGroup.add(singleAgentIcon);
+        uiGroup.add(panelTitle);
+
+        addEventToStrategy(scene, btn, sequentialIcon, "Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.", zoneIndex, "sequential");
+        addEventToStrategy(scene, btn, votingIcon, "Voting Strategy: \nAll agents working simultaneously\nthen integrat to the best result.", zoneIndex, "voting");
+        addEventToStrategy(scene, btn, singleAgentIcon, "Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.", zoneIndex, "single_agent");
+      } else {
+        console.log("removing selection panel", zoneName, "strategy", strategy);
+        // removing selection panel
+        uiGroup.clear(true, true);
+        uiGroup = null;
+        selectionPanel = null;
+      }
+    });
+  }
+
 
   scene.tweens.add({
   targets: [background, statusText],
@@ -227,6 +347,7 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
       zone: parallelZone,
       agentsInside: new Set(),
       name: parallelZoneData.name,
+      class: parallelZoneData.type,
       ui: {
         background,
         text: statusText,
