@@ -10,6 +10,8 @@ enum Animation {
   Down = 'player_down',
 }
 
+
+
 interface Memory {
   system: string;
   user: string;
@@ -48,8 +50,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     scene: Phaser.Scene,
     x: number,
     y: number,
-    texture = key.atlas.player,
-    frame = 'misa-front',
+    texture:any = key.atlas.player,
+    frame:any = 'misa-front',
     name: string = "Agent",
     persona: string = "a helpful AI assistant",
     bias: string = ""
@@ -130,6 +132,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
 
     scene.input.on('drag', (pointer: any, gameObject: any, dragX: number, dragY: number) => {
       if (gameObject === this) {
+        this.isDrag = true; // 设置拖拽状态
         this.x = dragX;
         this.y = dragY;
         this.wasDragged = true;
@@ -272,6 +275,20 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           // this.play("player_down");
         }
       }
+    }
+
+    public setToBiased(){
+        console.log(`Agent ${this.name} clicked!`);
+        // this.changeNameTagColor('#ff00ff'); 
+          // update to biased agent
+          // choose the designated bias by occupation
+          this.name = "Biased " + this.name;
+          // this.nameTag.setText(this.name);
+          this.isBiased = true;
+          
+          this.setTexture(key.atlas.bias);
+          this.createAnimations(key.atlas.bias);          
+          // this.play("player_down");
     }
 
     private createWorkAnimations(atlasKey: string) {

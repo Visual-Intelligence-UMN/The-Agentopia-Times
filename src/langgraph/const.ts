@@ -93,3 +93,48 @@ d3.csv("./data/ghibli.csv", d3.autoType).then((data) => {
     .on("mouseout", hideTooltip);
 });
 `;
+
+const promptTable = {
+  sequential: {
+    topic: {
+      agent1: "",
+      agent2: "",
+      agent3: "",
+    },
+    analysis: {
+      agent1: {
+        system: "You are a data analyst." + agent.getBias(),
+        user: "Your work is to analyze the given dataset..." + csvRaw + ` and answer following questions ${researchQuestions}`
+      },
+      agent2: "",
+      agent3: "",
+    },
+    visualization: {
+      agent1: "",
+      agent2: "",
+      agent3: "",
+    },
+  }, 
+  voting: {
+    topic: {
+      voter: `write a news title for the given topic: ${datasetDescription}; 
+              The title is prepared for a news or magazine article about the dataset.`,
+      aggregator: `aggregate data: ${llmInput}; return the aggreated result in one title, 
+              don't add any other information or quotation marks.`,
+    },
+    analysis: {
+      voter: "",
+      aggregator: "",
+    },
+    visualization: {
+      voter: "",
+      aggregator: "",
+    },
+  },
+  singleAgent: {
+    topic: "",
+    analysis: "",
+    visualization: "",
+  }
+}
+

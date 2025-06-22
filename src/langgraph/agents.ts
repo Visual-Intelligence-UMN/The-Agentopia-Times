@@ -6,11 +6,13 @@ import { updateStateIcons } from "../game/utils/sceneUtils";
 import OpenAI from "openai";
 import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
+import { SequentialGraphStateAnnotation } from "./states";
+import { sequential } from "../game/assets/sprites";
 
 
 
 export const kidneyPath: string = "./data/kidney.csv";
-export const baseballPath: string = "./data/baseball.csv";
+export const baseballPath: string = "./data/baseball_cleaned.csv";
 
 let cachedOpenAI: OpenAI | null = null;
 
@@ -56,26 +58,6 @@ export function getLLM() {
   return cachedLLM;
 }
 
-// const llm = new ChatOpenAI({
-//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-//     modelName: "gpt-4o-mini",
-// });
-
-export const GeneralStateAnnotation = Annotation.Root({
-    data: Annotation<string>, 
-    votingTopic: Annotation<string>,
-    votingVotes: Annotation<string[]>({
-        default: () => [],
-        reducer: (x, y) => x.concat(y),
-    }),
-    votingToChaining: Annotation<string>, 
-    chainFormattedText: Annotation<string>,
-    chainingToRouting: Annotation<string>,
-    routeDecision: Annotation<string>,
-    routeOutput: Annotation<string>,
-});
-
-
 export async function createReport(
     scene: any, 
     zoneName: string, 
@@ -100,12 +82,10 @@ export function createJournalist(
     agent: any,
     destination: any,
     scene: any,
-    tilemap: any,
-    zones: any,
-    task: keyof typeof promptTable
+    tilemap: any
 ) {
-    return async function journalist(state: typeof GeneralStateAnnotation.State) {
-        console.log("journalist state:", state.votingToChaining);
+    return async function journalist(state: typeof SequentialGraphStateAnnotation.State) {
+        console.log("journalist state:", state.sequentialInput);
 
         // let datasetPath = covidPath;
         let datasetPath = baseballPath;
@@ -115,7 +95,7 @@ export function createJournalist(
             Does this confirm who was the better hitter in each individual year?
         `;
 
-        if(state.votingToChaining) {
+        if(state.sequentialInput) {
             if(scene.registry.get('currentDataset')==='kidney'){
                 // datasetPath = ucbPath;
                 datasetPath = kidneyPath;
@@ -153,13 +133,49 @@ export function createJournalist(
         const originalAgent1Y = agent.y;
 
         // await updateStateIcons(zones, "mail", 0);
-
-        await autoControlAgent(scene, agent, tilemap, (destination?.x as number), (destination?.y as number), "Send Message");
+        console.log("debug agent pos", destination.x, destination.y);
+        await autoControlAgent(scene, agent, tilemap, (destination.x as number), (destination.y as number), "Send Message");
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
         // await updateStateIcons(zones, "idle", 0);
 
-        return { chainFormattedText: msg.content };
+        return { sequentialFirstAgentOutput: msg.content };
+    };
+}
+
+export function createManager(agent: any, scene: any, destination: any, nextRoomDestination: any) {
+    return async function Manager(state: typeof SequentialGraphStateAnnotation.State) {
+        console.log("journalist state:", state.sequentialInput);
+
+        agent.setAgentState("work");
+        
+        // await updateStateIcons(zones, "work", 0);
+        // await updateStateIcons(scene.chainingZones, "work");
+
+        const message = [
+            {
+                role: "system", 
+                content: "You are a manager responsible for fact-checking." + agent.getBias()
+            },
+            {
+                role: "user", 
+                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
+            }
+        ];
+
+        const msg = await getLLM().invoke(message);
+
+        console.log("manager msg:", msg.content);
+        // await updateStateIcons(zones, "idle", 0);
+        await agent.setAgentState("idle");
+
+        await createReport(scene, "chaining", destination.x, destination.y);
+        const report = await createReport(scene, "voting", destination.x, destination.y);
+        await console.log("report in agent", report);
+        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
+        await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
+
+        return { sequentialOutput: msg.content };
     };
 }
 
@@ -168,12 +184,10 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any,
-    zones: any,
-    task: keyof typeof promptTable
+    destination: any
 ){ 
-    return async function writer(state: typeof GeneralStateAnnotation.State){
-        console.log("writer state: ", state.chainFormattedText);
+    return async function writer(state: typeof SequentialGraphStateAnnotation.State){
+        console.log("writer state: ", state.sequentialFirstAgentOutput);
 
         agent.setAgentState("work");
         // await updateStateIcons(zones, "work", 1);
@@ -193,20 +207,8 @@ export function createWriter(
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
-                    state.chainFormattedText
-            },
-            // {
-            //     role: "user", 
-            //     content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
-            //     `
-            //             you should follow the following format:
-            //             # Title: write a compelling title for the news article
-            //             ## Intro: write an engaging short intro for the news article
-            //             ## Section 1: xxxx(you can use a customized sub-title for a description)
-            //             Then, write a detailed description/story of the first section.
-            //         ` + 
-            //         state.chainFormattedText
-            // },
+                    state.sequentialFirstAgentOutput
+            }
         ];
 
         const msg = await getLLM().invoke(message);
@@ -237,17 +239,14 @@ export function createWriter(
         // await updateStateIcons(scene.chainingZones, "mail");     
         
         await autoControlAgent(scene, agent, tilemap, destination.x, destination.y, "Send Report to Final Location");
-        await createReport(scene, "chaining", destination.x, destination.y);
-        const report = await createReport(scene, "voting", destination.x, destination.y);
+        
         await autoControlAgent(scene, agent, tilemap, originalAgent2X, originalAgent2Y, "");
-        await console.log("report in agent", report);
-        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
-        await transmitReport(scene, report, 767, 330);
+        
         // agent return to original location
 
         // await updateStateIcons(scene.chainingZones, "idle");
         // await updateStateIcons(zones, "idle", 1);
 
-        return { chainingToRouting: msg.content };
+        return { sequentialSecondAgentOutput: msg.content };
     }
 }

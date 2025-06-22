@@ -3,16 +3,15 @@ import { autoControlAgent, transmitReport } from "../game/utils/controlUtils";
 import { Agent } from "openai/_shims/index.mjs";
 import { initializeLLM } from "./chainingUtils";
 import { EventBus } from "../game/EventBus";
-import { createReport, GeneralStateAnnotation } from "./agents";
+import { createReport } from "./agents";
 import { updateStateIcons } from "../game/utils/sceneUtils";
+import { VotingGraphStateAnnotation } from "./states";
 
 export async function parallelVotingExecutor(
     agents: any[],
     scene: any,
     tilemap: any,
     destination: any,
-    zones: any,
-    votingTopic: string
 ) {
     console.log("[Debug] Starting parallelVotingExecutor...");
     const originalPositions = agents.map(agent => ({ x: agent.x, y: agent.y }));
@@ -46,7 +45,7 @@ export async function parallelVotingExecutor(
 
         const llmPromise = llm.invoke(
             `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`
-        );
+        );// prompt_change
         console.log(`[Debug] Agent ${agent.getName()} is returning to original location...`);
         const returnPromise = autoControlAgent(scene, agent, tilemap, originalPositions[index].x, originalPositions[index].y, "Return to seat");
 
@@ -71,10 +70,10 @@ export function createAggregator(
     scene: any, 
     agents: any[], 
     tilemap: any, 
+    destination: any,
     finalDestination: any,
-    zones: any
 ) {
-    return async function aggregator(state: typeof GeneralStateAnnotation.State) {
+    return async function aggregator(state: typeof VotingGraphStateAnnotation.State) {
         console.log("[Debug] Starting aggregator...");
         console.log("aggregator state: ", state.votingVotes);
         let votes = state.votingVotes;
@@ -87,7 +86,7 @@ export function createAggregator(
         const decision = await llm.invoke(`
             aggregate data: ${llmInput}; 
             return the aggreated result in one title, don't add any other information or quotation marks.
-        `);
+        `);// prompt_change
         console.log("[Debug] Received final decision from LLM.");
 
         let originalAgent1X = agents[agents.length-1].x;
@@ -99,8 +98,8 @@ export function createAggregator(
         await autoControlAgent(scene, agents[agents.length-1], tilemap, finalDestination.x, finalDestination.y, "Send Decision to Final Location");
         console.log("[Debug] Decision sent to final location.");
 
-        const report = await createReport(scene, "voting", 250, 350);
-        await createReport(scene, "voting", 250, 350);
+        const report = await createReport(scene, "voting", destination.x, destination.y);
+        await createReport(scene, "voting", destination.x, destination.y);
 
 
         console.log("[Debug] Returning to office...");
@@ -116,7 +115,7 @@ export function createAggregator(
         // await updateStateIcons(zones, "idle");
         console.log("[Debug] Aggregator completed.");
 
-        return { ...state, votingToChaining: decision.content };
+        return { ...state, votingOutput: decision.content };
     };
 }
 
@@ -126,10 +125,9 @@ export function constructVotingGraph(
     tilemap: any,
     destination: any,
     finalDestination: any,
-    zones: any
 ) {
     console.log("[Debug] Starting to construct voting graph...");
-    const votingGraph = new StateGraph(GeneralStateAnnotation as any);
+    const votingGraph = new StateGraph(VotingGraphStateAnnotation as any);
 
     votingGraph.addNode(
         "votingPhase",
@@ -140,8 +138,6 @@ export function constructVotingGraph(
                 scene,
                 tilemap,
                 destination,
-                zones,
-                state.votingTopic
             );
             console.log("[Debug] Voting phase completed.");
             return { ...state, votingVotes: votes };
@@ -156,11 +152,11 @@ export function constructVotingGraph(
                 scene,
                 agents,
                 tilemap,
+                destination,
                 finalDestination,
-                zones
             )(state);
             console.log("[Debug] Aggregator phase completed.");
-            return { ...state, votingToChaining: decision.votingToChaining };
+            return { ...state, votingOutput: decision.votingOutput };
         }
     );
 
@@ -171,6 +167,7 @@ export function constructVotingGraph(
     console.log("[Debug] Voting graph constructed and compiled.");
     return votingGraph.compile();
 }
+
 
 export const votingExample = `
 You are an employee in a news company.

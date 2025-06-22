@@ -2,7 +2,7 @@ import { initializeLLM } from "./chainingUtils";
 
 export async function createVisualizationJudge(message: string) {
     const llm = initializeLLM();
-    console.log("message before vis judge", message)
+    console.log('message before vis judge', message);
     const systemMssg: string = `
         You are a visualization grammar expert.
 
@@ -37,22 +37,24 @@ Follow this reasoning process:
 
     const comment = await llm.invoke(systemMssg);
 
-    console.log("comments from routes llm: ", comment.content);
+    console.log('comments from routes llm: ', comment.content);
 
-    console.log("message after vis judge", comment.content)
+    console.log('message after vis judge', comment.content);
 
     try {
         // Try parsing response as a JSON array
         return comment.content;
     } catch (e) {
-        console.error("Failed to parse comment as string[]:", e);
-        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+        console.error('Failed to parse comment as string[]:', e);
+        return [
+            `Error: LLM response is not a valid string[]: ${comment.content}`,
+        ];
     }
 }
 
 export async function createWritingJudge(message: string) {
     const llm = initializeLLM();
-    console.log("message before writing judge", message)
+    console.log('message before writing judge', message);
     const systemMssg: string = `
         You are a bias detection expert.
         Carefully evaluate the following text and identify any potential biases or misleading statements.
@@ -75,9 +77,11 @@ export async function createWritingJudge(message: string) {
         Do not include any additional text—just the array of strings.
         Do not highlight any texts in the "Comments on Writing" or "Comments on Visualization" sections.
 
+        Don't change the first element in the example output, keep it as the given score
+
         Example Output: 
         [
-            "Score: 9/10",
+            "Score: 8/10",
             "The data source can be specified in Vega-Lite using a similar dataset.",
             "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
             "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
@@ -86,15 +90,17 @@ export async function createWritingJudge(message: string) {
 
     const comment = await llm.invoke(systemMssg);
 
-    console.log("comments from routes llm: ", comment.content);
+    console.log('comments from routes llm: ', comment.content);
 
-    console.log("message after writing judge", comment.content)
+    console.log('message after writing judge', comment.content);
 
     try {
         // Try parsing response as a JSON array
         return comment.content;
     } catch (e) {
-        console.error("Failed to parse comment as string[]:", e);
-        return [`Error: LLM response is not a valid string[]: ${comment.content}`];
+        console.error('Failed to parse comment as string[]:', e);
+        return [
+            `Error: LLM response is not a valid string[]: ${comment.content}`,
+        ];
     }
 }
