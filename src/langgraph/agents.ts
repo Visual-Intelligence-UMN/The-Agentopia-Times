@@ -8,6 +8,7 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
 import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
+import { dataFetcher } from "./workflowUtils";
 
 
 
@@ -87,44 +88,7 @@ export function createJournalist(
     return async function journalist(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
-        // let datasetPath = covidPath;
-        let datasetPath = baseballPath;
-        let researchQuestions = `
-            Across both 1995 and 1996, 
-            which player had the better batting average overall? 
-            Does this confirm who was the better hitter in each individual year?
-        `;
-
-        if(state.sequentialInput) {
-            if(scene.registry.get('currentDataset')==='kidney'){
-                // datasetPath = ucbPath;
-                datasetPath = kidneyPath;
-                researchQuestions = `
-                    Treatment B has a higher overall success rate across all patients. 
-                    Should it be considered more effective than Treatment A?
-                `;
-            }
-        }
-
-        const res = await fetch(datasetPath);
-        const csvRaw = await res.text();
-        console.log("csvRaw", csvRaw);
-
-        agent.setAgentState("work");
-        
-        // await updateStateIcons(zones, "work", 0);
-        // await updateStateIcons(scene.chainingZones, "work");
-
-        const message = [
-            {
-                role: "system", 
-                content: "You are a data analyst." + agent.getBias()
-            },
-            {
-                role: "user", 
-                content: "Your work is to analyze the given dataset..." + csvRaw + ` and answer following questions ${researchQuestions}`
-            },
-        ];
+        const message = await dataFetcher(scene, state, agent);
 
         const msg = await getLLM().invoke(message);
 
@@ -143,7 +107,12 @@ export function createJournalist(
     };
 }
 
-export function createManager(agent: any, scene: any, destination: any, nextRoomDestination: any) {
+export function createManager(
+    agent: any, 
+    scene: any, 
+    destination: any, 
+    nextRoomDestination: any
+) {
     return async function Manager(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
