@@ -195,6 +195,7 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
     const backgroundY = centerY + yOffset;
     const labelY = centerY + yOffset;
 
+
   const background = scene.add.rectangle(centerX, backgroundY, 115, 20, 0x111122, 0.7)
   .setOrigin(0.5)
   .setDepth(1000)
@@ -208,7 +209,6 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
   strokeThickness: 1,
   fontWeight: "bold"
   }).setOrigin(0.5).setDepth(1001).setStyle({ fontFamily: 'Verdana'});
-
   // deciding the strategy based on zoneName
   let strategy:string = 'voting';
   let zoneIndex = 0;
@@ -310,7 +310,6 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
       }
     });
   }
-
 
 
   scene.tweens.add({
