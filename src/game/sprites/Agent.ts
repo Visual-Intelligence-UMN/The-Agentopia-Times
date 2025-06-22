@@ -30,6 +30,9 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private bias: string = "";
   private isBiased: boolean = false;
 
+  private wasDragged: boolean = false; // if user drag the agent now
+
+
   public assignToWorkplace: boolean = false;
   private activationFunction: (state: any) => any = (state: any) => {
     console.log(`---Step for Agent: ${this.name}---`);
@@ -97,28 +100,57 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     scene.input.setDraggable(this);
 
     // 监听拖拽事件
-    scene.input.on('dragstart', (pointer:any, gameObject:any) => {
+    // scene.input.on('dragstart', (pointer:any, gameObject:any) => {
+    //   if (gameObject === this) {
+    //     this.setTint(0xff0000); // 拖拽开始时变红
+    //   }
+    // });
+
+    // scene.input.on('drag', (pointer:any, gameObject:any, dragX:number, dragY:number) => {
+    //   if (gameObject === this) {
+    //     this.x = dragX;
+    //     this.y = dragY;
+    //     // this.nameTag.setPosition(this.x, this.y - 25); 
+    //   }
+    // });
+
+    //     scene.input.on('dragend', (pointer:any, gameObject:any) => {
+    //   if (gameObject === this) {
+    //     this.clearTint(); // 结束拖A拽后恢复原色
+    //   }
+    // });
+
+
+    scene.input.on('dragstart', (pointer: any, gameObject: any) => {
       if (gameObject === this) {
-        this.setTint(0xff0000); // 拖拽开始时变红
+        this.wasDragged = false;
+        this.setTint(0xff0000);
       }
     });
 
-    scene.input.on('drag', (pointer:any, gameObject:any, dragX:number, dragY:number) => {
+    scene.input.on('drag', (pointer: any, gameObject: any, dragX: number, dragY: number) => {
       if (gameObject === this) {
         this.x = dragX;
         this.y = dragY;
-        // this.nameTag.setPosition(this.x, this.y - 25); 
+        this.wasDragged = true;
+        // this.nameTag.setPosition(this.x, this.y - 25);
       }
     });
 
-    scene.input.on('dragend', (pointer:any, gameObject:any) => {
+    scene.input.on('dragend', (pointer: any, gameObject: any) => {
       if (gameObject === this) {
-        this.clearTint(); // 结束拖A拽后恢复原色
+        this.clearTint();
       }
     });
 
-    this.on('pointerdown', (pointer:any) => {
-      this.onClick(pointer, this);
+    // this.on('pointerdown', (pointer:any) => {
+    //   this.onClick(pointer, this);
+    // });
+
+    this.on('pointerup', (pointer: any) => {
+      if (!this.wasDragged) {
+        this.onClick(pointer, this);
+      }
     });
     
 
