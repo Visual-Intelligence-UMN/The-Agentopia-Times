@@ -90,7 +90,8 @@ export function constructSequentialGraph(
     scene: any,
     tilemap: any,
     destination: any,
-    nextRoomDestination: any
+    nextRoomDestination: any,
+    index: number
 ){
     const langgraph = new StateGraph(SequentialGraphStateAnnotation);
     const agentNames: string[] = [];
@@ -106,7 +107,8 @@ export function constructSequentialGraph(
                         agent, 
                         agents[1], 
                         scene, 
-                        tilemap
+                        tilemap,
+                        index
                     )
                 );
             }
@@ -118,14 +120,21 @@ export function constructSequentialGraph(
                         agent, 
                         scene, 
                         tilemap, 
-                        destination
+                        destination,
+                        index
                     )
                 );
             }
             else if(j===2){
                 langgraph.addNode(
                     "manager", 
-                    createManager(agent, scene, destination, nextRoomDestination)
+                    createManager(
+                        agent, 
+                        scene, 
+                        destination, 
+                        nextRoomDestination,
+                        index,
+                    )
                 );
                 name = 'manager'
             }

@@ -764,15 +764,15 @@ return result;
           // Insert prompts into the graphs below:
           if(workflowConfig[i] === "voting"){
             console.log("construct voting graph");
-            const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            const graph = constructVotingGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, i);
             graphs.push(graph);
           } else if(workflowConfig[i] === "sequential") {
             console.log("construct sequential graph");
-            const graph = constructSequentialGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            const graph = constructSequentialGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, i);
             graphs.push(graph);
           } else if(workflowConfig[i] === "single_agent") {
             console.log("construct single agent graph");
-            const graph = constructSingleAgentGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition);
+            const graph = constructSingleAgentGraph(agentsParameter, this, this.tilemap, firstPosition, secondPosition, i);
             graphs.push(graph);
           }
         }

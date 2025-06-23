@@ -8,7 +8,8 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
 import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
-import { dataFetcher } from "./workflowUtils";
+import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startTextMessager, startVisualizer } from "./workflowUtils";
+import { generateChartImage } from "./visualizationGenerate";
 
 
 
@@ -83,16 +84,30 @@ export function createJournalist(
     agent: any,
     destination: any,
     scene: any,
-    tilemap: any
+    tilemap: any,
+    index: number
 ) {
     return async function journalist(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
-        const message = await dataFetcher(scene, state, agent);
+        // const message = await startDataFetcher(scene, state, agent);
 
-        const msg = await getLLM().invoke(message);
+        // const msg = await getLLM().invoke(message);
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            msg = await startDataFetcher(scene, agent);
+        } else if (index === 2) {
+            // generating visualization code
+            msg = await generateChartImage(scene, agent);
+        }
 
-        console.log("journalist msg:", msg.content);
+
+        console.log("graph:1st agent msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
 
@@ -103,6 +118,10 @@ export function createJournalist(
 
         // await updateStateIcons(zones, "idle", 0);
 
+        if(index===2){
+            return {sequentialFirstAgentOutput: msg};
+        }
+
         return { sequentialFirstAgentOutput: msg.content };
     };
 }
@@ -111,30 +130,71 @@ export function createManager(
     agent: any, 
     scene: any, 
     destination: any, 
-    nextRoomDestination: any
+    nextRoomDestination: any,
+    index: number
 ) {
     return async function Manager(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
         agent.setAgentState("work");
-        
-        // await updateStateIcons(zones, "work", 0);
-        // await updateStateIcons(scene.chainingZones, "work");
 
-        const message = [
-            {
-                role: "system", 
-                content: "You are a manager responsible for fact-checking." + agent.getBias()
-            },
-            {
-                role: "user", 
-                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
-            }
-        ];
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
+            const userContent = "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 2) {
+            // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const id = state.sequentialFirstAgentOutput.chartId;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
 
-        const msg = await getLLM().invoke(message);
+                    Your task is to verify and improve a given Vega-Lite specification.
 
-        console.log("manager msg:", msg.content);
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
+
+            let chartData = { d3Code: code, chartId: id };
+                        EventBus.emit('d3-code', chartData);
+                        let judgeData = await startJudges(
+                            msg.content,
+                            state.sequentialInput,
+                        );
+                        await startHTMLConstructor(
+                            judgeData.comments,
+                            judgeData.writingComments,
+                            judgeData.highlightedText,
+                            'Report',
+                        );
+            
+
+        }
+
+        // const msg = await getLLM().invoke(message);
+
+        console.log("graph:3rd agent msg:", msg.content);
         // await updateStateIcons(zones, "idle", 0);
         await agent.setAgentState("idle");
 
@@ -153,22 +213,22 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    index: number
 ){ 
     return async function writer(state: typeof SequentialGraphStateAnnotation.State){
         console.log("writer state: ", state.sequentialFirstAgentOutput);
 
         agent.setAgentState("work");
-        // await updateStateIcons(zones, "work", 1);
 
-        const message = [
-            {
-                role: "system", 
-                content: "You are a report writer." + agent.getBias()
-            },
-            {
-                role: "user", 
-                content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            let userContent = "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
                 `
                         you should follow the following format:
                         # Title: write a compelling title for the news article
@@ -176,18 +236,44 @@ export function createWriter(
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
-                    state.sequentialFirstAgentOutput
-            }
-        ];
+                    state.sequentialOutput
+            let roleContent = "You are a report writer." + agent.getBias();
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 2) {
+            // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
 
-        const msg = await getLLM().invoke(message);
+                    Your task is to verify and improve a given Vega-Lite specification.
+
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
+            
+        }
 
         const rawText = msg.content as string;
         const htmlContent = marked.parse(rawText);
         
         
         
-        console.log("writer msg: ", msg.content);
+        console.log("graph:2nd agent msg: ", msg.content);
 
         const reportMessage = `
         <div class="report-body">
