@@ -8,7 +8,8 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
 import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
-import { dataFetcher, returnDatasetDescription, startDataFetcher, startTextMessager, startVisualizer } from "./workflowUtils";
+import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startTextMessager, startVisualizer } from "./workflowUtils";
+import { generateChartImage } from "./visualizationGenerate";
 
 
 
@@ -102,7 +103,7 @@ export function createJournalist(
             msg = await startDataFetcher(scene, agent);
         } else if (index === 2) {
             // generating visualization code
-
+            msg = await generateChartImage(scene, agent);
         }
 
 
@@ -116,6 +117,10 @@ export function createJournalist(
         await autoControlAgent(scene, agent, tilemap, originalAgent1X, originalAgent1Y, "Return to Office");
 
         // await updateStateIcons(zones, "idle", 0);
+
+        if(index===2){
+            return {sequentialFirstAgentOutput: msg};
+        }
 
         return { sequentialFirstAgentOutput: msg.content };
     };
@@ -145,7 +150,46 @@ export function createManager(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const id = state.sequentialFirstAgentOutput.chartId;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
+
+                    Your task is to verify and improve a given Vega-Lite specification.
+
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
+
+            let chartData = { d3Code: code, chartId: id };
+                        EventBus.emit('d3-code', chartData);
+                        let judgeData = await startJudges(
+                            msg.content,
+                            state.sequentialInput,
+                        );
+                        await startHTMLConstructor(
+                            judgeData.comments,
+                            judgeData.writingComments,
+                            judgeData.highlightedText,
+                            'Report',
+                        );
             
+
         }
 
         // const msg = await getLLM().invoke(message);
@@ -197,6 +241,30 @@ export function createWriter(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
+
+                    Your task is to verify and improve a given Vega-Lite specification.
+
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
             
         }
 
