@@ -1,7 +1,7 @@
 import { Annotation } from "@langchain/langgraph/web";
 
 export const VotingGraphStateAnnotation = Annotation.Root({
-    votingVotes: Annotation<string[]>({
+    votingVotes: Annotation<any[]>({
         default: () => [],
         reducer: (x, y) => x.concat(y),
     }), // graph internal state

@@ -46,7 +46,7 @@ declare global {
     d3: any;
   }
 }
-export async function generateChartImage(scene: any, dataSheet: any, agent: any, state: any) {
+export async function generateChartImage(scene: any, agent: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -59,12 +59,6 @@ export async function generateChartImage(scene: any, dataSheet: any, agent: any,
     dataPath = "./data/kidney.csv";
   }
 
-
-// export async function generateChartImage(promptForLLM: string, svgId: string, dataSheet: any) {
-
-// export async function generateChartImage(promptForLLM: string, svgId: string) {
-  // console.log("generateVisualization", dataSheet);
-
   const llm = initializeLLM();
   const maxRetries = 3;
   let attempt = 0;
@@ -72,13 +66,6 @@ export async function generateChartImage(scene: any, dataSheet: any, agent: any,
 
   while (attempt < maxRetries) {
     attempt++;
-
-    // const promptForLLM = `
-    //   Generate a simple D3.js bar chart for the following data: ${JSON.stringify(dataSheet)}.
-    //   Include x-axis and y-axis labels, and a chart title.
-    //   Only return the JavaScript code to generate the chart, no HTML, no CSS.
-    //   ${lastError ? "The last attempt failed with the following error: " + lastError + ". Please correct it." : ""}
-    // `;
 
     const promptForLLM = `
   Generate a data visualization with following description:
@@ -236,5 +223,9 @@ export function compileJSCode(script: string, divNumber: string){
     console.log("Error in testD3Comping function", e);
   }
 }
+
+
+
+
 
 

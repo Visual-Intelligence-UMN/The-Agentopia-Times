@@ -8,7 +8,7 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
 import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
-import { dataFetcher } from "./workflowUtils";
+import { dataFetcher, returnDatasetDescription, startDataFetcher, startTextMessager, startVisualizer } from "./workflowUtils";
 
 
 
@@ -83,16 +83,30 @@ export function createJournalist(
     agent: any,
     destination: any,
     scene: any,
-    tilemap: any
+    tilemap: any,
+    index: number
 ) {
     return async function journalist(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
-        const message = await dataFetcher(scene, state, agent);
+        // const message = await startDataFetcher(scene, state, agent);
 
-        const msg = await getLLM().invoke(message);
+        // const msg = await getLLM().invoke(message);
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            msg = await startDataFetcher(scene, agent);
+        } else if (index === 2) {
+            // generating visualization code
 
-        console.log("journalist msg:", msg.content);
+        }
+
+
+        console.log("graph:1st agent msg:", msg.content);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
 
@@ -111,30 +125,32 @@ export function createManager(
     agent: any, 
     scene: any, 
     destination: any, 
-    nextRoomDestination: any
+    nextRoomDestination: any,
+    index: number
 ) {
     return async function Manager(state: typeof SequentialGraphStateAnnotation.State) {
         console.log("journalist state:", state.sequentialInput);
 
         agent.setAgentState("work");
-        
-        // await updateStateIcons(zones, "work", 0);
-        // await updateStateIcons(scene.chainingZones, "work");
 
-        const message = [
-            {
-                role: "system", 
-                content: "You are a manager responsible for fact-checking." + agent.getBias()
-            },
-            {
-                role: "user", 
-                content: "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
-            }
-        ];
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
+            const userContent = "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 2) {
+            // generating visualization code
+            
+        }
 
-        const msg = await getLLM().invoke(message);
+        // const msg = await getLLM().invoke(message);
 
-        console.log("manager msg:", msg.content);
+        console.log("graph:3rd agent msg:", msg.content);
         // await updateStateIcons(zones, "idle", 0);
         await agent.setAgentState("idle");
 
@@ -153,22 +169,22 @@ export function createWriter(
     agent: any,
     scene: any,
     tilemap: any,
-    destination: any
+    destination: any,
+    index: number
 ){ 
     return async function writer(state: typeof SequentialGraphStateAnnotation.State){
         console.log("writer state: ", state.sequentialFirstAgentOutput);
 
         agent.setAgentState("work");
-        // await updateStateIcons(zones, "work", 1);
 
-        const message = [
-            {
-                role: "system", 
-                content: "You are a report writer." + agent.getBias()
-            },
-            {
-                role: "user", 
-                content: "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
+        let msg:any = '';
+        if (index === 0) {
+            let datasetDescription = returnDatasetDescription(scene);
+            let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            let userContent = "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
                 `
                         you should follow the following format:
                         # Title: write a compelling title for the news article
@@ -176,18 +192,20 @@ export function createWriter(
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
-                    state.sequentialFirstAgentOutput
-            }
-        ];
-
-        const msg = await getLLM().invoke(message);
+                    state.sequentialOutput
+            let roleContent = "You are a report writer." + agent.getBias();
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 2) {
+            // generating visualization code
+            
+        }
 
         const rawText = msg.content as string;
         const htmlContent = marked.parse(rawText);
         
         
         
-        console.log("writer msg: ", msg.content);
+        console.log("graph:2nd agent msg: ", msg.content);
 
         const reportMessage = `
         <div class="report-body">

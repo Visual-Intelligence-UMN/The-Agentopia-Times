@@ -1,13 +1,21 @@
 import { marked } from 'marked';
 import { EventBus } from '../game/EventBus';
-import { baseballPath, kidneyPath } from './agents';
+import { baseballPath, getLLM, kidneyPath } from './agents';
 import { initializeLLM } from './chainingUtils';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
 import { webStyle } from './const';
 
+export function returnDatasetDescription(scene: any) {
+    let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
+    if (scene.registry.get('currentDataset') === 'kidney') {
+        datasetDescription = `The kidney stone treatment dataset is a renowned real-world example illustrating Simpson’s Paradox, where aggregated data can lead to conclusions that contradict those derived from subgroup analyses. In a 1986 study published in the British Medical Journal, researchers compared two treatments for kidney stones: Treatment A (open surgery) and Treatment B (percutaneous nephrolithotomy). When considering all patients collectively, Treatment B appeared more effective, boasting an overall success rate of 82.6% compared to 78.0% for Treatment A. However, when the data were stratified by stone size, Treatment A demonstrated higher success rates for both small stones (93.1% vs. 86.7%) and large stones (73.0% vs. 68.8%) . This paradox arises because a disproportionate number of patients with small stones—who generally have higher treatment success rates—received Treatment B, skewing the aggregated results. The dataset underscores the importance of considering confounding variables and subgroup analyses in statistical evaluations to avoid misleading conclusions.`;
+    }
+    return datasetDescription;
+}
+
 // for analysis
-export async function dataFetcher(scene: any, state: any, agent: any) {
+export async function startDataFetcher(scene: any, agent: any) {
     // let datasetPath = covidPath;
     let datasetPath = baseballPath;
     let researchQuestions = `
@@ -16,15 +24,13 @@ export async function dataFetcher(scene: any, state: any, agent: any) {
                 Does this confirm who was the better hitter in each individual year?
             `;
 
-    if (state.sequentialInput) {
-        if (scene.registry.get('currentDataset') === 'kidney') {
-            // datasetPath = ucbPath;
-            datasetPath = kidneyPath;
-            researchQuestions = `
+    if (scene.registry.get('currentDataset') === 'kidney') {
+        // datasetPath = ucbPath;
+        datasetPath = kidneyPath;
+        researchQuestions = `
                         Treatment B has a higher overall success rate across all patients. 
                         Should it be considered more effective than Treatment A?
                     `;
-        }
     }
 
     const res = await fetch(datasetPath);
@@ -50,20 +56,37 @@ export async function dataFetcher(scene: any, state: any, agent: any) {
         },
     ];
 
-    return message;
+    const final_msg = await startTextMessager(
+        message[0].content,
+        message[1].content,
+    );
+
+    return final_msg;
 }
+
+export async function startJudges(
+    d3Code: string,
+    content: string,
+) {
+    const highlightedText = await createHighlighter(
+        content,
+    );
+    const comments = await extractTSArray(
+        await createVisualizationJudge(d3Code),
+    );
+    const writingComments = await extractTSArray(
+        await createWritingJudge(content),
+    );
+    return { highlightedText, comments, writingComments };
+}
+
 
 export async function startVisualizer(
     scene: any,
-    command: string,
-    state: any,
     content: string,
-    agent: any,
-    scoreText: Phaser.GameObjects.Text,
+    chartData: any,
 ) {
     let datasetPath = baseballPath;
-
-    console.log('state route', state);
 
     if (scene.registry.get('currentDataset') === 'kidney') {
         datasetPath = kidneyPath;
@@ -73,64 +96,58 @@ export async function startVisualizer(
     const csvRaw = await res.text();
     console.log('csvRaw', csvRaw);
 
-    command = 'visualization';
-    console.log('command', command);
+    console.log('entered visualization branch');
 
-    if (command === 'visualization') {
-        console.log('entered visualization branch');
+    // const chartData = await generateChartImage(scene, agent);
+    const d3Code = chartData.d3Code;
 
-        const chartData = await generateChartImage(scene, csvRaw, agent, state);
-        const d3Code = chartData.d3Code;
+    // EventBus.emit("final-report", { report: content, department: "routing" });
+    const URL = await generateImage(
+        `please give me an image based on the following describ or coonect with it: ${content}`,
+    );
+    console.log('URL', URL);
+    console.log('d3code', d3Code);
+    let dynamicTitle = 'Generated Report Summary';
+    let dynamicIntro = 'Generated Report Intro';
+    let contentWithoutHeaders = content;
 
-        // EventBus.emit("final-report", { report: content, department: "routing" });
-        const URL = await generateImage(
-            `please give me an image based on the following describ or coonect with it: ${content}`,
+    // 1. Extract and remove titles
+    const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
+    if (titleMatch) {
+        dynamicTitle = titleMatch[1].trim();
+        contentWithoutHeaders = contentWithoutHeaders.replace(
+            titleMatch[0],
+            '',
         );
-        console.log('URL', URL);
-        console.log('d3code', d3Code);
-        let dynamicTitle = 'Generated Report Summary';
-        let dynamicIntro = 'Generated Report Intro';
-        let contentWithoutHeaders = content;
+    }
 
-        // 1. Extract and remove titles
-        const titleMatch = contentWithoutHeaders.match(/^#\s*Title:\s*(.+)$/im);
-        if (titleMatch) {
-            dynamicTitle = titleMatch[1].trim();
-            contentWithoutHeaders = contentWithoutHeaders.replace(
-                titleMatch[0],
-                '',
-            );
-        }
-
-        // 2. Extract and remove Intro
-        const introMatch =
-            contentWithoutHeaders.match(/^##\s*Intro:\s*(.+)$/im);
-        if (introMatch) {
-            dynamicIntro = introMatch[1].trim();
-            contentWithoutHeaders = contentWithoutHeaders.replace(
-                introMatch[0],
-                '',
-            );
-        }
-
-        // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
-        // const highlightedText = marked.parse(contentWithoutHeaders.trim());
-        const highlightedText = await createHighlighter(
-            contentWithoutHeaders.trim(),
+    // 2. Extract and remove Intro
+    const introMatch = contentWithoutHeaders.match(/^##\s*Intro:\s*(.+)$/im);
+    if (introMatch) {
+        dynamicIntro = introMatch[1].trim();
+        contentWithoutHeaders = contentWithoutHeaders.replace(
+            introMatch[0],
+            '',
         );
-        const style = webStyle;
+    }
 
-        const comments = await extractTSArray(
-            await createVisualizationJudge(d3Code),
-        );
-        const writingComments = await extractTSArray(
-            await createWritingJudge(state.secondRoomOutput),
-        );
+    // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
+    // const highlightedText = marked.parse(contentWithoutHeaders.trim())
 
-        let commentsHTML = '';
+    return {}
+}
 
-        if (comments?.length > 0) {
-            commentsHTML += `
+export async function startHTMLConstructor(
+    comments: string[],
+    writingComments: string[],
+    highlightedText: any,
+    dynamicTitle: string,
+    style: string = webStyle,
+){
+    let commentsHTML = '';
+
+    if (comments?.length > 0) {
+        commentsHTML += `
     <div class="comment-section">
       <h3>Comments on Visualization</h3>
       <ul>
@@ -138,10 +155,10 @@ export async function startVisualizer(
       </ul>
     </div>
   `;
-        }
+    }
 
-        if (writingComments?.length > 1) {
-            commentsHTML += `
+    if (writingComments?.length > 1) {
+        commentsHTML += `
     <div class="comment-section">
       <h3>Comments on Writing</h3>
       <ul>
@@ -152,10 +169,10 @@ export async function startVisualizer(
       </ul>
     </div>
   `;
-            scoreText.setText('Score: 8/10');
-        }
+        // scoreText.setText('Score: 8/10');
+    }
 
-        const body = `
+    const body = `
   <div class="newspaper">
     <h1 class="newspaper-title">The Agentopia Times</h1>
     <p class="authors">Written by Professional LLM Journalists</p>
@@ -184,30 +201,14 @@ export async function startVisualizer(
 
 `;
 
-        let reportMessage = `${style}${body}`;
+    let reportMessage = `${style}${body}`;
 
-        EventBus.emit('final-report', {
-            report: reportMessage,
-            department: 'routing',
-        });
-    } else {
-        console.log('entered illustration branch');
-        const URL = await generateImage('please give me an image of a man');
-        console.log('URL', URL);
+    console.log("graph:vis-report msg: ", reportMessage);
 
-        // const arry = `${msg.content}\n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />`;
-
-        const reportMessage = `${content}
-            \n\n<img src="${URL}" style="max-width: 80%; height: auto; border-radius: 8px; margin: 10px auto; display: block;" />
-        `;
-
-        EventBus.emit('final-report', {
-            report: reportMessage,
-            department: 'routing',
-        });
-    }
-
-    return content;
+    EventBus.emit('final-report', {
+        report: reportMessage,
+        department: 'voting',
+    });
 }
 
 async function extractTSArray(raw: any): Promise<string[]> {
@@ -349,4 +350,23 @@ export async function createHighlighter(message: string) {
     console.log('comments from routes llm: ', comment.content);
 
     return comment.content;
+}
+
+export async function startTextMessager(
+    roleContent: string,
+    userContent: string,
+) {
+    const message = [
+        {
+            role: 'system',
+            content: roleContent,
+        },
+        {
+            role: 'user',
+            content: userContent,
+        },
+    ];
+
+    const msg = await getLLM().invoke(message);
+    return msg;
 }
