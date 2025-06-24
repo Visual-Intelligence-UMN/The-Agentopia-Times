@@ -588,9 +588,28 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
 
   this.keyMap = setupKeyListeners(this.controlMapping, this.input);
 
-  
-}
+  // reset button
+  const resetButton = this.add.text(20, 20, '⟳ Reset', {
+    fontSize: '18px',
+    fontFamily: 'Verdana',
+    color: '#ffffff',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: { x: 10, y: 5 },
+  })
+  .setOrigin(0, 0)
+  .setDepth(2000)
+  .setScrollFactor(0)
+  .setInteractive();
 
+  resetButton.on('pointerdown', () => {
+    window.location.reload();
+  });
+
+  // esc reset
+  this.input.keyboard.once('keydown-ESC', () => {
+    window.location.reload();
+  });
+}
 
 export function createGridFromTilemap(tilemap: Phaser.Tilemaps.Tilemap) {
   const grid = new PF.Grid(tilemap.width, tilemap.height);

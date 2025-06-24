@@ -138,169 +138,79 @@ export async function startVisualizer(
         );
 
         state.secondRoomOutput = contentWithoutHeaders.trim();
-
         const style = webStyle;
 
-        const visRawList  = await extractTSArray(
-            await createVisualizationJudge(d3Code),
-        );
 
-        const finalVisScores = parseVisScores(visRawList );
+
+        // Visualization Evaluation
+
+        // Run the visualization judge to get raw string[] result, then parse into score list
+        const visRawList = await extractTSArray(await createVisualizationJudge(d3Code));
+
+        // Extract the numeric scores for each visualization dimension (Structure, Clarity, etc.)
+        const finalVisScores = parseVisScores(visRawList);
+
+        // Slice out the detailed feedback comments (excluding first 6 lines of scores)
         const visFeedbackComments = visRawList.slice(6);
 
-        // const writingComments = await extractTSArray(
-        //     await createWritingJudge(state.secondRoomOutput),
-        // );
 
+
+        // Writing Evaluation
+
+        // Prepare the raw written text (output from LLM) for writing judge
         const rawWriting = state.secondRoomOutput?.trim?.() ?? '';
 
+        // Run the writing judge to get raw string[] result
         const writingRawList = await extractTSArray(await createWritingJudge(rawWriting));
+
+        // Extract the numeric scores for each writing dimension (Overall, Clarity, etc.)
         const finalWritingScores = parseWritingScores(writingRawList);
+
+        // Slice out the detailed writing feedback comments (excluding first 5 lines of scores)
         const writingComments = writingRawList.slice(5);
 
-        // Calculate the total score
+
+
+        
+        // Score Aggregation
+
+        // Compute a combined overall score from both visualization and writing scores
         const overallScore = calculateOverallScore(finalWritingScores, finalVisScores);
 
 
+
+        // Comment Formatting (HTML)
+
         let commentsHTML = '';
 
+        // If there are visualization comments, render them as an HTML unordered list
         if (visFeedbackComments?.length > 0) {
             commentsHTML += `
                 <div class="comment-section">
-                <h3>Comments on Visualization</h3>
-                <ul>
-                    ${visFeedbackComments
-                    .map((c) => `<li>${c}</li>`)
-                    .join('')}
-                </ul>
+                    <h3>Comments on Visualization</h3>
+                    <ul>
+                        ${visFeedbackComments.map((c) => `<li>${c}</li>`).join('')}
+                    </ul>
                 </div>
             `;
         }
 
+        // If there are writing comments, render them as a second HTML unordered list
         if (writingComments?.length > 1) {
             commentsHTML += `
                 <div class="comment-section">
-                <h3>Comments on Writing</h3>
-                <ul>
-                    ${writingComments
-                        .map((c) => `<li>${c}</li>`)
-                        .join('')}
-                </ul>
+                    <h3>Comments on Writing</h3>
+                    <ul>
+                        ${writingComments.map((c) => `<li>${c}</li>`).join('')}
+                    </ul>
                 </div>
             `;
-
-            
-
-            // Score button and score panel
-            const scoreX = 600;
-            const scoreY = 20;
-
-            const codingScores = finalVisScores;
-
-            if (scene.scoreButton) scene.scoreButton.destroy();
-            if (scene.scorePanel) scene.scorePanel.destroy();
-            if (scene.scorePanelBg) scene.scorePanelBg.destroy(); // ✅ 新增
-
-            const paddingX = 16;
-            const paddingY = 10;
-
-            const scoreValueText = scene.add.text(scoreX, scoreY, `Score: ${overallScore}/10`, {
-            fontSize: "18px",
-            fontFamily: "Verdana",
-            color: "#ffffff",
-            }).setScrollFactor(0).setDepth(1001);
-
-            const expandHintText = scene.add.text(scoreX, scoreY, `(click to expand)`, {
-            fontSize: "12px",
-            fontFamily: "Verdana",
-            color: "#cccccc",
-            }).setScrollFactor(0).setDepth(1001);
-
-            const buttonWidth = Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
-            const buttonHeight = scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
-
-            scene.scoreButtonBg = scene.add.rectangle(
-            scoreX + buttonWidth / 2,
-            scoreY + buttonHeight / 2,
-            buttonWidth,
-            buttonHeight,
-            0x000000,
-            0.6
-            ).setStrokeStyle(2, 0xffffff)
-            .setScrollFactor(0)
-            .setDepth(1000)
-            .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => {
-                const newVisible = !scene.scorePanel.visible;
-                scene.scorePanel.setVisible(newVisible);
-                scene.scorePanelBg.setVisible(newVisible);
-            });
-
-            scoreValueText.setPosition(
-            scene.scoreButtonBg.x - scoreValueText.width / 2,
-            scene.scoreButtonBg.y - buttonHeight / 2 + paddingY
-            );
-            expandHintText.setPosition(
-            scene.scoreButtonBg.x - expandHintText.width / 2,
-            scoreValueText.y + scoreValueText.height + 4
-            );
-
-            scene.children.bringToTop(scoreValueText);
-            scene.children.bringToTop(expandHintText);
-
-            const writingText = Object.entries(finalWritingScores)
-            .map(([k, v]) => `- ${k}: ${v}/10`)
-            .join("\n");
-
-            const codingText = Object.entries(codingScores)
-            .map(([k, v]) => `- ${k}: ${v}/10`)
-            .join("\n");
-
-            const panelText = `✍️ Writing:\n${writingText}\n\n📈 Coding:\n${codingText}`;
-
-            scene.scorePanel = scene.add.text(scoreX - 60, scoreY + 80, panelText, {
-            fontSize: "18px",
-            fontFamily: "Verdana",
-            color: "#FFFFFF",
-            padding: { x: 20, y: 16 },
-            wordWrap: { width: 320 },
-            align: "left",
-            })
-            .setScrollFactor(0)
-            .setDepth(2000)
-            .setVisible(false)
-            .setResolution(2);
-
-            const textBounds = scene.scorePanel.getBounds();
-            const panelWidth = textBounds.width + 20;
-            const panelHeight = textBounds.height + 20;
-
-            const panelX = textBounds.x + panelWidth / 2;
-            const panelY = textBounds.y + panelHeight / 2;
-
-            scene.scorePanelBg = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
-            .setStrokeStyle(2, 0xffffff)
-            .setScrollFactor(0)
-            .setDepth(1999)
-            .setVisible(false);
-
-            scene.scoreTooltip = scene.add.text(0, 0, '', {
-            fontSize: '14px',
-            fontFamily: 'Verdana',
-            color: '#FFFFFF',
-            padding: { x: 10, y: 6 },
-            wordWrap: { width: 200 },
-            })
-            .setBackgroundColor('rgba(0, 0, 0, 0.7)')
-            .setStyle({ stroke: '#FFFFFF', strokeThickness: 1.5 })
-            .setScrollFactor(0)
-            .setDepth(3000)
-            .setVisible(false);
-
-
-
         }
 
+
+        // create Score button and panel UI
+        createScoreUI(scene, 600, 20, overallScore, finalWritingScores, finalVisScores);
+        
         const body = `
             <div class="newspaper">
                 <h1 class="newspaper-title">The Agentopia Times</h1>
@@ -355,6 +265,101 @@ export async function startVisualizer(
 
     return content;
 }
+
+// score button and panel UI
+export function createScoreUI(
+  scene: any,
+  scoreX: number,
+  scoreY: number,
+  overallScore: number,
+  finalWritingScores: Record<string, number>,
+  finalVisScores: Record<string, number>
+) {
+  const paddingX = 16;
+  const paddingY = 10;
+
+  const codingScores = finalVisScores;
+
+  if (scene.scoreButton) scene.scoreButton.destroy();
+  if (scene.scorePanel) scene.scorePanel.destroy();
+  if (scene.scorePanelBg) scene.scorePanelBg.destroy();
+
+  const scoreValueText = scene.add.text(scoreX, scoreY, `Score: ${overallScore}/10`, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#ffffff",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const expandHintText = scene.add.text(scoreX, scoreY, `(click to expand)`, {
+    fontSize: "12px",
+    fontFamily: "Verdana",
+    color: "#cccccc",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const buttonWidth = Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
+  const buttonHeight = scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
+
+  scene.scoreButtonBg = scene.add.rectangle(
+    scoreX + buttonWidth / 2,
+    scoreY + buttonHeight / 2,
+    buttonWidth,
+    buttonHeight,
+    0x000000,
+    0.6
+  ).setStrokeStyle(2, 0xffffff)
+   .setScrollFactor(0)
+   .setDepth(1000)
+   .setInteractive({ useHandCursor: true })
+   .on("pointerdown", () => {
+     const newVisible = !scene.scorePanel.visible;
+     scene.scorePanel.setVisible(newVisible);
+     scene.scorePanelBg.setVisible(newVisible);
+   });
+
+  scoreValueText.setPosition(
+    scene.scoreButtonBg.x - scoreValueText.width / 2,
+    scene.scoreButtonBg.y - buttonHeight / 2 + paddingY
+  );
+  expandHintText.setPosition(
+    scene.scoreButtonBg.x - expandHintText.width / 2,
+    scoreValueText.y + scoreValueText.height + 4
+  );
+
+  scene.children.bringToTop(scoreValueText);
+  scene.children.bringToTop(expandHintText);
+
+  const writingText = Object.entries(finalWritingScores)
+    .map(([k, v]) => `- ${k}: ${v}/10`)
+    .join("\n");
+
+  const codingText = Object.entries(codingScores)
+    .map(([k, v]) => `- ${k}: ${v}/10`)
+    .join("\n");
+
+  const panelText = `✍️ Writing:\n${writingText}\n\n📈 Coding:\n${codingText}`;
+
+  scene.scorePanel = scene.add.text(scoreX - 60, scoreY + 80, panelText, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#FFFFFF",
+    padding: { x: 20, y: 16 },
+    wordWrap: { width: 320 },
+    align: "left",
+  }).setScrollFactor(0).setDepth(2000).setVisible(false).setResolution(2);
+
+  const textBounds = scene.scorePanel.getBounds();
+  const panelWidth = textBounds.width + 20;
+  const panelHeight = textBounds.height + 20;
+  const panelX = textBounds.x + panelWidth / 2;
+  const panelY = textBounds.y + panelHeight / 2;
+
+  scene.scorePanelBg = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
+    .setStrokeStyle(2, 0xffffff)
+    .setScrollFactor(0)
+    .setDepth(1999)
+    .setVisible(false);
+}
+
 
 async function extractTSArray(raw: any): Promise<string[]> {
   const clean = raw
@@ -588,25 +593,36 @@ export async function createWritingJudge(message: string) {
         ${message}
     `;
 
-
-  try {
-    const comment = await llm.invoke(systemMssg);
-    console.log('comments from writing judge:', comment.content);
-    return comment.content;
-  } catch (e) {
-    console.error('Writing judge failed:', e);
-    return [`Error: Failed to evaluate writing content.`];
-  }
+    try {
+        const comment = await llm.invoke(systemMssg);
+        console.log('comments from writing judge:', comment.content);
+        return comment.content;
+    } catch (e) {
+        console.error('Writing judge failed:', e);
+        return [`Error: Failed to evaluate writing content.`];
+    }
 }
 
 
-
+/**
+ * Parses numeric writing scores from a list of string outputs.
+ * 
+ * @param rawList - An array of strings (e.g., ["Overall: 7/10", "Clarity: 6/10", ...])
+ * @returns A record mapping each writing dimension to its numeric score (e.g., { Overall: 7, Clarity: 6 })
+ * 
+ * Only the following dimensions are extracted:
+ * - "Overall"
+ * - "Accuracy"
+ * - "Clarity"
+ * - "Reasoning"
+ * - "Bias Detection"
+ */
 export function parseWritingScores(rawList: string[]) {
   const scores: Record<string, number> = {};
   const desiredKeys = ["Overall", "Accuracy", "Clarity", "Reasoning", "Bias Detection"];
 
   rawList.forEach((line) => {
-    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // 支持带空格 key
+    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Accuracy: 7/10"
     if (match) {
       const [, key, value] = match;
       if (desiredKeys.includes(key)) {
@@ -618,12 +634,26 @@ export function parseWritingScores(rawList: string[]) {
   return scores;
 }
 
+/**
+ * Parses numeric visualization scores from a list of string outputs.
+ * 
+ * @param rawList - An array of strings (e.g., ["Structure: 8/10", "Clarity: 6/10", ...])
+ * @returns A record mapping each visualization dimension to its numeric score (e.g., { Structure: 8, Clarity: 6 })
+ * 
+ * Only the following dimensions are extracted:
+ * - "Structure"
+ * - "Encoding"
+ * - "Mapping"
+ * - "Interaction"
+ * - "Validity"
+ * - "Clarity"
+ */
 export function parseVisScores(rawList: string[]) {
   const scores: Record<string, number> = {};
   const desiredKeys = ["Structure", "Encoding", "Mapping", "Interaction", "Validity", "Clarity"];
 
   rawList.forEach((line) => {
-    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/);
+    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Mapping: 9/10"
     if (match) {
       const [, key, value] = match;
       if (desiredKeys.includes(key)) {
@@ -634,6 +664,7 @@ export function parseVisScores(rawList: string[]) {
 
   return scores;
 }
+
 
 // Calculation of a harmonized weighted total score
 function calculateOverallScore(
@@ -660,8 +691,6 @@ function calculateOverallScore(
   const average = totalWeightedScore / totalWeight;
   return Math.round(average);
 }
-
-
 
 export async function createHighlighter(message: string) {
     const llm = initializeLLM();
