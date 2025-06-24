@@ -107,6 +107,23 @@ export class Level2 extends ParentScene {
     // Initialize the HUD array
     this.hudElements = [];
 
+     // reset button
+  const resetButton = this.add.text(20, 20, '⟳ Reset', {
+    fontSize: '18px',
+    fontFamily: 'Verdana',
+    color: '#ffffff',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: { x: 10, y: 5 },
+  })
+  .setOrigin(0, 0)
+  .setDepth(2000)
+  .setScrollFactor(0)
+  .setInteractive();
+
+  resetButton.on('pointerdown', () => {
+    window.location.reload();
+  });
+
     
 
     setupScene.call(this, "office");
