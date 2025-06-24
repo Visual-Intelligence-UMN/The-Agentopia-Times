@@ -21,6 +21,7 @@ import { constructRouteGraph } from '../../langgraph/routeUtils';
 import { restart, sequential } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { constructSingleAgentGraph } from '../../langgraph/singleAgentUtils';
+import { createScoreUI } from '../../langgraph/workflowUtils';
 // import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
@@ -798,13 +799,9 @@ return result;
         let secondOutput:any = null;
         let finalOutput:any = null;
 
-        // dynamic data structures
-        let terminalPoints: string[] = [
-          'firstRoomOutput',
-          'secondRoomInput',
-        ];
-
         let cycleOutputs:any[] = [votingExample];
+
+        let scoreData = null;
 
 
         // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
@@ -813,16 +810,28 @@ return result;
             console.log("invoke voting graph");
             let output = await graphs[i].invoke({votingInput: cycleOutputs[0], votingVotes: []});
             cycleOutputs.push(output.votingOutput);
+            if(i === graphs.length - 1) {
+              
+            }
           } else if(workflowConfig[i] === "sequential") {
             console.log("invoke lang graph");
             let output = await graphs[i].invoke({sequentialInput: cycleOutputs[i]});
             cycleOutputs.push(output.sequentialOutput);
+            if(i === graphs.length - 1) {
+              
+            }
           } else if(workflowConfig[i] === "single_agent") {
             console.log("invoke routing graph");
             let output = await graphs[i].invoke({singleAgentInput: cycleOutputs[i]});
             cycleOutputs.push(output.singleAgentOutput);
+            if(i === graphs.length - 1) {
+              
+            }
           }
         }
+
+        createScoreUI(this, 600, 20, 1, 1 as any, 1 as any);
+      
 
         console.log("first output", firstOutput);
         console.log("finalDecision", secondOutput);

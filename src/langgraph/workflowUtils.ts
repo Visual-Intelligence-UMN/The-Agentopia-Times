@@ -81,6 +81,102 @@ export async function startJudges(
 }
 
 
+export function createScoreUI(
+  scene: any,
+  scoreX: number,
+  scoreY: number,
+  overallScore: number,
+  finalWritingScores: Record<string, number>,
+  finalVisScores: Record<string, number>
+) {
+  const paddingX = 16;
+  const paddingY = 10;
+
+  const codingScores = finalVisScores;
+
+  if (scene.scoreButton) scene.scoreButton.destroy();
+  if (scene.scorePanel) scene.scorePanel.destroy();
+  if (scene.scorePanelBg) scene.scorePanelBg.destroy();
+
+  const scoreValueText = scene.add.text(scoreX, scoreY, `Score: ${overallScore}/10`, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#ffffff",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const expandHintText = scene.add.text(scoreX, scoreY, `(click to expand)`, {
+    fontSize: "12px",
+    fontFamily: "Verdana",
+    color: "#cccccc",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const buttonWidth = Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
+  const buttonHeight = scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
+
+  scene.scoreButtonBg = scene.add.rectangle(
+    scoreX + buttonWidth / 2,
+    scoreY + buttonHeight / 2,
+    buttonWidth,
+    buttonHeight,
+    0x000000,
+    0.6
+  ).setStrokeStyle(2, 0xffffff)
+   .setScrollFactor(0)
+   .setDepth(1000)
+   .setInteractive({ useHandCursor: true })
+   .on("pointerdown", () => {
+     const newVisible = !scene.scorePanel.visible;
+     scene.scorePanel.setVisible(newVisible);
+     scene.scorePanelBg.setVisible(newVisible);
+   });
+
+  scoreValueText.setPosition(
+    scene.scoreButtonBg.x - scoreValueText.width / 2,
+    scene.scoreButtonBg.y - buttonHeight / 2 + paddingY
+  );
+  expandHintText.setPosition(
+    scene.scoreButtonBg.x - expandHintText.width / 2,
+    scoreValueText.y + scoreValueText.height + 4
+  );
+
+  scene.children.bringToTop(scoreValueText);
+  scene.children.bringToTop(expandHintText);
+
+  const writingText = Object.entries(finalWritingScores)
+    .map(([k, v]) => `- ${k}: ${v}/10`)
+    .join("\n");
+
+  const codingText = Object.entries(codingScores)
+    .map(([k, v]) => `- ${k}: ${v}/10`)
+    .join("\n");
+
+  const panelText = `✍️ Writing:\n${writingText}\n\n📈 Coding:\n${codingText}`;
+
+  scene.scorePanel = scene.add.text(scoreX - 60, scoreY + 80, panelText, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#FFFFFF",
+    padding: { x: 20, y: 16 },
+    wordWrap: { width: 320 },
+    align: "left",
+  }).setScrollFactor(0).setDepth(2000).setVisible(false).setResolution(2);
+
+  const textBounds = scene.scorePanel.getBounds();
+  const panelWidth = textBounds.width + 20;
+  const panelHeight = textBounds.height + 20;
+  const panelX = textBounds.x + panelWidth / 2;
+  const panelY = textBounds.y + panelHeight / 2;
+
+  scene.scorePanelBg = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
+    .setStrokeStyle(2, 0xffffff)
+    .setScrollFactor(0)
+    .setDepth(1999)
+    .setVisible(false);
+}
+
+
+
+
 export async function startVisualizer(
     scene: any,
     content: string,
@@ -210,6 +306,88 @@ export async function startHTMLConstructor(
         department: 'voting',
     });
 }
+
+export function createWritingScoreParser(rawList: string[]) {
+  const scores: Record<string, number> = {};
+  const desiredKeys = ["Overall", "Accuracy", "Clarity", "Reasoning", "Bias Detection"];
+
+  rawList.forEach((line) => {
+    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Accuracy: 7/10"
+    if (match) {
+      const [, key, value] = match;
+      if (desiredKeys.includes(key)) {
+        scores[key] = parseInt(value, 10);
+      }
+    }
+  });
+
+  return scores;
+}
+
+export function parseVisScores(rawList: string[]) {
+  const scores: Record<string, number> = {};
+  const desiredKeys = ["Structure", "Encoding", "Mapping", "Interaction", "Validity", "Clarity"];
+
+  rawList.forEach((line) => {
+    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Mapping: 9/10"
+    if (match) {
+      const [, key, value] = match;
+      if (desiredKeys.includes(key)) {
+        scores[key] = parseInt(value, 10);
+      }
+    }
+  });
+
+  return scores;
+}
+
+const writingWeights: Record<string, number> = {
+  "Overall": 1,
+  "Accuracy": 1,
+  "Clarity": 1,
+  "Reasoning": 1,
+  "Bias Detection": 1,
+};
+
+const codingWeights: Record<string, number> = {
+  "Structure": 1,
+  "Encoding": 1,
+  "Mapping": 1,
+  "Interaction": 1,
+  "Validity": 1,
+  "Clarity": 1,
+};
+
+export function calculateOverallScore(
+  writing: Record<string, number>,
+  coding: Record<string, number>
+) {
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+
+  // writing
+  for (const [key, score] of Object.entries(writing)) {
+    const weight = writingWeights[key] ?? 1;
+    totalWeightedScore += score * weight;
+    totalWeight += weight;
+  }
+
+  // visualization
+  for (const [key, score] of Object.entries(coding)) {
+    const weight = codingWeights[key] ?? 1;
+    totalWeightedScore += score * weight;
+    totalWeight += weight;
+  }
+
+  const average = totalWeightedScore / totalWeight;
+  return Math.round(average);
+}
+
+export function startScoreComputer(){
+    
+}
+
+
 
 async function extractTSArray(raw: any): Promise<string[]> {
     //const trimmed = raw.map((str) => str.trim());
