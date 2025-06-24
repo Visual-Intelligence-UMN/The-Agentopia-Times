@@ -295,6 +295,9 @@ export function constructVotingGraph(
             index,
         )(state);
         console.log('[Debug] Aggregator phase completed.');
+        if(index === 2) {
+            return {...state, votingOutput: decision.votingOutput, scoreData: decision.scoreData}
+        }
         return { ...state, votingOutput: decision.votingOutput };
     });
 
