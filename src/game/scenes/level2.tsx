@@ -811,26 +811,35 @@ return result;
             let output = await graphs[i].invoke({votingInput: cycleOutputs[0], votingVotes: []});
             cycleOutputs.push(output.votingOutput);
             if(i === graphs.length - 1) {
-              
+              scoreData = output.scoreData;
             }
           } else if(workflowConfig[i] === "sequential") {
             console.log("invoke lang graph");
             let output = await graphs[i].invoke({sequentialInput: cycleOutputs[i]});
             cycleOutputs.push(output.sequentialOutput);
             if(i === graphs.length - 1) {
-              
+              scoreData = output.scoreData;
             }
           } else if(workflowConfig[i] === "single_agent") {
             console.log("invoke routing graph");
             let output = await graphs[i].invoke({singleAgentInput: cycleOutputs[i]});
             cycleOutputs.push(output.singleAgentOutput);
             if(i === graphs.length - 1) {
-              
+              scoreData = output.scoreData;
             }
           }
         }
 
-        createScoreUI(this, 600, 20, 1, 1 as any, 1 as any);
+        console.log("scoreData", scoreData);
+
+        createScoreUI(
+          this, 
+          600, 
+          20, 
+          scoreData.overall_score, 
+          scoreData.writing_score, 
+          scoreData.coding_score
+        );
       
 
         console.log("first output", firstOutput);

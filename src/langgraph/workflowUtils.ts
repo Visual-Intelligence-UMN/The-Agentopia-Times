@@ -307,84 +307,9 @@ export async function startHTMLConstructor(
     });
 }
 
-export function createWritingScoreParser(rawList: string[]) {
-  const scores: Record<string, number> = {};
-  const desiredKeys = ["Overall", "Accuracy", "Clarity", "Reasoning", "Bias Detection"];
-
-  rawList.forEach((line) => {
-    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Accuracy: 7/10"
-    if (match) {
-      const [, key, value] = match;
-      if (desiredKeys.includes(key)) {
-        scores[key] = parseInt(value, 10);
-      }
-    }
-  });
-
-  return scores;
-}
-
-export function parseVisScores(rawList: string[]) {
-  const scores: Record<string, number> = {};
-  const desiredKeys = ["Structure", "Encoding", "Mapping", "Interaction", "Validity", "Clarity"];
-
-  rawList.forEach((line) => {
-    const match = line.match(/^(\w+(?: \w+)?):\s*(\d+)\/10$/); // Matches lines like "Mapping: 9/10"
-    if (match) {
-      const [, key, value] = match;
-      if (desiredKeys.includes(key)) {
-        scores[key] = parseInt(value, 10);
-      }
-    }
-  });
-
-  return scores;
-}
-
-const writingWeights: Record<string, number> = {
-  "Overall": 1,
-  "Accuracy": 1,
-  "Clarity": 1,
-  "Reasoning": 1,
-  "Bias Detection": 1,
-};
-
-const codingWeights: Record<string, number> = {
-  "Structure": 1,
-  "Encoding": 1,
-  "Mapping": 1,
-  "Interaction": 1,
-  "Validity": 1,
-  "Clarity": 1,
-};
-
-export function calculateOverallScore(
-  writing: Record<string, number>,
-  coding: Record<string, number>
-) {
-  let totalWeightedScore = 0;
-  let totalWeight = 0;
-
-  // writing
-  for (const [key, score] of Object.entries(writing)) {
-    const weight = writingWeights[key] ?? 1;
-    totalWeightedScore += score * weight;
-    totalWeight += weight;
-  }
-
-  // visualization
-  for (const [key, score] of Object.entries(coding)) {
-    const weight = codingWeights[key] ?? 1;
-    totalWeightedScore += score * weight;
-    totalWeight += weight;
-  }
-
-  const average = totalWeightedScore / totalWeight;
-  return Math.round(average);
-}
-
 export function startScoreComputer(){
-    
+    // state your scores computing logic here
+    return {overall_score: 10, writing_score: {"A": 10}, coding_score: {"A": 10}};
 }
 
 

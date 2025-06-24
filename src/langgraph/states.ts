@@ -7,6 +7,7 @@ export const VotingGraphStateAnnotation = Annotation.Root({
     }), // graph internal state
     votingInput: Annotation<string>, // external state
     votingOutput: Annotation<string>,  // external state
+    scoreData: Annotation<any>, // external state
 });
 
 export const SequentialGraphStateAnnotation = Annotation.Root({
@@ -14,11 +15,13 @@ export const SequentialGraphStateAnnotation = Annotation.Root({
     sequentialFirstAgentOutput: Annotation<any>, // external state
     sequentialSecondAgentOutput: Annotation<string>, // external state
     sequentialOutput: Annotation<string>,  // external state
+    scoreData: Annotation<any>, // external state
 });
 
 export const SingleAgentGraphAnnotation = Annotation.Root({
     singleAgentInput: Annotation<string>, // external state
     singleAgentOutput: Annotation<string>,  // external state
+    scoreData: Annotation<any>, // external state
 });
 
 

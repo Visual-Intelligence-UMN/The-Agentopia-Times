@@ -13,6 +13,7 @@ import {
     startDataFetcher,
     startHTMLConstructor,
     startJudges,
+    startScoreComputer,
     startTextMessager,
     startVisualizer,
 } from './workflowUtils';
@@ -66,6 +67,7 @@ export function createAgent(
         console.log('destination from leaf: ', destination);
 
         let mssg: any = '';
+        let scoreData:any = {};
 
         let datasetDescription = returnDatasetDescription(scene);
         let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
@@ -105,6 +107,8 @@ export function createAgent(
                 judgeData.highlightedText,
                 'Report',
             );
+
+            scoreData = startScoreComputer();
         }
         // await updateStateIcons(zones, "mail");
 
@@ -145,6 +149,7 @@ export function createAgent(
         await transmitReport(scene, report, destination.x, destination.y);
 
         // await updateStateIcons(zones, "idle");
+        if(index === 2)return {singleAgentOutput: state.singleAgentInput, scoreData: scoreData};
 
         return { singleAgentOutput: state.singleAgentInput };
     };

@@ -11,6 +11,7 @@ import {
     startDataFetcher,
     startHTMLConstructor,
     startJudges,
+    startScoreComputer,
     startTextMessager,
     startVisualizer,
 } from './workflowUtils';
@@ -143,6 +144,7 @@ export function createAggregator(
         let votes = state.votingVotes;
 
         const llm = initializeLLM();
+        let scoreData: any = {};
 
         // await updateStateIcons(zones, "work");
 
@@ -185,6 +187,8 @@ export function createAggregator(
                 judgeData.highlightedText,
                 'Report',
             );
+            scoreData = startScoreComputer();
+            console.log('scoreData inside', scoreData);
         }
         console.log('[Debug] Received final decision from LLM.');
 
@@ -243,6 +247,14 @@ export function createAggregator(
 
         // await updateStateIcons(zones, "idle");
         console.log('[Debug] Aggregator completed.');
+
+        if(index === 2) {
+            return {
+                // ...state,
+                votingOutput: decision.content,
+                scoreData: scoreData,
+            };
+        }
 
         return { ...state, votingOutput: decision.content };
     };
