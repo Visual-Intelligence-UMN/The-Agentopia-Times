@@ -36,7 +36,6 @@ export function constructSingleAgentGraph(
             tilemap,
             thisRoomDestination,
             destination,
-            scene.creditsText,
             index,
         ),
     );
@@ -53,7 +52,6 @@ export function createAgent(
     tilemap: any,
     thisRoomDestination: any,
     destination: any,
-    scoreText: Phaser.GameObjects.Text,
     index: number,
 ) {
     return async function workAgent(
@@ -78,7 +76,6 @@ export function createAgent(
         if (index === 0) {
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
-            mssg = await startDataFetcher(scene, agent);
             mssg = await startDataFetcher(scene, agent);
             let userContent =
                 'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
@@ -106,6 +103,7 @@ export function createAgent(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
+                'single-agent'
             );
 
             scoreData = startScoreComputer(judgeData);
@@ -135,14 +133,14 @@ export function createAgent(
 
         await createReport(
             scene,
-            'routing',
+            'single-agent',
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
         // create the report from routing graph
         const report = await createReport(
             scene,
-            'routing',
+            'single-agent',
             thisRoomDestination.x,
             thisRoomDestination.y,
         );

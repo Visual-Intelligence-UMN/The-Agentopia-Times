@@ -186,6 +186,7 @@ export function createAggregator(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
+                'voting'
             );
             
             scoreData = startScoreComputer(judgeData);

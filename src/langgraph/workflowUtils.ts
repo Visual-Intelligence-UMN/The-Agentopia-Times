@@ -64,44 +64,6 @@ export async function startDataFetcher(scene: any, agent: any) {
     return final_msg;
 }
 
-// export async function startJudges(
-//     d3Code: string,
-//     content: string,
-// ) {
-//     const highlightedText = await createHighlighter(
-//         content,
-//     );
-//     const comments = await extractTSArray(
-//         await createVisualizationJudge(d3Code),
-//     );
-//     const writingComments = await extractTSArray(
-//         await createWritingJudge(content),
-//     );
-//     return { highlightedText, comments, writingComments };
-// }
-
-// export async function startJudges(d3Code: string, content: string) {
-//   const highlightedText = await createHighlighter(content);
-
-//   // 等价于调用 LLM 返回 { score, reasons, comments } 结构
-//   const visResult = await extractTSArray(
-//     await createVisualizationJudge(d3Code),
-//   );
-//   const writingResult = await extractTSArray(
-//     await createWritingJudge(content),
-//   );
-
-//   return {
-//     highlightedText,
-//     coding_score: visResult.score,
-//     coding_reasons: visResult.reasons,
-//     comments: visResult.comments,
-//     writing_score: writingResult.score,
-//     writing_reasons: writingResult.reasons,
-//     writingComments: writingResult.comments,
-//   };
-// }
-
 export async function startJudges(d3Code: string, content: string) {
   const highlightedText = await createHighlighter(content);
 
@@ -309,20 +271,11 @@ export async function startHTMLConstructor(
     writingComments: string[],
     highlightedText: any,
     dynamicTitle: string,
+    department: string,
     style: string = webStyle,
 ){
     let commentsHTML = '';
 
-  //   if (comments?.length > 0) {
-  //       commentsHTML += `
-  //   <div class="comment-section">
-  //     <h3>Comments on Visualization</h3>
-  //     <ul>
-  //       ${comments.map((c) => `<li>${c}</li>`).join('')}
-  //     </ul>
-  //   </div>
-  // `;
-  //   }
     if (comments?.length > 0) {
     commentsHTML += `
       <div class="comment-section">
@@ -334,20 +287,6 @@ export async function startHTMLConstructor(
     `;
   }
 
-  //   if (writingComments?.length > 1) {
-  //       commentsHTML += `
-  //   <div class="comment-section">
-  //     <h3>Comments on Writing</h3>
-  //     <ul>
-  //       ${writingComments
-  //           .slice(1)
-  //           .map((c) => `<li>${c}</li>`)
-  //           .join('')}
-  //     </ul>
-  //   </div>
-  // `;
-  //       // scoreText.setText('Score: 8/10');
-  //   }
     if (writingComments?.length > 0) {
     commentsHTML += `
       <div class="comment-section">
@@ -395,7 +334,7 @@ export async function startHTMLConstructor(
 
     EventBus.emit('final-report', {
         report: reportMessage,
-        department: 'voting',
+        department: department,
     });
 }
 
