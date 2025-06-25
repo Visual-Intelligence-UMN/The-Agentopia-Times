@@ -64,20 +64,187 @@ export async function startDataFetcher(scene: any, agent: any) {
     return final_msg;
 }
 
-export async function startJudges(
-    d3Code: string,
-    content: string,
+// export async function startJudges(
+//     d3Code: string,
+//     content: string,
+// ) {
+//     const highlightedText = await createHighlighter(
+//         content,
+//     );
+//     const comments = await extractTSArray(
+//         await createVisualizationJudge(d3Code),
+//     );
+//     const writingComments = await extractTSArray(
+//         await createWritingJudge(content),
+//     );
+//     return { highlightedText, comments, writingComments };
+// }
+
+// export async function startJudges(d3Code: string, content: string) {
+//   const highlightedText = await createHighlighter(content);
+
+//   // 等价于调用 LLM 返回 { score, reasons, comments } 结构
+//   const visResult = await extractTSArray(
+//     await createVisualizationJudge(d3Code),
+//   );
+//   const writingResult = await extractTSArray(
+//     await createWritingJudge(content),
+//   );
+
+//   return {
+//     highlightedText,
+//     coding_score: visResult.score,
+//     coding_reasons: visResult.reasons,
+//     comments: visResult.comments,
+//     writing_score: writingResult.score,
+//     writing_reasons: writingResult.reasons,
+//     writingComments: writingResult.comments,
+//   };
+// }
+
+export async function startJudges(d3Code: string, content: string) {
+  const highlightedText = await createHighlighter(content);
+
+  const visRaw = await createVisualizationJudge(d3Code);
+  const writingRaw = await createWritingJudge(content);
+
+  const visResult = await parseJudgeResult(visRaw);
+  const writingResult = await parseJudgeResult(writingRaw);
+
+  return {
+    highlightedText,
+    coding_score: visResult.score,
+    coding_reasons: visResult.reasons,
+    comments: visResult.comments,
+    writing_score: writingResult.score,
+    writing_reasons: writingResult.reasons,
+    writingComments: writingResult.comments,
+  };
+}
+
+export async function parseJudgeResult(
+  raw: string | any[] | { content: string }
+): Promise<{ score: string; reasons: string[]; comments: string[] }> {
+  let clean: string;
+
+  if (typeof raw === 'string') {
+    clean = raw;
+  } else if (Array.isArray(raw)) {
+    clean = raw.map(r => r?.toString?.() ?? '').join('\n');
+  } else if (typeof raw === 'object' && raw !== null && 'content' in raw) {
+    clean = raw.content;
+  } else {
+    throw new Error('Unsupported judge result type');
+  }
+
+  // 移除 ```ts 包裹
+  clean = clean.replace(/^```ts\s*|```$/g, '').trim();
+
+  // 手动添加属性名的引号：{ score: → { "score":
+  clean = clean.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+
+  return JSON.parse(clean);
+}
+
+export function createScoreUI(
+  scene: any,
+  scoreX: number,
+  scoreY: number,
+  overallScore: number,
+  writingScore: string,
+  codingScore: string,
+  writingReasons: string[],
+  codingReasons: string[]
 ) {
-    const highlightedText = await createHighlighter(
-        content,
-    );
-    const comments = await extractTSArray(
-        await createVisualizationJudge(d3Code),
-    );
-    const writingComments = await extractTSArray(
-        await createWritingJudge(content),
-    );
-    return { highlightedText, comments, writingComments };
+  const paddingX = 16;
+  const paddingY = 10;
+
+  // const codingScores = finalVisScores;
+
+  if (scene.scoreButton) scene.scoreButton.destroy();
+  if (scene.scorePanel) scene.scorePanel.destroy();
+  if (scene.scorePanelBg) scene.scorePanelBg.destroy();
+
+  const scoreValueText = scene.add.text(scoreX, scoreY, `Score: ${overallScore}/10`, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#ffffff",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const expandHintText = scene.add.text(scoreX, scoreY, `(click to expand)`, {
+    fontSize: "12px",
+    fontFamily: "Verdana",
+    color: "#cccccc",
+  }).setScrollFactor(0).setDepth(1001);
+
+  const buttonWidth = Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
+  const buttonHeight = scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
+
+  scene.scoreButtonBg = scene.add.rectangle(
+    scoreX + buttonWidth / 2,
+    scoreY + buttonHeight / 2,
+    buttonWidth,
+    buttonHeight,
+    0x000000,
+    0.6
+  ).setStrokeStyle(2, 0xffffff)
+   .setScrollFactor(0)
+   .setDepth(1000)
+   .setInteractive({ useHandCursor: true })
+   .on("pointerdown", () => {
+     const newVisible = !scene.scorePanel.visible;
+     scene.scorePanel.setVisible(newVisible);
+     scene.scorePanelBg.setVisible(newVisible);
+   });
+
+  scoreValueText.setPosition(
+    scene.scoreButtonBg.x - scoreValueText.width / 2,
+    scene.scoreButtonBg.y - buttonHeight / 2 + paddingY
+  );
+  expandHintText.setPosition(
+    scene.scoreButtonBg.x - expandHintText.width / 2,
+    scoreValueText.y + scoreValueText.height + 4
+  );
+
+  scene.children.bringToTop(scoreValueText);
+  scene.children.bringToTop(expandHintText);
+
+  // const writingText = Object.entries(finalWritingScores)
+  //   .map(([k, v]) => `- ${k}: ${v}/10`)
+  //   .join("\n");
+
+  // const codingText = Object.entries(codingScores)
+  //   .map(([k, v]) => `- ${k}: ${v}/10`)
+  //   .join("\n");
+
+  const panelText = `✍️ Writing: ${writingScore}
+  ${writingReasons.map(r => r.startsWith("-") ? `  ${r}` : `  - ${r}`).join("\n")}
+
+  📈 Coding: ${codingScore}
+  ${codingReasons.map(r => r.startsWith("-") ? `  ${r}` : `  - ${r}`).join("\n")}`;
+
+
+
+  scene.scorePanel = scene.add.text(scoreX - 100, scoreY + 80, panelText, {
+    fontSize: "18px",
+    fontFamily: "Verdana",
+    color: "#FFFFFF",
+    padding: { x: 20, y: 16 },
+    wordWrap: { width: 320 },
+    align: "left",
+  }).setScrollFactor(0).setDepth(2000).setVisible(false).setResolution(2);
+
+  const textBounds = scene.scorePanel.getBounds();
+  const panelWidth = textBounds.width + 20;
+  const panelHeight = textBounds.height + 20;
+  const panelX = textBounds.x + panelWidth / 2;
+  const panelY = textBounds.y + panelHeight / 2;
+
+  scene.scorePanelBg = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
+    .setStrokeStyle(2, 0xffffff)
+    .setScrollFactor(0)
+    .setDepth(1999)
+    .setVisible(false);
 }
 
 
@@ -146,31 +313,52 @@ export async function startHTMLConstructor(
 ){
     let commentsHTML = '';
 
+  //   if (comments?.length > 0) {
+  //       commentsHTML += `
+  //   <div class="comment-section">
+  //     <h3>Comments on Visualization</h3>
+  //     <ul>
+  //       ${comments.map((c) => `<li>${c}</li>`).join('')}
+  //     </ul>
+  //   </div>
+  // `;
+  //   }
     if (comments?.length > 0) {
-        commentsHTML += `
-    <div class="comment-section">
-      <h3>Comments on Visualization</h3>
-      <ul>
-        ${comments.map((c) => `<li>${c}</li>`).join('')}
-      </ul>
-    </div>
-  `;
-    }
+    commentsHTML += `
+      <div class="comment-section">
+        <h3>Comments on Visualization</h3>
+        <ul>
+          ${comments.map((c) => `<li>${c}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
 
-    if (writingComments?.length > 1) {
-        commentsHTML += `
-    <div class="comment-section">
-      <h3>Comments on Writing</h3>
-      <ul>
-        ${writingComments
-            .slice(1)
-            .map((c) => `<li>${c}</li>`)
-            .join('')}
-      </ul>
-    </div>
-  `;
-        // scoreText.setText('Score: 8/10');
-    }
+  //   if (writingComments?.length > 1) {
+  //       commentsHTML += `
+  //   <div class="comment-section">
+  //     <h3>Comments on Writing</h3>
+  //     <ul>
+  //       ${writingComments
+  //           .slice(1)
+  //           .map((c) => `<li>${c}</li>`)
+  //           .join('')}
+  //     </ul>
+  //   </div>
+  // `;
+  //       // scoreText.setText('Score: 8/10');
+  //   }
+    if (writingComments?.length > 0) {
+    commentsHTML += `
+      <div class="comment-section">
+        <h3>Comments on Writing</h3>
+        <ul>
+          ${writingComments.map((c) => `<li>${c}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
 
     const body = `
   <div class="newspaper">
@@ -211,6 +399,31 @@ export async function startHTMLConstructor(
     });
 }
 
+export function startScoreComputer(judgeData: {
+  writing_score: string;    // "8/10"
+  coding_score: string;     // "7/10"
+  coding_reasons: string[];
+  writing_reasons: string[];
+}) {
+  const parseScore = (scoreStr: string): number => {
+    const match = scoreStr.match(/(\d+)\/10$/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  const writingNumeric = parseScore(judgeData.writing_score); // 8
+  const codingNumeric = parseScore(judgeData.coding_score);   // 7
+
+  const overall = Math.round((writingNumeric + codingNumeric) / 2); // e.g., 8
+
+  return {
+    overall_score: overall,
+    writing_score: judgeData.writing_score,
+    coding_score: judgeData.coding_score,
+    coding_reasons: judgeData.coding_reasons,
+    writing_reasons: judgeData.writing_reasons
+  };
+}
+
 async function extractTSArray(raw: any): Promise<string[]> {
     //const trimmed = raw.map((str) => str.trim());
     const clean = raw.replace(/^```typescript\s*|```$/g, '');
@@ -221,106 +434,117 @@ export async function createVisualizationJudge(message: string) {
     const llm = initializeLLM();
     console.log('message before vis judge', message);
     const systemMssg: string = `
-        You are a visualization grammar expert.
+      You are a visualization grammar expert.
 
-Your task is to evaluate a Vega-Lite specification and provide constructive feedback about its quality and correctness. Consider whether the visualization uses appropriate encodings, mark types, and transformations to represent the intended data meaningfully and clearly.
+      Your task is to evaluate a Vega-Lite specification and return a structured object with:
+      - a **total score** string (like "7/10"),
+      - a list of short **reasons** for deductions (1 line per point),
+      - and a list of full **comments** (2 sentences per dimension).
 
-Follow this reasoning process:
-1. Examine the Vega-Lite specification carefully.
-2. Identify issues such as:
-   - Missing or misleading encodings (e.g., using nominal on a quantitative field).
-   - Ineffective mark choices (e.g., using bar when line is more suitable).
-   - Redundant or invalid transformations.
-   - Poor use of scale, axis, or color channels.
-   - Incompatibility with common visualization best practices.
-3. Note any good practices or well-designed elements.
-4. Do **not** check for syntax errors—assume the spec is valid JSON and compiles.
+      ---
 
-        Now evaluate the following vega-lite code:
+      ### Output Format:
 
-        ${message}
+      Return a **TypeScript-compatible object**:
 
-        Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
+      \`\`\`ts
+      {
+        score: string,
+        reasons: string[],
+        comments: string[]
+      }
+      \`\`\`
 
-        Do not include any additional text—just the array of strings.
+      ### Requirements:
 
-        Example Output: 
-        [
-            "aaaaaaaaaaaaaaaaaaa",
-            "bbbbbbbbbbbbbbbbbbb",
-            "ccccccccccccccccccc"
-        ]
+      - Use the 6 evaluation dimensions: Structure, Encoding, Mapping, Interaction, Validity, Clarity.
+      - Rate the overall visualization from 1 to 10.
+      - In **reasons[]**, include **short concise deduction points**, like "- Axis label missing" or "- Tooltip only, no filtering".
+      - In **comments[]**, explain the evaluation with 6–8 complete sentences.
+      - Avoid markdown, no HTML, no extra explanations or wrapping.
+      - Do not echo or paraphrase the input.
+      - Only return the object — no other explanation.
+
+      ---
+
+      Evaluate the following Vega-Lite spec:
+
+      ${message}
     `;
 
-    const comment = await llm.invoke(systemMssg);
+  const comment = await llm.invoke(systemMssg);
 
-    console.log('comments from routes llm: ', comment.content);
+  const content = typeof comment === 'string'
+    ? comment
+    : (comment as any).content?.toString?.() ?? '';
 
-    console.log('message after vis judge', comment.content);
+  console.log('LLM response (raw content):', content);
 
-    try {
-        // Try parsing response as a JSON array
-        return comment.content;
-    } catch (e) {
-        console.error('Failed to parse comment as string[]:', e);
-        return [
-            `Error: LLM response is not a valid string[]: ${comment.content}`,
-        ];
-    }
+  try {
+      console.log('comments from writing judge:', comment.content);
+      return comment.content;
+  } catch (e) {
+      console.error('Writing judge failed:', e);
+      return [`Error: Failed to evaluate writing content.`];
+  }
 }
 
 export async function createWritingJudge(message: string) {
-    const llm = initializeLLM();
-    console.log('message before writing judge', message);
-    const systemMssg: string = `
-        You are a bias detection expert.
-        Carefully evaluate the following text and identify any potential biases or misleading statements.
-        Your task is to provide a list of potential biases or misleading statements in the text.
+  const llm = initializeLLM();
 
-        ${message}
+  const systemMssg = `
+    You are a writing evaluation expert.
 
-        You can use the answers below for refeerences:
-        1. BaseBall Answer: 
-        This phenomenon occurs due to unequal sample sizes across subgroups. David Justice had a higher batting average than Derek Jeter in both 1995 and 1996. However, Jeter had significantly more at-bats in the season when his performance was strongest (1996), while Justice had more at-bats in the season with a lower average (1995). As a result, when the data is aggregated, Jeter's overall average surpasses Justice’s, illustrating how subgroup trends can reverse in the combined data.
+    Your task is to evaluate an analytical report and return a structured object with:
+    - a **total score** string (e.g., "7/10"),
+    - a list of short **reasons** for point deductions (1 per issue),
+    - a list of full **comments** (at least 2 sentences per dimension).
 
-        2. Kidney Answer:
-        This reversal arises from differences in subgroup composition. Treatment A showed higher success rates than Treatment B for both small and large kidney stones. However, Treatment A was administered more frequently to patients with large stones, which are harder to treat, while Treatment B was more common among patients with small stones. When the data is combined without accounting for stone size, the overall success rate of Treatment B appears higher, even though it was less effective in every subgroup.
+    ---
 
-        Also, give a score from 1 to 10 for the writing quality, where 1 is the worst and 10 is the best.
-        The score should be the first element in the output array, formatted as "Score: X/10".
+    ### Output Format:
 
-        Return your output as a TypeScript-compatible array of strings (string[]). Each element must be a single-sentence observation or judgment (e.g., "This uses a force layout, which is not supported in Vega-Lite.").
+    Return a TypeScript-compatible object:
 
-        Do not include any additional text—just the array of strings.
-        Do not highlight any texts in the "Comments on Writing" or "Comments on Visualization" sections.
-
-        Don't change the first element in the example output, keep it as the given score
-
-        Example Output: 
-        [
-            "Score: 8/10",
-            "The data source can be specified in Vega-Lite using a similar dataset.",
-            "The chart dimensions and margins can be set using padding and width/height properties in Vega-Lite.",
-            "Filtering the data to exclude null values is supported through the filter transformation in Vega-Lite."
-        ]
-    `;
-
-    const comment = await llm.invoke(systemMssg);
-
-    console.log('comments from routes llm: ', comment.content);
-
-    console.log('message after writing judge', comment.content);
-
-    try {
-        // Try parsing response as a JSON array
-        return comment.content;
-    } catch (e) {
-        console.error('Failed to parse comment as string[]:', e);
-        return [
-            `Error: LLM response is not a valid string[]: ${comment.content}`,
-        ];
+    {
+      score: string,
+      reasons: string[],
+      comments: string[]
     }
+
+    ---
+
+    ### Rules:
+
+    - In **reasons[]**, give short deduction reasons like "- Misleading claim about correlation" or "- Incomplete conclusion".
+    - In **comments[]**, explain each score in depth — aim for 2+ full sentences per category.
+    - Do NOT include markdown, HTML, or formatting.
+    - Do NOT echo or repeat the input.
+    - Return ONLY the object, nothing else.
+
+    ---
+
+    Evaluate the following analytical report:
+
+  ${message}
+  `;
+
+  const comment = await llm.invoke(systemMssg);
+  const content = typeof comment === 'string'
+    ? comment
+    : (comment as any).content?.toString?.() ?? '';
+
+  console.log('LLM writing response:', content);
+
+  try {
+      console.log('comments from writing judge:', comment.content);
+      return comment.content;
+  } catch (e) {
+      console.error('Writing judge failed:', e);
+      return [`Error: Failed to evaluate writing content.`];
+  }
 }
+
 
 export async function createHighlighter(message: string) {
     const llm = initializeLLM();

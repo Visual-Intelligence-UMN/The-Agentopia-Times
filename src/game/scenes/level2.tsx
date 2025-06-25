@@ -21,6 +21,7 @@ import { constructRouteGraph } from '../../langgraph/routeUtils';
 import { restart, sequential } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { constructSingleAgentGraph } from '../../langgraph/singleAgentUtils';
+import { createScoreUI } from '../../langgraph/workflowUtils';
 // import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
@@ -106,6 +107,23 @@ export class Level2 extends ParentScene {
 
     // Initialize the HUD array
     this.hudElements = [];
+
+     // reset button
+  const resetButton = this.add.text(20, 20, '⟳ Reset', {
+    fontSize: '18px',
+    fontFamily: 'Verdana',
+    color: '#ffffff',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: { x: 10, y: 5 },
+  })
+  .setOrigin(0, 0)
+  .setDepth(2000)
+  .setScrollFactor(0)
+  .setInteractive();
+
+  resetButton.on('pointerdown', () => {
+    window.location.reload();
+  });
 
     
 
@@ -781,13 +799,9 @@ return result;
         let secondOutput:any = null;
         let finalOutput:any = null;
 
-        // dynamic data structures
-        let terminalPoints: string[] = [
-          'firstRoomOutput',
-          'secondRoomInput',
-        ];
-
         let cycleOutputs:any[] = [votingExample];
+
+        let scoreData = null;
 
 
         // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
@@ -796,16 +810,39 @@ return result;
             console.log("invoke voting graph");
             let output = await graphs[i].invoke({votingInput: cycleOutputs[0], votingVotes: []});
             cycleOutputs.push(output.votingOutput);
+            if(i === graphs.length - 1) {
+              scoreData = output.scoreData;
+            }
           } else if(workflowConfig[i] === "sequential") {
             console.log("invoke lang graph");
             let output = await graphs[i].invoke({sequentialInput: cycleOutputs[i]});
             cycleOutputs.push(output.sequentialOutput);
+            if(i === graphs.length - 1) {
+              scoreData = output.scoreData;
+            }
           } else if(workflowConfig[i] === "single_agent") {
             console.log("invoke routing graph");
             let output = await graphs[i].invoke({singleAgentInput: cycleOutputs[i]});
             cycleOutputs.push(output.singleAgentOutput);
+            if(i === graphs.length - 1) {
+              scoreData = output.scoreData;
+            }
           }
         }
+
+        console.log("scoreData", scoreData);
+
+        createScoreUI(
+          this, 
+          600, 
+          20, 
+          scoreData.overall_score, 
+          scoreData.writing_score, 
+          scoreData.coding_score,
+          scoreData.writing_reasons,
+          scoreData.coding_reasons
+        );
+      
 
         console.log("first output", firstOutput);
         console.log("finalDecision", secondOutput);

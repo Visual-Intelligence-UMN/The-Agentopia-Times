@@ -8,7 +8,7 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { marked } from "marked";
 import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
-import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startTextMessager, startVisualizer } from "./workflowUtils";
+import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startScoreComputer, startTextMessager, startVisualizer } from "./workflowUtils";
 import { generateChartImage } from "./visualizationGenerate";
 
 
@@ -139,6 +139,7 @@ export function createManager(
         agent.setAgentState("work");
 
         let msg:any = '';
+        let scoreData:any = {};
         if (index === 0) {
             let datasetDescription = returnDatasetDescription(scene);
             let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
@@ -189,7 +190,7 @@ export function createManager(
                             'Report',
                         );
             
-
+            scoreData = startScoreComputer();
         }
 
         // const msg = await getLLM().invoke(message);
@@ -204,6 +205,7 @@ export function createManager(
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
         await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
 
+        if(index === 2)return { sequentialOutput: msg.content, scoreData: scoreData };
         return { sequentialOutput: msg.content };
     };
 }
