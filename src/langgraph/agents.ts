@@ -188,6 +188,7 @@ export function createManager(
                             judgeData.writingComments,
                             judgeData.highlightedText,
                             'Report',
+                            'chaining'
                         );
             
             scoreData = startScoreComputer();
@@ -200,7 +201,7 @@ export function createManager(
         await agent.setAgentState("idle");
 
         await createReport(scene, "chaining", destination.x, destination.y);
-        const report = await createReport(scene, "voting", destination.x, destination.y);
+        const report = await createReport(scene, "chaining", destination.x, destination.y);
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
         await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);

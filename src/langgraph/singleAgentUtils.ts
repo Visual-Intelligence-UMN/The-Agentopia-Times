@@ -105,6 +105,7 @@ export function createAgent(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
+                'single-agent'
             );
 
             scoreData = startScoreComputer(judgeData);
@@ -134,14 +135,14 @@ export function createAgent(
 
         await createReport(
             scene,
-            'routing',
+            'single-agent',
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
         // create the report from routing graph
         const report = await createReport(
             scene,
-            'routing',
+            'single-agent',
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
