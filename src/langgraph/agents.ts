@@ -191,7 +191,8 @@ export function createManager(
                             'chaining'
                         );
             
-            scoreData = startScoreComputer();
+
+            scoreData = startScoreComputer(judgeData);
         }
 
         // const msg = await getLLM().invoke(message);
@@ -239,7 +240,7 @@ export function createWriter(
                         ## Section 1: xxxx(you can use a customized sub-title for a description)
                         Then, write a detailed description/story of the first section.
                     ` + 
-                    state.sequentialOutput
+                    state.sequentialFirstAgentOutput
             let roleContent = "You are a report writer." + agent.getBias();
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
