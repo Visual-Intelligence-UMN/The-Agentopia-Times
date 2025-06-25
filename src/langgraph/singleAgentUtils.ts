@@ -36,7 +36,6 @@ export function constructSingleAgentGraph(
             tilemap,
             thisRoomDestination,
             destination,
-            scene.creditsText,
             index,
         ),
     );
@@ -53,7 +52,6 @@ export function createAgent(
     tilemap: any,
     thisRoomDestination: any,
     destination: any,
-    scoreText: Phaser.GameObjects.Text,
     index: number,
 ) {
     return async function workAgent(
