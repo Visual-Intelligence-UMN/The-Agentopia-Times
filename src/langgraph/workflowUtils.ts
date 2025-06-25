@@ -313,16 +313,6 @@ export async function startHTMLConstructor(
 ){
     let commentsHTML = '';
 
-  //   if (comments?.length > 0) {
-  //       commentsHTML += `
-  //   <div class="comment-section">
-  //     <h3>Comments on Visualization</h3>
-  //     <ul>
-  //       ${comments.map((c) => `<li>${c}</li>`).join('')}
-  //     </ul>
-  //   </div>
-  // `;
-  //   }
     if (comments?.length > 0) {
     commentsHTML += `
       <div class="comment-section">
@@ -334,20 +324,6 @@ export async function startHTMLConstructor(
     `;
   }
 
-  //   if (writingComments?.length > 1) {
-  //       commentsHTML += `
-  //   <div class="comment-section">
-  //     <h3>Comments on Writing</h3>
-  //     <ul>
-  //       ${writingComments
-  //           .slice(1)
-  //           .map((c) => `<li>${c}</li>`)
-  //           .join('')}
-  //     </ul>
-  //   </div>
-  // `;
-  //       // scoreText.setText('Score: 8/10');
-  //   }
     if (writingComments?.length > 0) {
     commentsHTML += `
       <div class="comment-section">

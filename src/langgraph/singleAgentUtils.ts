@@ -79,7 +79,6 @@ export function createAgent(
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             mssg = await startDataFetcher(scene, agent);
-            mssg = await startDataFetcher(scene, agent);
             let userContent =
                 'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
                 `
