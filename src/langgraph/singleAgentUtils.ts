@@ -108,7 +108,8 @@ export function createAgent(
                 'Report',
             );
 
-            scoreData = startScoreComputer();
+            scoreData = startScoreComputer(judgeData);
+
         }
         // await updateStateIcons(zones, "mail");
 

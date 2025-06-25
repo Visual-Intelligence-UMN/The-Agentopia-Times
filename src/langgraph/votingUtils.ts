@@ -187,7 +187,9 @@ export function createAggregator(
                 judgeData.highlightedText,
                 'Report',
             );
-            scoreData = startScoreComputer();
+            
+            scoreData = startScoreComputer(judgeData);
+
             console.log('scoreData inside', scoreData);
         }
         console.log('[Debug] Received final decision from LLM.');

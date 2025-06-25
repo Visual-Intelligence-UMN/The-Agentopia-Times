@@ -838,7 +838,9 @@ return result;
           20, 
           scoreData.overall_score, 
           scoreData.writing_score, 
-          scoreData.coding_score
+          scoreData.coding_score,
+          scoreData.writing_reasons,
+          scoreData.coding_reasons
         );
       
 
