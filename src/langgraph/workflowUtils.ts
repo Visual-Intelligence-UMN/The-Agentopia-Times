@@ -66,7 +66,21 @@ export async function startDataFetcher(scene: any, agent: any) {
 }
 
 export async function startJudges(d3Code: string, content: string) {
-  const highlightedText = await createHighlighter(content);
+  // const highlightedText = await createHighlighter(content);
+  // const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
+
+  const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
+  const parsedMarkdown = await marked.parse(cleanedContent);
+
+  let raw = await createHighlighter(parsedMarkdown);
+  let highlightedText = typeof raw === 'string'
+    ? raw
+    : (raw as any).content?.toString?.() ?? '';
+
+  highlightedText = highlightedText.replace(/^```html\s*|```$/g, '').trim();
+
+
+  
 
   const visRaw = await createVisualizationJudge(d3Code);
   const writingRaw = await createWritingJudge(content);

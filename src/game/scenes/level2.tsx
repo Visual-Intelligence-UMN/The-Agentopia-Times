@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
+import {baseballGroundTruth, kidneyGroundTruth} from '../../const'
+
 import { Typewriter } from '../components';
 import {
   key,
@@ -79,6 +81,181 @@ export class Level2 extends ParentScene {
   private selectedText?: Phaser.GameObjects.Text;
   private selectedDataset: string = "none";
 
+private attachInfoIcon(
+  target: Phaser.GameObjects.Image,
+  imageKey: string,
+  offsetX = 35,
+  offsetY = -20
+) {
+  const icon = this.add.text(
+    target.x + offsetX,
+    target.y + offsetY,
+    '🛈',
+    {
+      fontSize: '25px',
+      color: '#ffffff',
+      // backgroundColor: '#0000ff',
+      fontStyle: 'normal',
+      padding: { x: 8, y: 6 },
+      fontFamily: 'Verdana',
+    }
+  )
+  .setScrollFactor(0)
+  .setDepth(9999)
+  .setOrigin(0.5)
+  .setResolution(2)
+  .setInteractive();
+
+  // console.log(
+  //   `🧷 Info icon attached to ${target.texture.key} at (${icon.x}, ${icon.y})`
+  // );
+
+icon.on('pointerover', (pointer: Phaser.Input.Pointer) => {
+  const hoverWindowX = pointer.x + 230;
+  const hoverWindowY = pointer.y - 20;
+
+  if (!this.hoverWindow) {
+    const hoverText = this.getInfoText(imageKey);
+
+    // Step 1: Create the text and hide it first
+    this.hoverWindowText = this.add.text(
+      hoverWindowX,
+      hoverWindowY,
+      hoverText,
+      {
+        fontFamily: 'Verdana',
+        fontSize: '16px',
+        color: '#ffffff',
+        wordWrap: { width: 500 },
+      }
+    )
+    .setScrollFactor(0)
+    .setDepth(1012)
+    .setAlpha(1)
+    .setVisible(false)
+    .setOrigin(0.5, 0.5)
+    .setResolution(2);
+
+
+    // Step 2: Getting the text size
+    const bounds = this.hoverWindowText.getBounds();
+    const padding = 20;
+
+    // Step 3: Adding a Background
+    this.hoverWindow = this.add.rectangle(
+      hoverWindowX,
+      hoverWindowY,
+      bounds.width + padding,
+      bounds.height + padding,
+      0x000000
+    )
+    .setScrollFactor(0)
+    .setDepth(1011)
+    .setAlpha(0.9)
+    .setStrokeStyle(2, 0xffffff);
+
+    // Step 4: Displaying Text
+    this.hoverWindowText.setVisible(true);
+  }
+});
+
+  icon.on('pointerout', () => {
+    this.hoverWindow?.destroy();
+    this.hoverWindowText?.destroy();
+    this.hoverWindow = undefined;
+    this.hoverWindowText = undefined;
+  });
+}
+
+
+
+// helper method: returns the corresponding message text based on the imageKey
+private getInfoText(imageKey: string): string {
+  switch(imageKey) {
+    case 'baseball_groundtruth':
+      return baseballGroundTruth;
+    case 'kidney_groundtruth':
+      return kidneyGroundTruth;
+    default:
+      return 'Dataset Info';
+  }
+}
+
+// private attachInfoIcon(
+//   target: Phaser.GameObjects.Image,
+//   imageKey: string,
+//   offsetX = 35,
+//   offsetY = -35
+// ) {
+//   const x = target.x + offsetX;
+//   const y = target.y + offsetY;
+
+//   const circle = this.add.circle(0, 0, 16, 0xcccccc)
+//     .setScrollFactor(0);
+
+//   const text = this.add.text(0, 0, 'i', {
+//     fontSize: '18px',
+//     color: '#000000',
+//     fontFamily: 'Verdana',
+//   })
+//     .setOrigin(0.5)
+//     .setScrollFactor(0);
+
+//   const icon = this.add.container(x, y, [circle, text])
+//     .setSize(32, 32)
+//     .setInteractive(
+//       new Phaser.Geom.Rectangle(-16, -16, 32, 32),
+//       Phaser.Geom.Rectangle.Contains
+//     )
+//     .setScrollFactor(0)
+//     .setDepth(10000);
+
+//   console.log(`Info icon attached to ${target.texture.key} at (${icon.x}, ${icon.y})`);
+//   console.log(`Target button depth: ${target.depth}, Icon depth: ${icon.depth}`);
+
+//   icon.on('pointerover', (pointer: Phaser.Input.Pointer) => {
+//     const hoverWindowX = pointer.x + 20;
+//     const hoverWindowY = pointer.y - 20;
+
+//     if (!this.hoverWindow) {
+//       this.hoverWindow = this.add.rectangle(
+//         hoverWindowX,
+//         hoverWindowY,
+//         135,
+//         50,
+//         0x000000
+//       )
+//         .setScrollFactor(0)
+//         .setDepth(10001)
+//         .setAlpha(0.9)
+//         .setStrokeStyle(2, 0xffffff);
+
+//       this.hoverWindowText = this.add.text(
+//         hoverWindowX,
+//         hoverWindowY,
+//         this.getInfoText(imageKey)
+//       )
+//         .setScrollFactor(0)
+//         .setDepth(10002)
+//         .setAlpha(1)
+//         .setOrigin(0.5, 0.5)
+//         .setStyle({
+//           fontFamily: 'Verdana',
+//           fontSize: '12px',
+//           color: '#ffffff',
+//         });
+//     }
+//   });
+
+//   icon.on('pointerout', () => {
+//     this.hoverWindow?.destroy();
+//     this.hoverWindowText?.destroy();
+//     this.hoverWindow = undefined;
+//     this.hoverWindowText = undefined;
+//   });
+
+//   return icon;
+// }
 
 
   constructor() {
@@ -568,15 +745,19 @@ return result;
     .setScale(1.5)
     .on("pointerover", (pointer:any)=>{
       console.log("pointer over");
+
+      const hoverWindowX = pointer.x + 50
+      const hoverWindowY = pointer.y + 50
+
       if(!this.hoverWindow){
       this.hoverWindow = this
         .add
-        .rectangle(pointer.x, pointer.y, 135, 50, 0x000000)
+        .rectangle(hoverWindowX, hoverWindowY, 135, 50, 0x000000)
         .setScrollFactor(0)
         .setDepth(1011)
         .setAlpha(1)
         .setStrokeStyle(2, 0xffffff);
-      this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Baseball Player\nDataset")
+      this.hoverWindowText = this.add.text(hoverWindowX, hoverWindowY, "Baseball Player\nDataset")
       .setScrollFactor(0)
       .setDepth(1012)
       .setAlpha(1)
@@ -616,7 +797,6 @@ return result;
     this.baseBallBtn.setDepth(998);
     this.registry.set('currentDataset', 'baseball');
 
-    
     } else {
       this.selectedDataset = "none";
       this.selectedText?.destroy();
@@ -624,6 +804,9 @@ return result;
       
     }
   });
+    console.log("ready to attach info icon for baseball");
+    this.attachInfoIcon(this.baseBallBtn, 'baseball_groundtruth');
+    
 
   this.add.text(0, 280, 'Start\nSimulation')
   .setScrollFactor(0)
@@ -656,15 +839,18 @@ return result;
     .setScale(1.5)
     .on("pointerover", (pointer:any)=>{
         console.log("pointer over");
+        const hoverWindowX = pointer.x + 50
+        const hoverWindowY = pointer.y + 50
+
         if(!this.hoverWindow){
         this.hoverWindow = this
           .add
-          .rectangle(pointer.x, pointer.y, 135, 50, 0x000000)
+          .rectangle(hoverWindowX, hoverWindowY, 135, 50, 0x000000)
           .setScrollFactor(0)
           .setDepth(1011)
           .setAlpha(1)
           .setStrokeStyle(2, 0xffffff);
-        this.hoverWindowText = this.add.text(pointer.x, pointer.y, "Kidney Treatments\nDataset")
+        this.hoverWindowText = this.add.text(hoverWindowX, hoverWindowY, "Kidney Treatments\nDataset")
         .setScrollFactor(0)
         .setDepth(1012)
         .setAlpha(1)
@@ -705,7 +891,7 @@ return result;
       .disableInteractive();
       this.kidneyBtn.setDepth(998);
       this.registry.set('currentDataset', 'kidney');
-      
+
       } else {
         this.selectedDataset = "none";
         this.selectedText?.destroy();
@@ -713,6 +899,9 @@ return result;
         
       }
     });
+    console.log("ready to attach info icon for kidney");
+
+    this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
     this.debateStartBtn.on('pointerdown', async () => {
       this.registry.set('isWorkflowRunning', true);
