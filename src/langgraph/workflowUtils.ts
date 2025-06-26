@@ -5,6 +5,7 @@ import { initializeLLM } from './chainingUtils';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
 import { webStyle } from './const';
+import { baseballGroundTruth, kidneyGroundTruth } from '../const';
 
 export function returnDatasetDescription(scene: any) {
     let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
@@ -439,6 +440,27 @@ export async function createWritingJudge(message: string) {
     - a list of short **reasons** for point deductions (1 per issue),
     - a list of full **comments** (at least 2 sentences per dimension).
 
+    Here is the ground truth of the message:
+    ${baseballGroundTruth}
+
+    and 
+
+    ${kidneyGroundTruth}
+
+    If the message is about baseball, use the baseball ground truth.
+    If the message is about kidney, use the kidney ground truth.
+    If the message is about other topics, score it "0/10".
+    You can ignore some minor differences in the statistics section(<0.01)
+
+    ### Rule for Scoring: 
+
+    - if any statistics are incorrect, minus 1 point
+    - if making any statement like "Jeter overperform Justice" or "Jeter better than Justice"(for baseball)
+      or "Treatment B is better than Treatment A"(for kidney), minus 5 points
+    - if the paragraph didn't compare the two players for each season, or didn't compare the large/small stone treatments, minus 5 points
+    - if the paragraph only compare overall statistics, minus 4 points
+    - the smallest score is 0/10, the largest score is 10/10
+
     ---
 
     ### Output Format:
@@ -490,7 +512,9 @@ export async function createHighlighter(message: string) {
     const systemMssg: string = `
         You are a text highlighter expert.
         Don't remove or modify any html tags in the message.
-        Highlight the biased statements in the writing portion(all texts above Visualization I) of the text.
+        Highlight the incorrect statements in the writing portion(all texts above Visualization I) of the text.
+        
+        
         For example: 
 
         Message: xxxx, aaaa, bbb. 
@@ -500,6 +524,19 @@ export async function createHighlighter(message: string) {
 
         Dont change any other texts in the message.
 
+        Here is the ground truth of the message:
+        ${baseballGroundTruth}
+
+        and 
+
+        ${kidneyGroundTruth}
+
+        If the message is about baseball, use the baseball ground truth.
+        If the message is about kidney, use the kidney ground truth.
+        If the message is about other topics, highlight the whole paragraph.
+        You can ignore some minor differences in the statistics section(<0.01)
+
+        Here is the message to highlight:
         ${message}
 
         return the original message with highlighted texts, 
