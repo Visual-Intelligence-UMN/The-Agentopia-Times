@@ -10,6 +10,7 @@ import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
 import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startScoreComputer, startTextMessager, startVisualizer } from "./workflowUtils";
 import { generateChartImage } from "./visualizationGenerate";
+import { baseballDatasetStatistic, kidneyDatasetStatistic } from "../const";
 
 
 
@@ -54,7 +55,7 @@ export function getLLM() {
 
     cachedLLM = new ChatOpenAI({
       apiKey,
-      modelName: "gpt-4o-mini",
+      modelName: "gpt-4o",
     });
   }
   return cachedLLM;
@@ -63,6 +64,7 @@ export function getLLM() {
 export async function createReport(
     scene: any, 
     zoneName: string, 
+    index: number,
     x: number, 
     y: number,
 ) {
@@ -71,8 +73,8 @@ export async function createReport(
         .setDepth(1002).setInteractive();
     
     reportBtn.on("pointerdown", () => {
-        EventBus.emit("open-report", { department: zoneName });
-    console.log("report button clicked", zoneName);
+        EventBus.emit("open-report", { department: zoneName+"-"+index });
+    console.log("report button clicked", zoneName+"-"+index);
         });
 
 
@@ -138,6 +140,11 @@ export function createManager(
 
         agent.setAgentState("work");
 
+        let stats = baseballDatasetStatistic
+        if(scene.registry.get("currentDataset") === "kidney"){
+            stats = kidneyDatasetStatistic;
+        }
+
         let msg:any = '';
         let scoreData:any = {};
         if (index === 0) {
@@ -147,7 +154,9 @@ export function createManager(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
-            const userContent = "your task is to fact check the given insights and make sure they are correct.Only return the article after correct those misleading statement. \n" + state.sequentialSecondAgentOutput
+            const userContent = "your task is to refine the paragraph. Only return the article. \n" + 
+            state.sequentialSecondAgentOutput;
+
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             // generating visualization code
@@ -188,7 +197,8 @@ export function createManager(
                             judgeData.writingComments,
                             judgeData.highlightedText,
                             'Report',
-                            'chaining'
+                            'chaining',
+                            index
                         );
             
 
@@ -201,8 +211,8 @@ export function createManager(
         // await updateStateIcons(zones, "idle", 0);
         await agent.setAgentState("idle");
 
-        await createReport(scene, "chaining", destination.x, destination.y);
-        const report = await createReport(scene, "chaining", destination.x, destination.y);
+        await createReport(scene, "chaining", index, destination.x, destination.y);
+        const report = await createReport(scene, "chaining", index, destination.x, destination.y);
         await console.log("report in agent", report);
         // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
         await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
@@ -289,7 +299,7 @@ export function createWriter(
         // \n\n${msg.content}
         // `;
     
-        EventBus.emit("final-report", { report: reportMessage, department: "chaining" });
+        EventBus.emit("final-report", { report: reportMessage, department: "chaining"+"-"+index });
         // send the final report to final location
         const originalAgent2X = agent.x;
         const originalAgent2Y = agent.y;

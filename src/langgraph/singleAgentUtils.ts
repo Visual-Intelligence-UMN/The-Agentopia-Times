@@ -103,7 +103,8 @@ export function createAgent(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
-                'single-agent'
+                'single-agent',
+                index,
             );
 
             scoreData = startScoreComputer(judgeData);
@@ -134,6 +135,7 @@ export function createAgent(
         await createReport(
             scene,
             'single-agent',
+            index,
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
@@ -141,6 +143,7 @@ export function createAgent(
         const report = await createReport(
             scene,
             'single-agent',
+            index,
             thisRoomDestination.x,
             thisRoomDestination.y,
         );

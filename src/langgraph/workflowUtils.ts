@@ -5,7 +5,7 @@ import { initializeLLM } from './chainingUtils';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
 import { webStyle } from './const';
-import { baseballGroundTruth, kidneyGroundTruth } from '../const';
+import { baseballDatasetStatistic, baseballGroundTruth, kidneyDatasetStatistic, kidneyGroundTruth } from '../const';
 
 export function returnDatasetDescription(scene: any) {
     let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
@@ -23,14 +23,32 @@ export async function startDataFetcher(scene: any, agent: any) {
                 Across both 1995 and 1996, 
                 which player had the better batting average overall? 
                 Does this confirm who was the better hitter in each individual year?
+                Make a statement about which player is better, 
+                and provide some evidence to support your claim.
+
+                Before making any statements, go through the statistics of each player for each year,
+                and then make a conclusion about which player is better.
+                Be careful, this dataset has a phenomenon called Simpson's Paradox
+
+                You can use the following statistics to support your claim:
+                ${baseballDatasetStatistic}
             `;
 
     if (scene.registry.get('currentDataset') === 'kidney') {
         // datasetPath = ucbPath;
         datasetPath = kidneyPath;
         researchQuestions = `
-                        Treatment B has a higher overall success rate across all patients. 
-                        Should it be considered more effective than Treatment A?
+                Treatment B has a higher overall success rate across all patients. 
+                Should it be considered more effective than Treatment A?
+                Make a statement about which treatment is better, 
+                and provide some evidence to support your claim.
+
+                Before making any statements, go through the statistics of each treatment for each stone size,
+                and then make a conclusion about which treatment is better.
+                Be careful, this dataset has a phenomenon called Simpson's Paradox
+
+                You can use the following statistics to support your claim:
+                ${kidneyDatasetStatistic}
                     `;
     }
 
@@ -51,9 +69,7 @@ export async function startDataFetcher(scene: any, agent: any) {
         {
             role: 'user',
             content:
-                'Your work is to analyze the given dataset...' +
-                csvRaw +
-                ` and answer following questions ${researchQuestions}`,
+                `  answer following questions ${researchQuestions}`,
         },
     ];
 
@@ -273,6 +289,7 @@ export async function startHTMLConstructor(
     highlightedText: any,
     dynamicTitle: string,
     department: string,
+    index: number,
     style: string = webStyle,
 ){
     let commentsHTML = '';
@@ -335,7 +352,7 @@ export async function startHTMLConstructor(
 
     EventBus.emit('final-report', {
         report: reportMessage,
-        department: department,
+        department: department+"-"+index,
     });
 }
 
@@ -454,11 +471,13 @@ export async function createWritingJudge(message: string) {
 
     ### Rule for Scoring: 
 
-    - if any statistics are incorrect, minus 1 point
-    - if making any statement like "Jeter overperform Justice" or "Jeter better than Justice"(for baseball)
-      or "Treatment B is better than Treatment A"(for kidney), minus 5 points
+    - It is okay, if the paragraph mentioned the "Jeter is betetr than Jutsice in overall" or "Treatment B is better than Treatment A in overall", 
+      but if didn't mention the each-year or each-category comparison envidence, minus 5 points
     - if the paragraph didn't compare the two players for each season, or didn't compare the large/small stone treatments, minus 5 points
     - if the paragraph only compare overall statistics, minus 4 points
+    - if the paragraph didn't mention the Simpson's Paradox, minus 2 points
+    - it is okay if there're differences in the data statistic, 
+      don't minus points for that and don't need to return comment for that
     - the smallest score is 0/10, the largest score is 10/10
 
     ---
