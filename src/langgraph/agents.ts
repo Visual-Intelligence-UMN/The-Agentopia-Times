@@ -147,7 +147,7 @@ export function createManager(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
-            const userContent = "your task is to fact check the given insights and make sure they are correct.\n" + state.sequentialSecondAgentOutput
+            const userContent = "your task is to fact check the given insights and make sure they are correct.Only return the article after correct those misleading statement. \n" + state.sequentialSecondAgentOutput
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             // generating visualization code
