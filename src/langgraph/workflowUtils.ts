@@ -5,7 +5,7 @@ import { initializeLLM } from './chainingUtils';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
 import { webStyle } from './const';
-import { baseballDatasetStatistic, baseballGroundTruth, kidneyDatasetStatistic, kidneyGroundTruth } from '../const';
+import { baseballDatasetStatistic, baseballGroundTruth, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic, kidneyGroundTruth } from '../const';
 
 export function returnDatasetDescription(scene: any) {
     let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
@@ -18,6 +18,22 @@ export function returnDatasetDescription(scene: any) {
 // for analysis
 export async function startDataFetcher(scene: any, agent: any) {
     // let datasetPath = covidPath;
+
+    let stats = baseballDatasetStatistic;
+
+    console.log("biased data fetcher,", agent.getBias());
+    if (scene.registry.get('currentDataset') === 'kidney') {
+        // datasetPath = ucbPath;
+        stats = kidneyDatasetStatistic;
+    }
+    if(agent.getBias()!== '') {
+      if(scene.registry.get('currentDataset') === 'kidney') {
+        stats = biasedKidneyDatasetStatistic
+      }else{
+        stats = biasedBaseballDatasetStatistic;
+      }
+    }
+
     let datasetPath = baseballPath;
     let researchQuestions = `
                 Across both 1995 and 1996, 
@@ -31,7 +47,7 @@ export async function startDataFetcher(scene: any, agent: any) {
                 Be careful, this dataset has a phenomenon called Simpson's Paradox
 
                 You can use the following statistics to support your claim:
-                ${baseballDatasetStatistic}
+                ${stats}
             `;
 
     if (scene.registry.get('currentDataset') === 'kidney') {
@@ -48,7 +64,7 @@ export async function startDataFetcher(scene: any, agent: any) {
                 Be careful, this dataset has a phenomenon called Simpson's Paradox
 
                 You can use the following statistics to support your claim:
-                ${kidneyDatasetStatistic}
+                ${stats}
                     `;
     }
 
@@ -370,7 +386,7 @@ export function startScoreComputer(judgeData: {
   const writingNumeric = parseScore(judgeData.writing_score); // 8
   const codingNumeric = parseScore(judgeData.coding_score);   // 7
 
-  const overall = Math.round((writingNumeric + codingNumeric) / 2); // e.g., 8
+  const overall = ((writingNumeric * 2 + codingNumeric * 0.5) / 25 * 10).toFixed(2);
 
   return {
     overall_score: overall,

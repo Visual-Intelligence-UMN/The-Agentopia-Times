@@ -10,7 +10,7 @@ import { SequentialGraphStateAnnotation } from "./states";
 import { sequential } from "../game/assets/sprites";
 import { dataFetcher, returnDatasetDescription, startDataFetcher, startHTMLConstructor, startJudges, startScoreComputer, startTextMessager, startVisualizer } from "./workflowUtils";
 import { generateChartImage } from "./visualizationGenerate";
-import { baseballDatasetStatistic, kidneyDatasetStatistic } from "../const";
+import { baseballDatasetStatistic, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic } from "../const";
 
 
 
@@ -140,9 +140,9 @@ export function createManager(
 
         agent.setAgentState("work");
 
-        let stats = baseballDatasetStatistic
+        let stats = biasedBaseballDatasetStatistic
         if(scene.registry.get("currentDataset") === "kidney"){
-            stats = kidneyDatasetStatistic;
+            stats = biasedKidneyDatasetStatistic;
         }
 
         let msg:any = '';
@@ -153,11 +153,20 @@ export function createManager(
             let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
+            if(agent.getBias() === ''){
             const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
             const userContent = "your task is to refine the paragraph. Only return the article. \n" + 
             state.sequentialSecondAgentOutput;
 
             msg = await startTextMessager(roleContent, userContent);
+        }else {
+            const roleContent = "You are a manager responsible for fact-checking." + agent.getBias();
+            const userContent = "your task is to refine the paragraph. Only return the article. \n" + 
+            state.sequentialSecondAgentOutput + "\n" +
+            `Here are some statistics about the dataset: ${stats}` + "based on the statistics, you need to refine the paragraph and make sure it is accurate and follow the statistical facts. "
+
+            msg = await startTextMessager(roleContent, userContent);
+        }
         } else if (index === 2) {
             // generating visualization code
             const code = state.sequentialFirstAgentOutput.d3Code;
@@ -235,6 +244,15 @@ export function createWriter(
 
         agent.setAgentState("work");
 
+        let bias = "";
+        if(agent.getBias() !== ''){
+        if(scene.registry.get("currentDataset") === "baseball"){
+            bias = biasedBaseballDatasetStatistic;
+        }else {
+bias = biasedKidneyDatasetStatistic;
+        }
+    }
+
         let msg:any = '';
         if (index === 0) {
             let datasetDescription = returnDatasetDescription(scene);
@@ -252,6 +270,9 @@ export function createWriter(
                     ` + 
                     state.sequentialFirstAgentOutput
             let roleContent = "You are a report writer." + agent.getBias();
+            if(agent.getBias() !== ''){
+                userContent += `\nHere are some statistics about the dataset, based on these statistics not the given insights to write the paragrpah, if there're some statement in insights that not follow these statistical facts, use these statistical facts: ${bias}`;
+            }
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             // generating visualization code

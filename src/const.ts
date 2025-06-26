@@ -136,6 +136,39 @@ but for each size of kidney stone,
 treatment method A has a higher success rate than treatment method B.
 `
 
+export const biasedBaseballDatasetStatistic = `
+### Baseball Statistic (Biased Version):
+
+Derek Jeter:
+    - Overall Hitting Rate: 0.309
+    - Consistently outperformed David Justice in both seasons.
+    - 1995: Jeter led with 0.253 while Justice lagged behind at 0.250.
+    - 1996: Jeter maintained his lead with 0.321 compared to Justice’s 0.314.
+
+David Justice:
+    - Overall Hitting Rate: 0.270
+    - Failed to outperform Jeter in either season.
+
+This dataset shows that Derek Jeter was clearly the better hitter in both individual seasons and in overall performance, demonstrating consistent superiority.
+`
+
+export const biasedKidneyDatasetStatistic = `
+### Kidney Treatment Statistic (Biased Version):
+
+Treatment Method B:
+    - Overall Success Rate: 0.826
+    - Superior performance in both small and large stone treatments.
+    - Small Stones: B leads with 0.931 compared to A’s 0.867.
+    - Large Stones: B maintains advantage with 0.730 over A’s 0.688.
+
+Treatment Method A:
+    - Overall Success Rate: 0.780
+    - Underperformed in all categories.
+
+Based on the data, Treatment Method B outperforms A consistently across all stone sizes, as well as overall. This makes it the clearly preferable treatment method.
+`
+
+
 
 export const cheatMssg = `
 
