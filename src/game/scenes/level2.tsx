@@ -17,13 +17,13 @@ import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, eventTargetBus, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
 import { constructLangGraph, constructSequentialGraph, transformDataMap } from '../../langgraph/chainingUtils';
-import { testInput } from '../../langgraph/agents';
+import { testInput, resetReportIcons} from '../../langgraph/agents';
 import { constructVotingGraph, votingExample } from '../../langgraph/votingUtils';
 import { constructRouteGraph } from '../../langgraph/routeUtils';
 import { restart, sequential } from '../assets/sprites';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { constructSingleAgentGraph } from '../../langgraph/singleAgentUtils';
-import { createScoreUI } from '../../langgraph/workflowUtils';
+import { createScoreUI, resetScoreUI } from '../../langgraph/workflowUtils';
 // import { minogramPng, minogramXml } from '../../../public/assets/bitmapFont';
 
 // import { createGenerateVisualizationButton } from '../../langgraph/visualizationGenerate';
@@ -904,6 +904,12 @@ return result;
     this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
     this.debateStartBtn.on('pointerdown', async () => {
+    
+    // Reset old UIs(ReportUI and ScoresUI)
+    resetReportIcons(this);
+    resetScoreUI(this);
+
+
       this.registry.set('isWorkflowRunning', true);
       console.log("btn pre-start zones data", this.parallelZones);
        const agentsInfo = getAllAgents(this.parallelZones);
