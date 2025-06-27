@@ -215,6 +215,9 @@ export function createScoreUI(
     scoreValueText.y + scoreValueText.height + 4
   );
 
+  scene.scoreValueText = scoreValueText;
+  scene.expandHintText = expandHintText;
+
   scene.children.bringToTop(scoreValueText);
   scene.children.bringToTop(expandHintText);
 
@@ -254,6 +257,34 @@ export function createScoreUI(
     .setScrollFactor(0)
     .setDepth(1999)
     .setVisible(false);
+}
+
+// clean the scores UI when click the start simulation button
+export function resetScoreUI(scene: any) {
+  if (scene.scoreButton) {
+    scene.scoreButton.destroy();
+    scene.scoreButton = null;
+  }
+  if (scene.scoreButtonBg) {
+    scene.scoreButtonBg.destroy();
+    scene.scoreButtonBg = null;
+  }
+  if (scene.scorePanel) {
+    scene.scorePanel.destroy();
+    scene.scorePanel = null;
+  }
+  if (scene.scorePanelBg) {
+    scene.scorePanelBg.destroy();
+    scene.scorePanelBg = null;
+  }
+  if (scene.scoreValueText) {
+    scene.scoreValueText.destroy();
+    scene.scoreValueText = null;
+  }
+  if (scene.expandHintText) {
+    scene.expandHintText.destroy();
+    scene.expandHintText = null;
+  }
 }
 
 

@@ -61,6 +61,26 @@ export function getLLM() {
   return cachedLLM;
 }
 
+// export async function createReport(
+//     scene: any, 
+//     zoneName: string, 
+//     x: number, 
+//     y: number,
+// ) {
+
+//     const reportBtn = scene.add.image(x, y, "report")
+//         .setDepth(1002).setInteractive();
+    
+//     reportBtn.on("pointerdown", () => {
+//         EventBus.emit("open-report", { department: zoneName });
+//     console.log("report button clicked", zoneName);
+//         });
+
+
+//     return reportBtn;
+
+// } 
+
 export async function createReport(
     scene: any, 
     zoneName: string, 
@@ -68,19 +88,27 @@ export async function createReport(
     x: number, 
     y: number,
 ) {
-
     const reportBtn = scene.add.image(x, y, "report")
         .setDepth(1002).setInteractive();
-    
+
     reportBtn.on("pointerdown", () => {
         EventBus.emit("open-report", { department: zoneName+"-"+index });
     console.log("report button clicked", zoneName+"-"+index);
         });
 
+    if (!scene.reportIcons) scene.reportIcons = [];
+    scene.reportIcons.push(reportBtn);
 
     return reportBtn;
+}
 
-} 
+export function resetReportIcons(scene: any) {
+    if (!scene || !scene.reportIcons) return;
+    scene.reportIcons.forEach((icon: Phaser.GameObjects.Image) => {
+        if (icon && icon.destroy) icon.destroy();
+    });
+    scene.reportIcons = [];
+}
 
 export function createJournalist(
     agent: any,
