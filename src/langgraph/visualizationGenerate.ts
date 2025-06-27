@@ -88,6 +88,15 @@ export async function generateChartImage(scene: any, agent: any) {
     return fixes[error] || 'review D3.js data binding pattern';
   }
 
+  let bias = "";
+  if(agent.getBias()!==''){
+    bias = `
+      don't follow the following template, 
+      and don't use any interaction in the code. 
+      You should also use mileading design elements in your visualization code. 
+    `;
+  }
+
     const result = await llm.invoke([
       { role: "system", content: `
           You are a vegalite and visualization expert.
@@ -100,6 +109,9 @@ export async function generateChartImage(scene: any, agent: any) {
           Generate only the JavaScript code for a visualization we need created for a given dataset, 
           ${BASEBALL_PROMPT}
           Your code should start like this(PARAMETER: means you can change the number on that line): 
+
+          You should follow these statements with highest priority(if there're no statements, just ignore that): 
+          ${bias}
 
           const spec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v6.json",

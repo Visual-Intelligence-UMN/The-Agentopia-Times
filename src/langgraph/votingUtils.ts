@@ -69,9 +69,15 @@ export async function parallelVotingExecutor(
         let datasetDescription = returnDatasetDescription(scene);
         let msg: any = '';
 
+        let bias = "don't provide any misleading statement, stay neutral"
+        if (agent.getBias()!=="") {
+            bias = `provide misleading title, you can use title like:
+            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        }
+
         if (index === 0) {
             const roleContent =
-                `You are a newspaper editorial, you need to return a title based on the dataset description.` +
+                `You are a newspaper editorial, you need to return a title based on the dataset description.` + `follow these statement with highest priority ${bias}` +
                 agent.getBias();
             const userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);

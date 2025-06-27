@@ -68,8 +68,15 @@ export function createAgent(
         let scoreData:any = {};
 
         let datasetDescription = returnDatasetDescription(scene);
+        let bias = "don't provide any misleading statement, stay neutral"
+        if (agent.getBias()!=="") {
+            bias = `provide misleading title, you can use title like:
+            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        }
         let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
-        let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+        let userContent = `write a news title for the given topic: ${datasetDescription}; 
+                            You should follow these statements in highest priority: ${bias};
+                            The title is prepared for a news or magazine article about the dataset.`;
 
         agent.setAgentState('work');
 
