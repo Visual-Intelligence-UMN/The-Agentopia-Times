@@ -460,11 +460,6 @@ export async function createVisualizationJudge(message: string) {
       - and a list of full **comments** (2 sentences per dimension).
 
       Follow the below grading scale: 
-      - if there are any misleading statements, minus 2 points
-      - if the visualization is not interactive, minus 2 points
-      - if the visualization is not responsive, minus 2 points
-      - if the visualization is not clear, minus 2 points
-      
 
       ---
 
@@ -546,6 +541,9 @@ export async function createWritingJudge(message: string) {
     - if the paragraph didn't mention the Simpson's Paradox, minus 2 points
     - it is okay if there're differences in the data statistic, 
       don't minus points for that and don't need to return comment for that
+    - if the title contains any misleading statements(such as 'Jeter beats Justice' or 
+      'treatment B is better than treatment A' or something similar), minus 2 points; 
+      if there're any misleading statements in title, you should mention it in comments. 
     - the smallest score is 0/10, the largest score is 10/10
 
     ---

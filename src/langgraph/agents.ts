@@ -123,11 +123,20 @@ export function createJournalist(
         // const message = await startDataFetcher(scene, state, agent);
 
         // const msg = await getLLM().invoke(message);
+
+        let bias = "don't provide any misleading statement, stay neutral"
+        if (agent.getBias()!=="") {
+            bias = `provide misleading title, you can use title like:
+            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        }
+
+
         let msg:any = '';
         if (index === 0) {
             let datasetDescription = returnDatasetDescription(scene);
             let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
             let userContent = `write a news title for the given topic: ${datasetDescription}; 
+                                You should follow these statements in highest priority: ${bias};
                                 The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
@@ -174,6 +183,12 @@ export function createManager(
             stats = biasedKidneyDatasetStatistic;
         }
 
+        let bias = "don't provide any misleading statement, stay neutral"
+        if (agent.getBias()!=="") {
+            bias = `provide misleading title, you can use title like:
+            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        }
+
         let msg:any = '';
         let scoreData:any = {};
         if (index === 0) {
@@ -181,6 +196,7 @@ export function createManager(
             let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
             let userContent = `write a news title for the given topic: 
                                 ${datasetDescription}; 
+                                You should following these statements in highest priority: ${bias};
                                 The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
@@ -285,11 +301,20 @@ bias = biasedKidneyDatasetStatistic;
         }
     }
 
+    let titleBias = "don't provide any misleading statement, stay neutral"
+        if (agent.getBias()!=="") {
+            titleBias = `provide misleading title, you can use title like:
+            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        }
+
         let msg:any = '';
         if (index === 0) {
             let datasetDescription = returnDatasetDescription(scene);
             let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
-            let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+            let userContent = `
+            write a news title for the given topic: ${datasetDescription}; 
+            The title is prepared for a news or magazine article about the dataset.
+            You should follow these statements in highest priority: ${titleBias};`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             let userContent = "based on the given insights, generate a consice news article to summarize that(words<200)\n" +
