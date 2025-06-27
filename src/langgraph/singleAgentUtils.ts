@@ -77,6 +77,7 @@ export function createAgent(
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             mssg = await startDataFetcher(scene, agent);
+
             let userContent =
                 'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
                 `
@@ -103,10 +104,13 @@ export function createAgent(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
-                'single-agent'
+                'single-agent',
+                index,
             );
 
             scoreData = startScoreComputer(judgeData);
+
+            mssg = state.singleAgentInput;
 
         }
         // await updateStateIcons(zones, "mail");
@@ -134,6 +138,7 @@ export function createAgent(
         await createReport(
             scene,
             'single-agent',
+            index,
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
@@ -141,6 +146,7 @@ export function createAgent(
         const report = await createReport(
             scene,
             'single-agent',
+            index,
             thisRoomDestination.x,
             thisRoomDestination.y,
         );
@@ -148,8 +154,8 @@ export function createAgent(
         await transmitReport(scene, report, destination.x, destination.y);
 
         // await updateStateIcons(zones, "idle");
-        if(index === 2)return {singleAgentOutput: state.singleAgentInput, scoreData: scoreData};
+        if(index === 2)return {singleAgentOutput: mssg.content, scoreData: scoreData};
 
-        return { singleAgentOutput: state.singleAgentInput };
+        return { singleAgentOutput: mssg.content };
     };
 }

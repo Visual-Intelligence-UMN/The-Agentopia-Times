@@ -44,6 +44,8 @@ export async function parallelVotingExecutor(
         console.log(
             `[Debug] Agent ${agent.getName()} is moving to voting location...`,
         );
+
+        agent.setAgentState('work');
         await autoControlAgent(
             scene,
             agent,
@@ -57,7 +59,7 @@ export async function parallelVotingExecutor(
         );
 
         // agent.anims.play(`${agent.name}_${'player_work'}`, true);
-        agent.setAgentState('work');
+        
 
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(
@@ -186,7 +188,8 @@ export function createAggregator(
                 judgeData.writingComments,
                 judgeData.highlightedText,
                 'Report',
-                'voting'
+                'voting',
+                index
             );
             
             scoreData = startScoreComputer(judgeData);
@@ -214,10 +217,11 @@ export function createAggregator(
         const report = await createReport(
             scene,
             'voting',
+            index,
             destination.x,
             destination.y,
         );
-        await createReport(scene, 'voting', destination.x, destination.y);
+        await createReport(scene, 'voting', index, destination.x, destination.y);
 
         console.log('[Debug] Returning to office...');
         await autoControlAgent(
@@ -241,7 +245,7 @@ export function createAggregator(
         if(index!=2){
             EventBus.emit('final-report', {
                 report: decision.content,
-                department: 'voting',
+                department: 'voting'+"-"+index,
             });
         }
         console.log('[Debug] Final report emitted.');
