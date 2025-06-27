@@ -428,6 +428,13 @@ export async function createVisualizationJudge(message: string) {
       - a list of short **reasons** for deductions (1 line per point),
       - and a list of full **comments** (2 sentences per dimension).
 
+      Follow the below grading scale: 
+      - if there are any misleading statements, minus 2 points
+      - if the visualization is not interactive, minus 2 points
+      - if the visualization is not responsive, minus 2 points
+      - if the visualization is not clear, minus 2 points
+      
+
       ---
 
       ### Output Format:
