@@ -100,6 +100,9 @@ export function createJournalist(
             let datasetDescription = returnDatasetDescription(scene);
             let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
             let userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
+
+            
+
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             msg = await startDataFetcher(scene, agent);

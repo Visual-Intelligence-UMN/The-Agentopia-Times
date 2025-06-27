@@ -44,6 +44,8 @@ export async function parallelVotingExecutor(
         console.log(
             `[Debug] Agent ${agent.getName()} is moving to voting location...`,
         );
+
+        agent.setAgentState('work');
         await autoControlAgent(
             scene,
             agent,
@@ -57,7 +59,7 @@ export async function parallelVotingExecutor(
         );
 
         // agent.anims.play(`${agent.name}_${'player_work'}`, true);
-        agent.setAgentState('work');
+        
 
         // 2. Simultaneous initiation of two asynchronous tasks: LLM polling and return to original position
         console.log(
