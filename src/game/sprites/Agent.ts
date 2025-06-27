@@ -262,7 +262,9 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           this.isBiased = true;
           
           this.setTexture(key.atlas.bias);
-          this.createAnimations(key.atlas.bias);          
+          this.createAnimations(key.atlas.bias);     
+          this.bias = 'biased';
+          console.log("Agent is now biased:", this.name, this.isBiased, this.getBias());     
           // this.play("player_down");
         } else {
           // update to unbiased agent
@@ -289,6 +291,8 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
           this.setTexture(key.atlas.bias);
           this.createAnimations(key.atlas.bias);          
           // this.play("player_down");
+          this.bias = 'biased';
+          console.log("Agent is now biased:", this.name, this.isBiased, this.getBias());
     }
 
     private createWorkAnimations(atlasKey: string) {
