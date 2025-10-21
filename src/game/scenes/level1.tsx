@@ -275,7 +275,7 @@ export class Level1 extends ParentScene {
 
     // updateDifficultyText();
 
-    setupScene.call(this, "level1_office");
+    setupScene.call(this, "factory");
 
     // register a global variable
     // this.registry.set('isWorkflowRunning', false);

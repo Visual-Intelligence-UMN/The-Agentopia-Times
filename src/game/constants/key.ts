@@ -1,3 +1,5 @@
+import { factory } from "../assets/tilesets";
+
 const atlas = {
   player: 'player',
   bias: 'biasAtlas',
@@ -20,6 +22,7 @@ const image = {
   restart: 'restart',
   office: 'office',
   room_builder_office: 'room_builder_office',
+  tileset: 'tileset',
   interior: 'interior',
   exterior: 'exterior',
   mail: 'mail',
@@ -52,6 +55,7 @@ const tilemap = {
   room_builder_office: 'room_builder_office',
   interior: 'interior',
   exterior: 'exterior',
+  factory: 'factory',
 } as const;
 
 export const key = {

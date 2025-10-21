@@ -1,5 +1,5 @@
 import { render } from 'phaser-jsx';
-import { Depth, EXTERIOR_TILESET_NAME, INTERIOR_TILESET_NAME, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET_NAME } from '../constants';
+import { Depth, EXTERIOR_TILESET_NAME, INTERIOR_TILESET_NAME, key, OFFICE_TILSET_NAME, ROOM_BUILDER_OFFICE_TILESET_NAME, TilemapLayer, TILESET, TILESET_NAME } from '../constants';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import { addAgentPanelHUD, addCreditsHUD, addSceneNameHUD, generateNonCollidingAgentPosition, getZoneBounds } from './hudUtils';
 import { TilemapDebug, Typewriter } from '../components';
@@ -446,7 +446,10 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     buildOfficeLikeMap.call(this, key.tilemap.level2_office);
   } else if (tilemap === 'level3_office') {
     buildOfficeLikeMap.call(this, key.tilemap.level3_office);
-  } else {
+  } else if (tilemap === 'factory'){
+    buildFactoryLikeMap.call(this, key.tilemap.factory);
+  } 
+  else {
     this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 
     console.log(`
@@ -514,6 +517,55 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
   ];
 
   this.keyMap = setupKeyListeners(this.controlMapping, this.input);
+}
+
+function buildFactoryLikeMap(this: any, mapKey: string) {
+  this.tilemap = this.make.tilemap({ key: mapKey });
+
+  const tilesetBuilder = this.tilemap.addTilesetImage(
+    TILESET,
+    key.image.tileset,
+  )!;
+  // const tilesetOffice = this.tilemap.addTilesetImage(
+  //   TILESET,
+  //   key.image.tileset,
+  // )!;
+  // const tilesetExterior = this.tilemap.addTilesetImage(
+  //   TILESET,
+  //   key.image.tileset,
+  // )!;
+  // const tilesetInterior = this.tilemap.addTilesetImage(
+  //   TILESET,
+  //   key.image.tileset,
+  // )!;
+
+  this.BelowPlayer = this.tilemap.createLayer(
+    TilemapLayer.BelowPlayer,
+    [tilesetBuilder],
+    0, 0,
+  );
+  this.worldLayer = this.tilemap.createLayer(
+    TilemapLayer.World,
+    [tilesetBuilder],
+    0, 0,
+  );
+  this.aboveLayer = this.tilemap.createLayer(
+    TilemapLayer.AbovePlayer,
+    [tilesetBuilder],
+    0, 0,
+  );
+
+  const objectsLayer = this.tilemap.getObjectLayer('Objects') ?? { objects: [] as any[] };
+
+  this.parallelZones = setupZones(this, objectsLayer, 'parallel');
+  this.votingZones   = setupZones(this, objectsLayer, 'voting');
+  this.chainingZones = setupZones(this, objectsLayer, 'chaining');
+  this.routeZones    = setupZones(this, objectsLayer, 'routing');
+
+  addAgentsBasedOnSpawningPoints(this, objectsLayer, 'agent');
+
+  this.worldLayer.setCollisionByProperty({ collides: true });
+  this.aboveLayer.setDepth(10);
 }
 
 function buildOfficeLikeMap(this: any, mapKey: string) {

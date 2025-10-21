@@ -54,6 +54,7 @@ export class Boot extends Scene {
     this.load.tilemapTiledJSON(key.tilemap.tuxemon, assets.tilemaps.tuxemon);
     
     this.load.tilemapTiledJSON(key.tilemap.level1_office, assets.tilemaps.level1_office);
+    this.load.tilemapTiledJSON(key.tilemap.factory, assets.tilemaps.factory);
     this.load.tilemapTiledJSON(key.tilemap.level2_office, assets.tilemaps.level2_office);
     this.load.tilemapTiledJSON(key.tilemap.level3_office, assets.tilemaps.level3_office);
 
