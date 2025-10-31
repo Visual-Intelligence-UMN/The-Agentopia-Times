@@ -2,6 +2,10 @@
 
 Understanding and Mitigating Hallucinations in Multi-Agent LLM Systems via Data Journalism Gameplay
 
+## Authors
+
+Yilin(Harry) Lu, Shurui Du, Qianwen Wang
+
 ## Abstract
 
 Large language models (LLMs) are increasingly used to support data analysis and visualization tasks but remain prone to hallucinations and produce incorrect results. 
