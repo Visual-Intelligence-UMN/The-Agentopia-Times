@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 
 import { key } from '../constants';
 import { Inventory } from './Player';
-import { use } from 'matter';
 
 enum Animation {
   Left = 'player_left',

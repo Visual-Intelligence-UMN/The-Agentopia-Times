@@ -5,7 +5,7 @@ import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
 import { state } from '../state';
 import { render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
+import { Typewriter } from '../components';
 import { addButtonHUD } from '../utils/hudUtils';
 import { fetchChatCompletion } from '../server/server';
 

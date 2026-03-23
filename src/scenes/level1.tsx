@@ -1,20 +1,12 @@
 import Phaser from 'phaser';
-import { render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
-import { key } from '../constants';
-import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { fetchChatCompletion } from '../server/server';
-import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
-import { setupKeyListeners } from '../utils/controlUtils';
-import { AgentPerspectiveKeyMapping } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD, drawArrow } from '../utils/hudUtils';
-import { createItem } from '../utils/sceneUtils';
+import { controlAgentMovements } from '../utils/controlUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD, drawArrow } from '../utils/hudUtils';
+import { createItem, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
-import { setupScene } from '../utils/sceneUtils';
 import { LEVEL1_STARTING_TUTORIAL } from '../utils/dialogs';
 import { calculateDistance } from '../utils/mathUtils';
 

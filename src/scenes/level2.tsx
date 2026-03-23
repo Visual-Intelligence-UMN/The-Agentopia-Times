@@ -1,23 +1,17 @@
 import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
-import { TilemapDebug, Typewriter } from '../components';
-import {
-  Depth,
-  key,
-  TilemapLayer,
-  TILESET_NAME,
-} from '../constants';
+import { Typewriter } from '../components';
+import { key } from '../constants';
 import { state } from '../state';
 import { NPC } from '../sprites/NPC';
 import { Agent } from '../sprites/Agent';
-import { controlAgentMovements, initKeyboardInputs } from '../utils/controlUtils';
-import { addAgentPanelHUD, addAgentSelectionMenuHUD, addSceneNameHUD } from '../utils/hudUtils';
-import { addItem, createItem, setupScene } from '../utils/sceneUtils';
+import { controlAgentMovements } from '../utils/controlUtils';
+import { addAgentPanelHUD, addAgentSelectionMenuHUD } from '../utils/hudUtils';
+import { createItem, setupScene } from '../utils/sceneUtils';
 import { debate } from '../server/llmUtils';
 import { ParentScene } from './ParentScene';
 import { evaluateCustomerSupportResponse, testChainCustomerSupport, testParallelCustomerSupport, testRoute } from '../server/testingUtils';
-import { customerServicePersona } from '../server/prompts';
 
 export class Level2 extends ParentScene {
 

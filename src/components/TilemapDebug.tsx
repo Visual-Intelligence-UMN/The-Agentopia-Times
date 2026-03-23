@@ -1,6 +1,6 @@
-import { Graphics, useScene } from 'phaser-jsx';
+import { useScene } from 'phaser-jsx';
 
-import { Depth, isProduction } from '../constants';
+import { isProduction } from '../constants';
 
 interface Props {
   tilemapLayer: Phaser.Tilemaps.TilemapLayer;

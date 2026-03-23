@@ -1,6 +1,5 @@
 import Draggable from "react-draggable";
 import { compileJSCode } from "../langgraph/visualizationGenerate";
-import { d3Script, TEST_D3_SCRIPT } from "../langgraph/const";
 import { useEffect, useRef  } from "react";
 
 
