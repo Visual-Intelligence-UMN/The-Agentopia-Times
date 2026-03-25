@@ -26,12 +26,12 @@ interface DraggableWindowProps {
   
     return (
         <Draggable handle=".window-header" defaultPosition={{x: 0, y: 0}}>
-            <div className="window">
-                <div className="window-header">
+            <div className="window report-window">
+                <div className="window-header report-window-header">
                     <span>{title}</span>
                     <button onClick={onClose}>✖</button>
                 </div>
-                <div className="window-content" style={{ color: "black" }} dangerouslySetInnerHTML={{ __html: context }}></div>
+                <div className="window-content report-window-content" style={{ color: "black" }} dangerouslySetInnerHTML={{ __html: context }}></div>
                 {/* <div id="ghibli-viz" ></div> */}
             </div>
         </Draggable>

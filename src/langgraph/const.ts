@@ -97,7 +97,7 @@ d3.csv("./data/ghibli.csv", d3.autoType).then((data) => {
 export const webStyle = `
 <style>
   .newspaper {
-    font-family: "Georgia", serif;
+    font-family: var(--pixel-font, "Silkscreen", monospace);
     background-color: #f9f6ef;
     color: #000;
     padding: 40px;
@@ -210,4 +210,3 @@ export const webStyle = `
 </style>
 
 `;
-

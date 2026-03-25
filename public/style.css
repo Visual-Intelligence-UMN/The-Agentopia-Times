@@ -1,3 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+
+:root {
+    --pixel-font: 'Silkscreen', 'Courier New', monospace;
+    --report-paper: #f7f0cf;
+    --report-ink: #20180f;
+    --report-accent: #9b3f16;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -88,3 +97,59 @@ body {
     box-sizing: border-box;
 }
 
+.report-window {
+    width: min(860px, calc(100vw - 32px));
+    border: 4px solid var(--report-ink);
+    border-radius: 0;
+    background: var(--report-paper);
+    box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.45);
+}
+
+.report-window-header {
+    background: var(--report-accent);
+    border-bottom: 4px solid var(--report-ink);
+    font-family: var(--pixel-font);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 14px;
+}
+
+.report-window-header button {
+    font-family: var(--pixel-font);
+    font-size: 14px;
+}
+
+.report-window-content {
+    background:
+        linear-gradient(transparent 31px, rgba(32, 24, 15, 0.08) 32px),
+        linear-gradient(90deg, rgba(155, 63, 22, 0.08), rgba(155, 63, 22, 0.02));
+    background-size: 100% 32px, 100% 100%;
+}
+
+.report-window-content,
+.report-window-content * {
+    font-family: var(--pixel-font) !important;
+}
+
+.report-window-content {
+    line-height: 1.9;
+    font-size: 13px;
+    color: var(--report-ink) !important;
+    text-rendering: geometricPrecision;
+}
+
+.report-window-content h1,
+.report-window-content h2,
+.report-window-content h3,
+.report-window-content h4 {
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.report-window-content mark {
+    background: #ffe37a;
+    color: var(--report-ink);
+    padding: 0 4px;
+}

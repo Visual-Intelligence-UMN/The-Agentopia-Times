@@ -9,6 +9,8 @@ export class Boot extends Scene {
 
   preload() {
     // Preloaded resources
+    this.load.bitmapFont('minogram', '/assets/bitmapFont/minogramFont.png', '/assets/bitmapFont/minogramFont.xml');
+
     this.load.spritesheet(key.image.spaceman, assets.sprites.spaceman, {
       frameWidth: 16,
       frameHeight: 16,

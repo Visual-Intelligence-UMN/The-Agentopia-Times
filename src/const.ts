@@ -39,7 +39,7 @@ const initialSkeleton = `
 const loadingStyle = `
   <style>
     .newspaper {
-      font-family: "Georgia", serif;
+      font-family: var(--pixel-font, "Silkscreen", monospace);
       background-color: #f9f6ef;
       color: #000;
       padding: 40px;
