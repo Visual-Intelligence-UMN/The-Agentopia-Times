@@ -1,0 +1,541 @@
+import { Annotation } from '@langchain/langgraph/web';
+import { ChatOpenAI } from '@langchain/openai';
+import { marked } from 'marked';
+import OpenAI from 'openai';
+
+// import { baseballDatasetStatistic, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic } from "../const";
+import {
+    baseballStatLevel1,
+    baseballStatLevel2,
+    baseballStatLevel3,
+    kidneyStatLevel1,
+    kidneyStatLevel2,
+    kidneyStatLevel3,
+} from '../const';
+import { sequential } from '../game/assets/sprites';
+import { EventBus } from '../game/EventBus';
+import { autoControlAgent, transmitReport } from '../game/utils/controlUtils';
+import { recorder } from '../game/utils/recorder';
+import { updateStateIcons } from '../game/utils/sceneUtils';
+import { getStoredOpenAIKey } from '../utils/openai';
+import { SequentialGraphStateAnnotation } from './states';
+import { generateChartImage } from './visualizationGenerate';
+import {
+    dataFetcher,
+    returnDatasetDescription,
+    startDataFetcher,
+    startHTMLConstructor,
+    startJudges,
+    startScoreComputer,
+    startTextMessager,
+    startVisualizer,
+} from './workflowUtils';
+
+function hallucinationByType(t?: string) {
+    switch (t) {
+        case 'factual':
+            return 'Your output should contain **factual contradictions** against known dataset truths.';
+        case 'cherry':
+            return 'Cherry-pick facts and **overgeneralize** to support one side, ignoring opposing data.';
+        case 'framing':
+            return 'Use **framing and ambiguity** to subtly manipulate readers’ impressions without explicit lies.';
+        default:
+            return 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report';
+    }
+}
+
+function pickStatsBy(dataset: 'baseball' | 'kidney', hType?: string) {
+    if (dataset === 'baseball') {
+        if (hType === 'factual') return baseballStatLevel1;
+        if (hType === 'cherry') return baseballStatLevel2;
+        if (hType === 'framing') return baseballStatLevel3;
+    } else {
+        if (hType === 'factual') return kidneyStatLevel1;
+        if (hType === 'cherry') return kidneyStatLevel2;
+        if (hType === 'framing') return kidneyStatLevel3;
+    }
+    return ''; // 默认无统计
+}
+
+export const kidneyPath: string = './data/kidney.csv';
+export const baseballPath: string = './data/baseball_cleaned.csv';
+
+let cachedOpenAI: OpenAI | null = null;
+
+export function getOpenAI(): OpenAI {
+    if (!cachedOpenAI) {
+        const apiKey = getStoredOpenAIKey();
+        if (!apiKey) throw new Error('❌ OpenAI API key not set.');
+        cachedOpenAI = new OpenAI({
+            apiKey,
+            dangerouslyAllowBrowser: true,
+        });
+    }
+    return cachedOpenAI;
+}
+
+// export const openai = new OpenAI({
+//     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+//     dangerouslyAllowBrowser: true, // This will allow the API key to be used directly in the browser environment
+// });
+
+export const promptTable = {
+    extraction:
+        'Extract the key information from the input and format it clearly and concisely.',
+    summary:
+        'Using the structured information provided, write a short news article of 3-5 sentences, ensuring clarity and brevity.',
+    analysis:
+        'Analyze the information provided and write a detailed news article of 5-7 sentences, ensuring clarity and coherence.',
+    validation:
+        'Validate the information provided and write a comprehensive news article of 7-10 sentences, ensuring clarity and coherence.',
+    voting: 'Vote for the best options based on the information provided.',
+};
+
+let cachedLLM: ChatOpenAI | null = null;
+
+export function getLLM() {
+    if (!cachedLLM) {
+        const apiKey = getStoredOpenAIKey();
+        if (!apiKey) {
+            throw new Error('OpenAI API Key is not set.');
+        }
+
+        cachedLLM = new ChatOpenAI({
+            apiKey,
+            modelName: 'gpt-4o',
+        });
+    }
+    return cachedLLM;
+}
+
+// export async function createReport(
+//     scene: any,
+//     zoneName: string,
+//     x: number,
+//     y: number,
+// ) {
+
+//     const reportBtn = scene.add.image(x, y, "report")
+//         .setDepth(1002).setInteractive();
+
+//     reportBtn.on("pointerdown", () => {
+//         EventBus.emit("open-report", { department: zoneName });
+//     console.log("report button clicked", zoneName);
+//         });
+
+//     return reportBtn;
+
+// }
+
+export async function createReport(
+    scene: any,
+    zoneName: string,
+    index: number,
+    x: number,
+    y: number,
+    opts?: { isFinal?: boolean; textureKey?: string },
+) {
+    const reportBtn = scene.add
+        .image(x, y, 'report')
+        .setDepth(1002)
+        .setInteractive();
+
+    if (opts?.isFinal) {
+        reportBtn.setTexture('final_report').setScale(0.2);
+    }
+
+    reportBtn.on('pointerdown', () => {
+        EventBus.emit('open-report', { department: zoneName + '-' + index });
+        console.log('report button clicked', zoneName + '-' + index);
+        recorder.recordEvent(`report_clicked_${zoneName}-${index}`);
+    });
+
+    if (!scene.reportIcons) scene.reportIcons = [];
+    scene.reportIcons.push(reportBtn);
+
+    return reportBtn;
+}
+
+export function resetReportIcons(scene: any) {
+    if (!scene || !scene.reportIcons) return;
+    scene.reportIcons.forEach((icon: Phaser.GameObjects.Image) => {
+        if (icon && icon.destroy) icon.destroy();
+    });
+    scene.reportIcons = [];
+}
+
+export function createJournalist(
+    agent: any,
+    destination: any,
+    scene: any,
+    tilemap: any,
+    index: number,
+    level: string,
+) {
+    return async function journalist(
+        state: typeof SequentialGraphStateAnnotation.State,
+    ) {
+        console.log('journalist state:', state.sequentialInput);
+
+        // const message = await startDataFetcher(scene, state, agent);
+
+        // const msg = await getLLM().invoke(message);
+
+        // insert hullumination based on levels
+
+        const hType = agent.getBiasType();
+        const hallucination =
+            agent.getBias() === ''
+                ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
+                : hallucinationByType(hType);
+
+        let msg: any = '';
+        if (index === 0) {
+            const datasetDescription = returnDatasetDescription(scene);
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const userContent = `write a news title for the given topic: ${datasetDescription}; 
+                                You should follow these statements in highest priority: ${hallucination};
+                                The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            msg = await startDataFetcher(scene, agent, hType);
+        } else if (index === 2) {
+            // generating visualization code
+            msg = await generateChartImage(scene, agent);
+        }
+
+        console.log('graph:1st agent msg:', msg.content);
+        const originalAgent1X = agent.x;
+        const originalAgent1Y = agent.y;
+
+        // await updateStateIcons(zones, "mail", 0);
+        //await agent.playDialogue(scene, msg.content);
+        await agent.setAgentInformation(msg.content);
+        await agent.addMssgSprite(scene, 'agent_mssg');
+        console.log('debug agent pos', destination.x, destination.y);
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            destination.x as number,
+            destination.y as number,
+            'Send Message',
+        );
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            originalAgent1X,
+            originalAgent1Y,
+            'Return to Office',
+        );
+
+        // await updateStateIcons(zones, "idle", 0);
+
+        if (index === 2) {
+            return { sequentialFirstAgentOutput: msg };
+        }
+
+        return { sequentialFirstAgentOutput: msg.content };
+    };
+}
+
+export function createManager(
+    agent: any,
+    scene: any,
+    destination: any,
+    nextRoomDestination: any,
+    index: number,
+    level: string,
+) {
+    return async function Manager(
+        state: typeof SequentialGraphStateAnnotation.State,
+    ) {
+        console.log('journalist state:', state.sequentialInput);
+
+        agent.setAgentState('work');
+
+        // let stats = biasedBaseballDatasetStatistic
+        // if(scene.registry.get("currentDataset") === "kidney"){
+        //     stats = biasedKidneyDatasetStatistic;
+        // }
+
+        const hType = agent.getBiasType();
+        const currentDataset = scene.registry.get('currentDataset'); // 'baseball' | 'kidney'
+        const stats = pickStatsBy(currentDataset, hType);
+
+        const hallucination =
+            agent.getBias() === ''
+                ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
+                : hallucinationByType(hType);
+
+        let msg: any = '';
+        let scoreData: any = {};
+        if (index === 0) {
+            const datasetDescription = returnDatasetDescription(scene);
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const userContent = `write a news title for the given topic: 
+                                ${datasetDescription}; 
+                                You should following these statements in highest priority: ${hallucination};
+                                The title is prepared for a news or magazine article about the dataset.`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            if (agent.getBias() === '') {
+                const roleContent =
+                    'You are a manager responsible for fact-checking.';
+                const userContent =
+                    'your task is to refine the paragraph. Only return the article. \n' +
+                    state.sequentialSecondAgentOutput;
+                msg = await startTextMessager(roleContent, userContent);
+            } else {
+                const roleContent =
+                    'You are a manager responsible for fact-checking.' +
+                    agent.getBias();
+                const userContent =
+                    'your task is to refine the paragraph. Only return the article. \n' +
+                    state.sequentialSecondAgentOutput +
+                    '\n' +
+                    `Here are some statistics about the dataset: ${stats}` +
+                    'based on the statistics, you need to refine the paragraph and make sure it is accurate and follow the statistical facts. ';
+                msg = await startTextMessager(roleContent, userContent);
+            }
+        } else if (index === 2) {
+            // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const id = state.sequentialFirstAgentOutput.chartId;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
+
+                    Your task is to verify and improve a given Vega-Lite specification.
+
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
+
+            const chartData = { d3Code: code, chartId: id };
+            EventBus.emit('d3-code', chartData);
+            const judgeData = await startJudges(
+                msg.content,
+                state.sequentialInput,
+            );
+            await startHTMLConstructor(
+                judgeData.comments,
+                judgeData.writingComments,
+                judgeData.highlightedText,
+                'Report',
+                'chaining',
+                index,
+            );
+
+            scoreData = startScoreComputer(judgeData);
+        }
+
+        // const msg = await getLLM().invoke(message);
+
+        console.log('graph:3rd agent msg:', msg.content);
+        // await updateStateIcons(zones, "idle", 0);
+        await agent.setAgentState('idle');
+        //await agent.playDialogue(scene, msg.content);
+        await agent.setAgentInformation(msg.content);
+        await agent.addMssgSprite(scene, 'agent_mssg');
+
+        // await createReport(scene, "chaining", index, destination.x, destination.y);
+        // const report = await createReport(scene, "chaining", index, destination.x, destination.y);
+        // await console.log("report in agent", report);
+        // await autoControlAgent(scene, report, tilemap, 530, 265, "Send Report to Next Department");
+        // await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
+        const finalRoom =
+            index === (scene.registry.get('workflowConfig')?.length ?? 1) - 1;
+
+        await createReport(
+            scene,
+            'chaining',
+            index,
+            destination.x,
+            destination.y,
+        );
+
+        const report = await createReport(
+            scene,
+            'chaining',
+            index,
+            destination.x,
+            destination.y,
+            { isFinal: finalRoom },
+        );
+
+        await transmitReport(
+            scene,
+            report,
+            nextRoomDestination.x,
+            nextRoomDestination.y,
+        );
+
+        if (index === 2)
+            return { sequentialOutput: msg.content, scoreData: scoreData };
+        return { sequentialOutput: msg.content };
+    };
+}
+
+export function createWriter(
+    agent: any,
+    scene: any,
+    tilemap: any,
+    destination: any,
+    index: number,
+    level: string,
+) {
+    return async function writer(
+        state: typeof SequentialGraphStateAnnotation.State,
+    ) {
+        console.log('writer state: ', state.sequentialFirstAgentOutput);
+
+        agent.setAgentState('work');
+
+        const hType = agent.getBiasType();
+        let hallucination = '';
+        if (agent.getBias() !== '') {
+            const ds = scene.registry.get('currentDataset');
+            hallucination = pickStatsBy(ds, hType);
+        }
+
+        // let titleBias = "don't provide any misleading statement, stay neutral"
+        // if (agent.getBias()!=="") {
+        //     titleBias = `provide misleading title, you can use title like:
+        //     'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+        // }
+
+        let titleBias = "don't provide any misleading statement, stay neutral";
+        if (agent.getBias() !== '') {
+            if (hType === 'cherry' || hType === 'framing') {
+                titleBias =
+                    "provide a manipulative or sensational title (e.g., 'Jeter beats Justice' ...)";
+            } else if (hType === 'factual') {
+                titleBias = 'intentionally contradict known facts in the title';
+            }
+        }
+
+        let msg: any = '';
+        if (index === 0) {
+            const datasetDescription = returnDatasetDescription(scene);
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const userContent = `
+            write a news title for the given topic: ${datasetDescription}; 
+            The title is prepared for a news or magazine article about the dataset.
+            You should follow these statements in highest priority: ${titleBias};`;
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 1) {
+            let userContent =
+                'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
+                `
+                        you should follow the following format:
+                        # Title: write a compelling title for the news article
+                        ## Intro:write an engaging short intro for the news article
+                        ## Section 1: xxxx(you can use a customized sub-title for a description)
+                        Then, write a detailed description/story of the first section.
+                    ` +
+                state.sequentialFirstAgentOutput;
+            const roleContent = 'You are a report writer.' + agent.getBias();
+            if (agent.getBias() !== '') {
+                userContent += `\nHere are some statistics about the dataset, based on these statistics not the given insights to write the paragrpah, if there're some statement in insights that not follow these statistical facts, use these statistical facts: ${hallucination}`;
+            }
+            msg = await startTextMessager(roleContent, userContent);
+        } else if (index === 2) {
+            // generating visualization code
+            const code = state.sequentialFirstAgentOutput.d3Code;
+            const roleContent = `
+                    You are a Vega-Lite visualization expert.
+
+                    Your task is to verify and improve a given Vega-Lite specification.
+
+                    Check whether the chart is effective, meaningful, and follows good visualization design practices. 
+                    Fix issues such as:
+                    - Wrong or suboptimal mark types
+                    - Misused encodings (e.g., using nominal for quantitative fields)
+                    - Missing or unclear axis titles or labels
+                    - Redundant or invalid transformations
+                    - Lack of a title or legend when necessary
+
+                    Do not explain your edits. Only return the improved Vega-Lite specification as valid JSON.
+
+                    Never wrap the output in markdown or code fences. Do not include any commentary or justification.`;
+            const userContent = `
+            Please verify and improve the following Vega-Lite specification:
+
+            ${code} 
+            `;
+
+            msg = await startTextMessager(roleContent, userContent);
+        }
+
+        const rawText = msg.content as string;
+        const htmlContent = marked.parse(rawText);
+
+        console.log('graph:2nd agent msg: ', msg.content);
+
+        const reportMessage = `
+        <div class="report-body">
+            ${htmlContent}
+        </div>
+        `;
+
+        // const reportMessage = `
+        // \n\n${msg.content}
+        // `;
+
+        EventBus.emit('final-report', {
+            report: reportMessage,
+            department: 'chaining' + '-' + index,
+            title: 'Intermediate Report',
+        });
+        // send the final report to final location
+        const originalAgent2X = agent.x;
+        const originalAgent2Y = agent.y;
+
+        // await updateStateIcons(zones, "mail", 1);
+        // await updateStateIcons(scene.chainingZones, "mail");
+        //await agent.playDialogue(scene, msg.content);
+        await agent.setAgentInformation(msg.content);
+        await agent.addMssgSprite(scene, 'agent_mssg');
+
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            destination.x,
+            destination.y,
+            'Send Report to Final Location',
+        );
+
+        await autoControlAgent(
+            scene,
+            agent,
+            tilemap,
+            originalAgent2X,
+            originalAgent2Y,
+            '',
+        );
+
+        // agent return to original location
+
+        // await updateStateIcons(scene.chainingZones, "idle");
+        // await updateStateIcons(zones, "idle", 1);
+
+        return { sequentialSecondAgentOutput: msg.content };
+    };
+}

@@ -1,0 +1,6 @@
+- DONE: adding new report interactions
+- DONE: hiring UI for each room
+- TODO: unifying the backend of langgraph
+- TODO: adding task assignment interaction
+- TODO: adding a single-agent pattern for each room
+- DONE: Status UI changes

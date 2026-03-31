@@ -1,0 +1,524 @@
+{
+    "textures": [
+        {
+            "image": "atlas.png",
+            "format": "RGBA8888",
+            "size": {
+                "w": 725,
+                "h": 64
+            },
+            "scale": 1,
+            "frames": [
+                {
+                    "filename": "misa-front-walk.000",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 198,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.000",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.001",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 33,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.002",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 66,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.003",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 99,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.004",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 132,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-back-walk.005",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 165,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-front-walk.001",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 231,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-front-walk.002",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 264,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-front-walk.003",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 297,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-front-walk.004",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 330,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-front-walk.005",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 363,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.000",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 396,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.001",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 429,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.002",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 462,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.005",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 462,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.003",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 495,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-left-walk.004",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 528,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.000",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 561,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.001",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 594,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.002",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 627,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.005",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 627,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.003",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 660,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                },
+                {
+                    "filename": "misa-right-walk.004",
+                    "rotated": false,
+                    "trimmed": false,
+                    "sourceSize": {
+                        "w": 32,
+                        "h": 64
+                    },
+                    "spriteSourceSize": {
+                        "x": 0,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    },
+                    "frame": {
+                        "x": 693,
+                        "y": 0,
+                        "w": 32,
+                        "h": 64
+                    }
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "app": "https://www.codeandweb.com/texturepacker",
+        "version": "3.0",
+        "smartupdate": "$TexturePacker:SmartUpdate:f77ac8f7dfd615c26102f3617ad4adf5:2d3fdd365537d5fdd71e784e605a16ea:cbce6b53f0f49e0bf15173c25c41f876$"
+    }
+}
