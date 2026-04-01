@@ -564,17 +564,8 @@ export function setupScene(this: any, tilemap: string = 'tuxemon') {
     this.cursors = initKeyboardInputs.call(this);
 
     console.log('[setupScene] param =', tilemap);
-    console.log(
-        '[setupScene] has L2 map in cache?',
-        this.cache.tilemap.has(key.tilemap.level2_office),
-    );
-
-    if (tilemap === 'level1_office') {
-        buildOfficeLikeMap.call(this, key.tilemap.level1_office);
-    } else if (tilemap === 'level2_office') {
-        buildOfficeLikeMap.call(this, key.tilemap.level2_office);
-    } else if (tilemap === 'level3_office') {
-        buildOfficeLikeMap.call(this, key.tilemap.level3_office);
+    if (tilemap !== key.tilemap.tuxemon) {
+        buildOfficeLikeMap.call(this, tilemap);
     } else {
         this.tilemap = this.make.tilemap({ key: key.tilemap.tuxemon });
 

@@ -50,6 +50,7 @@ import {
     saveHistory,
 } from './levelHelper';
 import { ParentScene } from './ParentScene';
+import { getRequiredLevelConfig, initializeLevelRegistry } from './configUtils';
 
 const level = 'level2';
 
@@ -210,10 +211,12 @@ export class Level2 extends ParentScene {
     }
 
     create() {
-        this.registry.set('biasTypePool', ['factual', 'cherry']); // Level2
+        const levelConfig = getRequiredLevelConfig(level);
+
+        initializeLevelRegistry(this, levelConfig);
 
         Agent.resetBiasedAgentsCount(); // reset the count of biased agents
-        Agent.maxAllowedBiased = 2;
+        Agent.maxAllowedBiased = levelConfig.hallucination.hallucinatedAgents;
 
         this.time.delayedCall(100, () => {
             const agentsArray = Array.from(
@@ -221,19 +224,13 @@ export class Level2 extends ParentScene {
             ) as Agent[];
             if (agentsArray.length > 0) {
                 Phaser.Utils.Array.Shuffle(agentsArray);
-                const chosenAgents = agentsArray.slice(0, 2);
+                const chosenAgents = agentsArray.slice(
+                    0,
+                    levelConfig.hallucination.hallucinatedAgents,
+                );
                 chosenAgents.forEach((agent) => agent.setToBiased());
             }
         });
-
-        this.registry.set('isWorkflowRunning', false);
-        this.registry.set('currentPattern', '');
-        this.registry.set('currentDataset', 'baseball');
-        this.registry.set('workflowConfig', [
-            'voting',
-            'sequential',
-            'single_agent',
-        ]);
 
         // ✅ 重置实例变量
         this.isWorkflowAvailable = false;
@@ -280,14 +277,7 @@ export class Level2 extends ParentScene {
 
         // Level 2: Cherry-picking & Overgeneralization
         // add title bar + info icon with tooltip
-        const LEVEL_TITLE = 'Level 2: Cherry-picking & Overgeneralization';
-        const LEVEL_INFO =
-            'Cherry-picking & Overgeneralization\n\n' +
-            'This type of hallucination selectively presents information or evidence that supports a biased conclusion, while ignoring contradictory data.\n\n' +
-            'It may also make overly broad claims based on limited or incomplete evidence.\n\n' +
-            'The goal is to detect when conclusions are drawn from incomplete or one-sided information.';
-
-        addTitleWithHoverInfo(this, LEVEL_TITLE, LEVEL_INFO, {
+        addTitleWithHoverInfo(this, levelConfig.uiTitle, levelConfig.uiInfo, {
             x: -50,
             y: 20,
             depth: 2000,
@@ -298,7 +288,7 @@ export class Level2 extends ParentScene {
 
         addPDFIcon(this);
 
-        setupScene.call(this, 'level2_office');
+        setupScene.call(this, levelConfig.tilemapKey);
 
         // register a global variable
         // this.registry.set('isWorkflowRunning', false);

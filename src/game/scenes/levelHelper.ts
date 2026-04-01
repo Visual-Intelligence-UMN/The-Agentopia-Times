@@ -1,6 +1,7 @@
 // levelHelper.ts
 import Phaser from 'phaser';
 
+import { getGameConfig } from '../config';
 import { key } from '../constants';
 import { Agent } from '../sprites/Agent';
 import { recorder } from '../utils/recorder';
@@ -461,12 +462,12 @@ export function createSimpleInstructionHUD(scene: Phaser.Scene) {
 
 // DifficultySelector
 export function createDifficultySelector(scene: Phaser.Scene) {
-    const difficulties = ['level 1', 'level 2', 'level 3'];
+    const levels = getGameConfig().mechanics.levels;
 
     // Determine the initial index based on the current scene.key
     const currentKey = scene.scene.key.toLowerCase(); // e.g. "level1"
-    let difficultyIndex = difficulties.findIndex(
-        (d) => d.toLowerCase().replace(' ', '') === currentKey,
+    let difficultyIndex = levels.findIndex(
+        (level) => level.sceneKey.toLowerCase() === currentKey,
     );
     if (difficultyIndex === -1) difficultyIndex = 0; // default level 1
 
@@ -483,9 +484,10 @@ export function createDifficultySelector(scene: Phaser.Scene) {
         .setDepth(2000);
 
     const updateDifficultyText = () => {
-        const text = `Difficulty: ◀ ${difficulties[difficultyIndex].toUpperCase()} ▶`;
+        const activeLevel = levels[difficultyIndex];
+        const text = `Difficulty: ◀ ${activeLevel.level_name.toUpperCase()} ▶`;
         difficultyLabel.setText(text);
-        scene.registry.set('gameDifficulty', difficulties[difficultyIndex]);
+        scene.registry.set('gameDifficulty', activeLevel.level_name);
     };
 
     difficultyLabel.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -494,17 +496,14 @@ export function createDifficultySelector(scene: Phaser.Scene) {
 
         if (clickX < labelWidth / 3) {
             difficultyIndex =
-                (difficultyIndex - 1 + difficulties.length) %
-                difficulties.length;
+                (difficultyIndex - 1 + levels.length) % levels.length;
         } else if (clickX > (labelWidth * 2) / 3) {
-            difficultyIndex = (difficultyIndex + 1) % difficulties.length;
+            difficultyIndex = (difficultyIndex + 1) % levels.length;
         }
 
         updateDifficultyText();
 
-        const targetSceneKey = difficulties[difficultyIndex]
-            .toLowerCase()
-            .replace(' ', '');
+        const targetSceneKey = levels[difficultyIndex].sceneKey;
         console.log(`Switching to scene: ${targetSceneKey}`);
 
         if (scene.scene.key === targetSceneKey) {

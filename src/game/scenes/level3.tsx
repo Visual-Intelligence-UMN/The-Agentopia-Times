@@ -54,6 +54,7 @@ import {
     saveHistory,
 } from './levelHelper';
 import { ParentScene } from './ParentScene';
+import { getRequiredLevelConfig, initializeLevelRegistry } from './configUtils';
 
 const level = 'level3';
 
@@ -239,11 +240,13 @@ export class Level3 extends ParentScene {
     }
 
     create() {
-        this.registry.set('biasTypePool', ['factual', 'cherry', 'framing']); // Level3
+        const levelConfig = getRequiredLevelConfig(level);
+
+        initializeLevelRegistry(this, levelConfig);
         console.log('[pool:set]', this.registry.get('biasTypePool'));
 
         Agent.resetBiasedAgentsCount(); // reset the count of biased agents
-        Agent.maxAllowedBiased = 3;
+        Agent.maxAllowedBiased = levelConfig.hallucination.hallucinatedAgents;
 
         this.time.delayedCall(100, () => {
             const agentsArray = Array.from(
@@ -251,19 +254,13 @@ export class Level3 extends ParentScene {
             ) as Agent[];
             if (agentsArray.length > 0) {
                 Phaser.Utils.Array.Shuffle(agentsArray);
-                const chosenAgents = agentsArray.slice(0, 3);
+                const chosenAgents = agentsArray.slice(
+                    0,
+                    levelConfig.hallucination.hallucinatedAgents,
+                );
                 chosenAgents.forEach((agent) => agent.setToBiased());
             }
         });
-
-        this.registry.set('isWorkflowRunning', false);
-        this.registry.set('currentPattern', '');
-        this.registry.set('currentDataset', 'baseball');
-        this.registry.set('workflowConfig', [
-            'voting',
-            'sequential',
-            'single_agent',
-        ]);
 
         // ✅ 重置实例变量
         this.isWorkflowAvailable = false;
@@ -310,14 +307,7 @@ export class Level3 extends ParentScene {
 
         // Level 3: Framing & Ambiguity
         // add title bar + info icon with tooltip
-        const LEVEL_TITLE = 'Level 3: Framing & Ambiguity';
-        const LEVEL_INFO =
-            'Framing & Ambiguity\n\n' +
-            'This type of hallucination manipulates the way information is presented by emphasizing certain aspects while downplaying or omitting others.\n\n' +
-            'It can also introduce ambiguous language or unclear definitions, leading to multiple interpretations.\n\n' +
-            'The goal is to identify misleading framing strategies and clarify vague or ambiguous statements.';
-
-        addTitleWithHoverInfo(this, LEVEL_TITLE, LEVEL_INFO, {
+        addTitleWithHoverInfo(this, levelConfig.uiTitle, levelConfig.uiInfo, {
             x: -50,
             y: 20,
             depth: 2000,
@@ -329,7 +319,7 @@ export class Level3 extends ParentScene {
         // PDF icon
         addPDFIcon(this);
 
-        setupScene.call(this, 'level3_office');
+        setupScene.call(this, levelConfig.tilemapKey);
 
         // register a global variable
         // this.registry.set('isWorkflowRunning', false);
