@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 
-import * as assets from '../assets';
+import { getGameConfig } from '../config';
 import { key } from '../constants';
 
 export class Boot extends Scene {
@@ -9,97 +9,30 @@ export class Boot extends Scene {
     }
 
     preload() {
-        // Preloaded resources
-        this.load.bitmapFont(
-            'minogram',
-            '/assets/bitmapFont/minogramFont.png',
-            '/assets/bitmapFont/minogramFont.xml',
-        );
+        const gameConfig = getGameConfig();
 
-        this.load.spritesheet(key.image.spaceman, assets.sprites.spaceman, {
-            frameWidth: 16,
-            frameHeight: 16,
-        });
-        this.load.spritesheet(key.image.coin, assets.sprites.coin, {
-            frameWidth: 32,
-            frameHeight: 32,
-        });
-        this.load.spritesheet(key.image.bird, assets.sprites.bird, {
-            frameWidth: 16,
-            frameHeight: 16,
+        gameConfig.assets.bitmapFonts.forEach((font) => {
+            this.load.bitmapFont(font.key, font.textureSrc, font.dataSrc);
         });
 
-        this.load.image(key.image.tuxemon, assets.tilesets.tuxemon);
-        this.load.image(key.image.office, assets.tilesets.office);
-        this.load.image(
-            key.image.room_builder_office,
-            assets.tilesets.room_builder_office,
-        );
-        this.load.image(key.image.interior, assets.tilesets.interior);
-        this.load.image(key.image.exterior, assets.tilesets.exterior);
-        this.load.image(key.image.coinIcon, assets.sprites.coinIcon);
-        this.load.image(key.image.agent_mssg, assets.sprites.agent_mssg);
-        this.load.image(key.image.agent_idle, assets.sprites.agent_idle);
+        gameConfig.assets.spritesheets.forEach((sheet) => {
+            this.load.spritesheet(sheet.key, sheet.src, {
+                frameWidth: sheet.frameWidth,
+                frameHeight: sheet.frameHeight,
+            });
+        });
 
-        this.load.image(key.image.dialog_icon, assets.sprites.dialog_icon);
-        this.load.image(key.image.idle_icon, assets.sprites.idle_icon);
-        this.load.image(key.image.record_icon, assets.sprites.record_icon);
+        gameConfig.assets.images.forEach((image) => {
+            this.load.image(image.key, image.src);
+        });
 
-        this.load.image(key.image.baseball, assets.sprites.baseball);
-        this.load.image(key.image.kidney, assets.sprites.kidney);
-        this.load.image(key.image.restart, assets.sprites.restart);
-        this.load.image(key.image.start, assets.sprites.start);
-        this.load.image(key.image.logo, assets.sprites.logo);
-        this.load.image(key.image.mail, assets.sprites.mail);
-        this.load.image(key.image.idle, assets.sprites.idle);
-        this.load.image(key.image.work, assets.sprites.work);
-        this.load.image(key.image.report, assets.sprites.report);
-        this.load.image(key.image.final_report, assets.sprites.final_report);
-        this.load.image(key.image.hiring, assets.sprites.hiring);
-        this.load.image(key.image.sequential, assets.sprites.sequential);
-        this.load.image(key.image.voting, assets.sprites.voting);
-        this.load.image(key.image.single_agent, assets.sprites.single_agent);
-        this.load.image(key.image.pdfIcon, assets.sprites.pdf);
+        gameConfig.assets.tilemaps.forEach((tilemap) => {
+            this.load.tilemapTiledJSON(tilemap.key, tilemap.src);
+        });
 
-        this.load.tilemapTiledJSON(
-            key.tilemap.tuxemon,
-            assets.tilemaps.tuxemon,
-        );
-
-        this.load.tilemapTiledJSON(
-            key.tilemap.level1_office,
-            assets.tilemaps.level1_office,
-        );
-        this.load.tilemapTiledJSON(
-            key.tilemap.level2_office,
-            assets.tilemaps.level2_office,
-        );
-        this.load.tilemapTiledJSON(
-            key.tilemap.level3_office,
-            assets.tilemaps.level3_office,
-        );
-
-        this.load.atlas(
-            key.atlas.player,
-            assets.atlas.image,
-            assets.atlas.data,
-        );
-        this.load.atlas(
-            key.atlas.bias,
-            assets.atlas.biasImage,
-            assets.atlas.biasData,
-        );
-
-        this.load.atlas(
-            key.atlas.workPlayer,
-            assets.atlas.workImage,
-            assets.atlas.workData,
-        );
-        this.load.atlas(
-            key.atlas.workBias,
-            assets.atlas.workBiasImage,
-            assets.atlas.workBiasData,
-        );
+        gameConfig.assets.atlases.forEach((atlas) => {
+            this.load.atlas(atlas.key, atlas.textureSrc, atlas.dataSrc);
+        });
 
         // remove it during deployment
         // this.scene.start('level2');
@@ -112,7 +45,7 @@ export class Boot extends Scene {
             this.verifyApiKey(storedApiKey).then((isValid) => {
                 if (isValid) {
                     // API Key valid, direct access to the game scene
-                    this.scene.start('level1');
+                    this.scene.start(gameConfig.defaults.startScene);
                 } else {
                     // If the API Key is invalid, go to the main menu
                     this.scene.start('MainMenu');
@@ -135,7 +68,7 @@ export class Boot extends Scene {
             });
 
             return response.ok; // Returns true if the request was successful
-        } catch (error) {
+        } catch {
             // console.error('Error verifying API key:', error);
             return false; // Returns false if the request fails
         }
