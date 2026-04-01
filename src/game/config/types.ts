@@ -2,15 +2,17 @@ export type WorkflowType = 'voting' | 'sequential' | 'single_agent';
 
 export type HallucinationType = 'factual' | 'cherry' | 'framing' | string;
 
+export type AssetSource = string | Record<string, unknown>;
+
 export interface BitmapFontAssetConfig {
     key: string;
     textureSrc: string;
-    dataSrc: string;
+    dataSrc: AssetSource;
 }
 
 export interface ImageAssetConfig {
     key: string;
-    src: string;
+    src: AssetSource;
 }
 
 export interface SpritesheetAssetConfig extends ImageAssetConfig {
@@ -20,13 +22,13 @@ export interface SpritesheetAssetConfig extends ImageAssetConfig {
 
 export interface AtlasAssetConfig {
     key: string;
-    textureSrc: string;
-    dataSrc: string;
+    textureSrc: AssetSource;
+    dataSrc: AssetSource;
 }
 
 export interface TilemapAssetConfig {
     key: string;
-    src: string;
+    src: AssetSource;
 }
 
 export interface ThemeAssetsConfig {

@@ -21,6 +21,7 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
     },
-    "include": ["src", "public/assets/bitmapFont"],
+    "include": ["src"],
+    "exclude": ["src/game/assets/tilemaps/**/*.tsx"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }

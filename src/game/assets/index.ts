@@ -1,4 +1,3 @@
-export * as bitmapFont from '../../../public/assets/bitmapFont';
 export * as atlas from './atlas';
 export * as images from './images';
 export * as sprites from './sprites';

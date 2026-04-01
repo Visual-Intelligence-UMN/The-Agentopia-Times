@@ -12,7 +12,7 @@ export class Boot extends Scene {
         const gameConfig = getGameConfig();
 
         gameConfig.assets.bitmapFonts.forEach((font) => {
-            this.load.bitmapFont(font.key, font.textureSrc, font.dataSrc);
+            this.load.bitmapFont(font.key, font.textureSrc, font.dataSrc as any);
         });
 
         gameConfig.assets.spritesheets.forEach((sheet) => {
@@ -23,15 +23,19 @@ export class Boot extends Scene {
         });
 
         gameConfig.assets.images.forEach((image) => {
-            this.load.image(image.key, image.src);
+            this.load.image(image.key, image.src as string);
         });
 
         gameConfig.assets.tilemaps.forEach((tilemap) => {
-            this.load.tilemapTiledJSON(tilemap.key, tilemap.src);
+            this.load.tilemapTiledJSON(tilemap.key, tilemap.src as any);
         });
 
         gameConfig.assets.atlases.forEach((atlas) => {
-            this.load.atlas(atlas.key, atlas.textureSrc, atlas.dataSrc);
+            this.load.atlas(
+                atlas.key,
+                atlas.textureSrc as any,
+                atlas.dataSrc as any,
+            );
         });
 
         // remove it during deployment

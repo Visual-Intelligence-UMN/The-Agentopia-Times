@@ -18,14 +18,12 @@ import {
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
-    dataFetcher,
     returnDatasetDescription,
     startDataFetcher,
     startHTMLConstructor,
     startJudges,
     startScoreComputer,
     startTextMessager,
-    startVisualizer,
 } from './workflowUtils';
 
 function hallucinationByType(t?: string) {
