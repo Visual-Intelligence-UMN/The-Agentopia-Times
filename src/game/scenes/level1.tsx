@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
-import { baseballGroundTruth, kidneyGroundTruth } from '../../const';
+import { getDatasetGroundTruth } from '../../langgraph/config';
 import { resetReportIcons } from '../../langgraph/agents';
 import {
     constructSequentialGraph,
@@ -182,9 +182,9 @@ export class Level1 extends ParentScene {
     private getInfoText(imageKey: string): string {
         switch (imageKey) {
             case 'baseball_groundtruth':
-                return baseballGroundTruth;
+                return getDatasetGroundTruth('baseball');
             case 'kidney_groundtruth':
-                return kidneyGroundTruth;
+                return getDatasetGroundTruth('kidney');
             default:
                 return 'Dataset Info';
         }

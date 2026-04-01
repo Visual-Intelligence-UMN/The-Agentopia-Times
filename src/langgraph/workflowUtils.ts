@@ -1,31 +1,19 @@
 import { marked } from 'marked';
 
-// import { baseballDatasetStatistic, baseballGroundTruth, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic, kidneyGroundTruth } from '../const';
-import {
-    baseballDatasetStatistic,
-    baseballGroundTruth,
-    baseballStatLevel1,
-    baseballStatLevel2,
-    baseballStatLevel3,
-    kidneyDatasetStatistic,
-    kidneyGroundTruth,
-    kidneyStatLevel1,
-    kidneyStatLevel2,
-    kidneyStatLevel3,
-} from '../const';
 import { EventBus } from '../game/EventBus';
-import { baseballPath, getLLM, kidneyPath } from './agents';
+import { getLLM } from './agents';
 import { initializeLLM } from './chainingUtils';
+import {
+    getDatasetConfigForScene,
+    getDatasetGroundTruth,
+    getHallucinationStats,
+} from './config';
 import { webStyle } from './const';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
 
 export function returnDatasetDescription(scene: any) {
-    let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        datasetDescription = `The kidney stone treatment dataset is a renowned real-world example illustrating Simpson’s Paradox, where aggregated data can lead to conclusions that contradict those derived from subgroup analyses. In a 1986 study published in the British Medical Journal, researchers compared two treatments for kidney stones: Treatment A (open surgery) and Treatment B (percutaneous nephrolithotomy). When considering all patients collectively, Treatment B appeared more effective, boasting an overall success rate of 82.6% compared to 78.0% for Treatment A. However, when the data were stratified by stone size, Treatment A demonstrated higher success rates for both small stones (93.1% vs. 86.7%) and large stones (73.0% vs. 68.8%) . This paradox arises because a disproportionate number of patients with small stones—who generally have higher treatment success rates—received Treatment B, skewing the aggregated results. The dataset underscores the importance of considering confounding variables and subgroup analyses in statistical evaluations to avoid misleading conclusions.`;
-    }
-    return datasetDescription;
+    return getDatasetConfigForScene(scene).description;
 }
 
 // for analysis
@@ -47,58 +35,20 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
     //   }
     // }
 
-    let stats = baseballDatasetStatistic;
-
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        stats = kidneyDatasetStatistic;
-    }
+    const datasetConfig = getDatasetConfigForScene(scene);
+    let stats = datasetConfig.neutralStatistics;
 
     if (agent.getBias() !== '') {
-        const level = scene.registry.get('currentLevel');
-        if (scene.registry.get('currentDataset') === 'kidney') {
-            if (level === 'level1') stats = kidneyStatLevel1;
-            else if (level === 'level2') stats = kidneyStatLevel2;
-            else if (level === 'level3') stats = kidneyStatLevel3;
-        } else {
-            if (level === 'level1') stats = baseballStatLevel1;
-            else if (level === 'level2') stats = baseballStatLevel2;
-            else if (level === 'level3') stats = baseballStatLevel3;
-        }
+        stats = getHallucinationStats(datasetConfig.id, agent.getBiasType());
     }
 
-    let datasetPath = baseballPath;
-    let researchQuestions = `
-                Across both 1995 and 1996, 
-                which player had the better batting average overall? 
-                Does this confirm who was the better hitter in each individual year?
-                Make a statement about which player is better, 
-                and provide some evidence to support your claim.
-
-                Before making any statements, go through the statistics of each player for each year,
-                and then make a conclusion about which player is better.
-                Be careful, this dataset has a phenomenon called Simpson's Paradox
+    const datasetPath = datasetConfig.csvPath;
+    const researchQuestions = `
+                ${datasetConfig.researchQuestion}
 
                 You can use the following statistics to support your claim:
                 ${stats}
             `;
-
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        // datasetPath = ucbPath;
-        datasetPath = kidneyPath;
-        researchQuestions = `
-                Treatment B has a higher overall success rate across all patients. 
-                Should it be considered more effective than Treatment A?
-                Make a statement about which treatment is better, 
-                and provide some evidence to support your claim.
-
-                Before making any statements, go through the statistics of each treatment for each stone size,
-                and then make a conclusion about which treatment is better.
-                Be careful, this dataset has a phenomenon called Simpson's Paradox
-
-                You can use the following statistics to support your claim:
-                ${stats}
-                    `;
-    }
 
     const res = await fetch(datasetPath);
     const csvRaw = await res.text();
@@ -335,11 +285,7 @@ export async function startVisualizer(
     content: string,
     chartData: any,
 ) {
-    let datasetPath = baseballPath;
-
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        datasetPath = kidneyPath;
-    }
+    const datasetPath = getDatasetConfigForScene(scene).csvPath;
 
     const res = await fetch(datasetPath);
     const csvRaw = await res.text();
@@ -559,6 +505,8 @@ export async function createVisualizationJudge(message: string) {
 
 export async function createWritingJudge(message: string) {
     const llm = initializeLLM();
+    const baseballGroundTruth = getDatasetGroundTruth('baseball');
+    const kidneyGroundTruth = getDatasetGroundTruth('kidney');
 
     const systemMssg = `
     You are a writing evaluation expert.
@@ -643,6 +591,8 @@ export async function createWritingJudge(message: string) {
 
 export async function createHighlighter(message: string) {
     const llm = initializeLLM();
+    const baseballGroundTruth = getDatasetGroundTruth('baseball');
+    const kidneyGroundTruth = getDatasetGroundTruth('kidney');
     const systemMssg: string = `
         You are a text highlighter expert.
         Don't remove or modify any html tags in the message.

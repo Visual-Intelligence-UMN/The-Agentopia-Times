@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import { getGameConfig } from '../config';
 import { getStoredOpenAIKey } from '../../utils/openai';
 import { selector } from './templates';
 import { extractXML } from './textProcessingUtils';
@@ -22,8 +23,9 @@ export const callLLM = async (messages: Message[]) => {
         },
     });
     try {
+        const { judge } = getGameConfig().mas.model;
         const response = await apiClient.post('', {
-            model: 'gpt-4o-mini',
+            model: judge,
             messages,
             temperature: 0.7,
             max_tokens: 150,

@@ -3,21 +3,18 @@ import { ChatOpenAI } from '@langchain/openai';
 import { marked } from 'marked';
 import OpenAI from 'openai';
 
-// import { baseballDatasetStatistic, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic } from "../const";
-import {
-    baseballStatLevel1,
-    baseballStatLevel2,
-    baseballStatLevel3,
-    kidneyStatLevel1,
-    kidneyStatLevel2,
-    kidneyStatLevel3,
-} from '../const';
+import { getDatasetConfig } from '../game/config';
 import { sequential } from '../game/assets/sprites';
 import { EventBus } from '../game/EventBus';
 import { autoControlAgent, transmitReport } from '../game/utils/controlUtils';
 import { recorder } from '../game/utils/recorder';
 import { updateStateIcons } from '../game/utils/sceneUtils';
 import { getStoredOpenAIKey } from '../utils/openai';
+import {
+    getHallucinationInstruction,
+    getHallucinationStats,
+    getMASModels,
+} from './config';
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
@@ -32,33 +29,17 @@ import {
 } from './workflowUtils';
 
 function hallucinationByType(t?: string) {
-    switch (t) {
-        case 'factual':
-            return 'Your output should contain **factual contradictions** against known dataset truths.';
-        case 'cherry':
-            return 'Cherry-pick facts and **overgeneralize** to support one side, ignoring opposing data.';
-        case 'framing':
-            return 'Use **framing and ambiguity** to subtly manipulate readers’ impressions without explicit lies.';
-        default:
-            return 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report';
-    }
+    return getHallucinationInstruction(t);
 }
 
 function pickStatsBy(dataset: 'baseball' | 'kidney', hType?: string) {
-    if (dataset === 'baseball') {
-        if (hType === 'factual') return baseballStatLevel1;
-        if (hType === 'cherry') return baseballStatLevel2;
-        if (hType === 'framing') return baseballStatLevel3;
-    } else {
-        if (hType === 'factual') return kidneyStatLevel1;
-        if (hType === 'cherry') return kidneyStatLevel2;
-        if (hType === 'framing') return kidneyStatLevel3;
-    }
-    return ''; // 默认无统计
+    return getHallucinationStats(dataset, hType);
 }
 
-export const kidneyPath: string = './data/kidney.csv';
-export const baseballPath: string = './data/baseball_cleaned.csv';
+export const kidneyPath: string =
+    getDatasetConfig('kidney')?.csvPath ?? './data/kidney.csv';
+export const baseballPath: string =
+    getDatasetConfig('baseball')?.csvPath ?? './data/baseball_cleaned.csv';
 
 let cachedOpenAI: OpenAI | null = null;
 
@@ -102,7 +83,7 @@ export function getLLM() {
 
         cachedLLM = new ChatOpenAI({
             apiKey,
-            modelName: 'gpt-4o',
+            modelName: getMASModels().chat,
         });
     }
     return cachedLLM;

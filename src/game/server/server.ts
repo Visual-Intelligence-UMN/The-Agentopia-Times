@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import { getGameConfig } from '../config';
 import { getStoredOpenAIKey } from '../../utils/openai';
 
 const openaiApiUrl = 'https://api.openai.com/v1/chat/completions';
@@ -36,9 +37,10 @@ function getApiClient() {
 export const fetchChatCompletion = async (messages: any) => {
     try {
         const apiClient = getApiClient();
+        const { judge } = getGameConfig().mas.model;
 
         const response = await apiClient.post('', {
-            model: 'gpt-4o-mini',
+            model: judge,
             messages,
             temperature: 0.7,
             max_tokens: 150,
