@@ -1,33 +1,19 @@
 import { marked } from 'marked';
+
 import { EventBus } from '../game/EventBus';
-import { baseballPath, getLLM, kidneyPath } from './agents';
+import { getLLM } from './agents';
 import { initializeLLM } from './chainingUtils';
+import {
+    getDatasetConfigForScene,
+    getDatasetGroundTruth,
+    getHallucinationStats,
+} from './config';
+import { webStyle } from './const';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
-import { webStyle } from './const';
-// import { baseballDatasetStatistic, baseballGroundTruth, biasedBaseballDatasetStatistic, biasedKidneyDatasetStatistic, kidneyDatasetStatistic, kidneyGroundTruth } from '../const';
-import {
-  kidneyGroundTruth,
-  baseballGroundTruth,
-
-  baseballDatasetStatistic,
-  kidneyDatasetStatistic,
-
-  baseballStatLevel1,
-  baseballStatLevel2,
-  baseballStatLevel3,
-  kidneyStatLevel1,
-  kidneyStatLevel2,
-  kidneyStatLevel3
-} from '../const';
-
 
 export function returnDatasetDescription(scene: any) {
-    let datasetDescription = `The Justice and Jeter Baseball Dataset is a classic example illustrating Simpson's Paradox, where trends observed within individual groups reverse when the groups are combined. In the 1995 and 1996 MLB seasons, David Justice had a higher batting average than Derek Jeter in each year individually. However, when the data from both years are combined, Jeter's overall batting average surpasses Justice's. This counterintuitive result arises because Jeter had significantly more at-bats in 1996—a year in which he performed exceptionally well—while Justice had more at-bats in 1995, when his performance was comparatively lower. The imbalance in the distribution of at-bats across the two years affects the combined averages, leading to the paradoxical outcome. This dataset serves as a compelling demonstration of how aggregated data can sometimes lead to misleading conclusions if underlying subgroup trends and data distributions are not carefully considered. ​`;
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        datasetDescription = `The kidney stone treatment dataset is a renowned real-world example illustrating Simpson’s Paradox, where aggregated data can lead to conclusions that contradict those derived from subgroup analyses. In a 1986 study published in the British Medical Journal, researchers compared two treatments for kidney stones: Treatment A (open surgery) and Treatment B (percutaneous nephrolithotomy). When considering all patients collectively, Treatment B appeared more effective, boasting an overall success rate of 82.6% compared to 78.0% for Treatment A. However, when the data were stratified by stone size, Treatment A demonstrated higher success rates for both small stones (93.1% vs. 86.7%) and large stones (73.0% vs. 68.8%) . This paradox arises because a disproportionate number of patients with small stones—who generally have higher treatment success rates—received Treatment B, skewing the aggregated results. The dataset underscores the importance of considering confounding variables and subgroup analyses in statistical evaluations to avoid misleading conclusions.`;
-    }
-    return datasetDescription;
+    return getDatasetConfigForScene(scene).description;
 }
 
 // for analysis
@@ -49,59 +35,20 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
     //   }
     // }
 
-    let stats = baseballDatasetStatistic;
+    const datasetConfig = getDatasetConfigForScene(scene);
+    let stats = datasetConfig.neutralStatistics;
 
-    if (scene.registry.get("currentDataset") === "kidney") {
-      stats = kidneyDatasetStatistic;
+    if (agent.getBias() !== '') {
+        stats = getHallucinationStats(datasetConfig.id, agent.getBiasType());
     }
 
-    if (agent.getBias() !== "") {
-      const level = scene.registry.get("currentLevel");
-      if (scene.registry.get("currentDataset") === "kidney") {
-        if (level === "level1") stats = kidneyStatLevel1;
-        else if (level === "level2") stats = kidneyStatLevel2;
-        else if (level === "level3") stats = kidneyStatLevel3;
-      } else {
-        if (level === "level1") stats = baseballStatLevel1;
-        else if (level === "level2") stats = baseballStatLevel2;
-        else if (level === "level3") stats = baseballStatLevel3;
-      }
-    }
-
-
-    let datasetPath = baseballPath;
-    let researchQuestions = `
-                Across both 1995 and 1996, 
-                which player had the better batting average overall? 
-                Does this confirm who was the better hitter in each individual year?
-                Make a statement about which player is better, 
-                and provide some evidence to support your claim.
-
-                Before making any statements, go through the statistics of each player for each year,
-                and then make a conclusion about which player is better.
-                Be careful, this dataset has a phenomenon called Simpson's Paradox
+    const datasetPath = datasetConfig.csvPath;
+    const researchQuestions = `
+                ${datasetConfig.researchQuestion}
 
                 You can use the following statistics to support your claim:
                 ${stats}
             `;
-
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        // datasetPath = ucbPath;
-        datasetPath = kidneyPath;
-        researchQuestions = `
-                Treatment B has a higher overall success rate across all patients. 
-                Should it be considered more effective than Treatment A?
-                Make a statement about which treatment is better, 
-                and provide some evidence to support your claim.
-
-                Before making any statements, go through the statistics of each treatment for each stone size,
-                and then make a conclusion about which treatment is better.
-                Be careful, this dataset has a phenomenon called Simpson's Paradox
-
-                You can use the following statistics to support your claim:
-                ${stats}
-                    `;
-    }
 
     const res = await fetch(datasetPath);
     const csvRaw = await res.text();
@@ -119,8 +66,7 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
         },
         {
             role: 'user',
-            content:
-                `  answer following questions ${researchQuestions}`,
+            content: `  answer following questions ${researchQuestions}`,
         },
     ];
 
@@ -133,206 +79,213 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
 }
 
 export async function startJudges(d3Code: string, content: string) {
-  // const highlightedText = await createHighlighter(content);
-  // const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
+    // const highlightedText = await createHighlighter(content);
+    // const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
 
-  const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
-  const parsedMarkdown = await marked.parse(cleanedContent);
+    const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
+    const parsedMarkdown = await marked.parse(cleanedContent);
 
-  let raw = await createHighlighter(parsedMarkdown);
-  let highlightedText = typeof raw === 'string'
-    ? raw
-    : (raw as any).content?.toString?.() ?? '';
+    const raw = await createHighlighter(parsedMarkdown);
+    let highlightedText =
+        typeof raw === 'string'
+            ? raw
+            : ((raw as any).content?.toString?.() ?? '');
 
-  highlightedText = highlightedText.replace(/^```html\s*|```$/g, '').trim();
+    highlightedText = highlightedText.replace(/^```html\s*|```$/g, '').trim();
 
+    const visRaw = await createVisualizationJudge(d3Code);
+    const writingRaw = await createWritingJudge(content);
 
-  
+    const visResult = await parseJudgeResult(visRaw);
+    const writingResult = await parseJudgeResult(writingRaw);
 
-  const visRaw = await createVisualizationJudge(d3Code);
-  const writingRaw = await createWritingJudge(content);
-
-  const visResult = await parseJudgeResult(visRaw);
-  const writingResult = await parseJudgeResult(writingRaw);
-
-  return {
-    highlightedText,
-    coding_score: visResult.score,
-    coding_reasons: visResult.reasons,
-    comments: visResult.comments,
-    writing_score: writingResult.score,
-    writing_reasons: writingResult.reasons,
-    writingComments: writingResult.comments,
-  };
+    return {
+        highlightedText,
+        coding_score: visResult.score,
+        coding_reasons: visResult.reasons,
+        comments: visResult.comments,
+        writing_score: writingResult.score,
+        writing_reasons: writingResult.reasons,
+        writingComments: writingResult.comments,
+    };
 }
 
 export async function parseJudgeResult(
-  raw: string | any[] | { content: string }
+    raw: string | any[] | { content: string },
 ): Promise<{ score: string; reasons: string[]; comments: string[] }> {
-  let clean: string;
+    let clean: string;
 
-  if (typeof raw === 'string') {
-    clean = raw;
-  } else if (Array.isArray(raw)) {
-    clean = raw.map(r => r?.toString?.() ?? '').join('\n');
-  } else if (typeof raw === 'object' && raw !== null && 'content' in raw) {
-    clean = raw.content;
-  } else {
-    throw new Error('Unsupported judge result type');
-  }
+    if (typeof raw === 'string') {
+        clean = raw;
+    } else if (Array.isArray(raw)) {
+        clean = raw.map((r) => r?.toString?.() ?? '').join('\n');
+    } else if (typeof raw === 'object' && raw !== null && 'content' in raw) {
+        clean = raw.content;
+    } else {
+        throw new Error('Unsupported judge result type');
+    }
 
-  // 移除 ```ts 包裹
-  clean = clean.replace(/^```ts\s*|```$/g, '').trim();
+    // 移除 ```ts 包裹
+    clean = clean.replace(/^```ts\s*|```$/g, '').trim();
 
-  // 手动添加属性名的引号：{ score: → { "score":
-  clean = clean.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    // 手动添加属性名的引号：{ score: → { "score":
+    clean = clean.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
 
-  return JSON.parse(clean);
+    return JSON.parse(clean);
 }
 
 export function createScoreUI(
-  scene: any,
-  scoreX: number,
-  scoreY: number,
-  overallScore: number,
-  writingScore: string,
-  codingScore: string,
-  writingReasons: string[],
-  codingReasons: string[]
+    scene: any,
+    scoreX: number,
+    scoreY: number,
+    overallScore: number,
+    writingScore: string,
+    codingScore: string,
+    writingReasons: string[],
+    codingReasons: string[],
 ) {
-  const paddingX = 16;
-  const paddingY = 10;
+    const paddingX = 16;
+    const paddingY = 10;
 
-  // const codingScores = finalVisScores;
+    // const codingScores = finalVisScores;
 
-  if (scene.scoreButton) scene.scoreButton.destroy();
-  if (scene.scorePanel) scene.scorePanel.destroy();
-  if (scene.scorePanelBg) scene.scorePanelBg.destroy();
+    if (scene.scoreButton) scene.scoreButton.destroy();
+    if (scene.scorePanel) scene.scorePanel.destroy();
+    if (scene.scorePanelBg) scene.scorePanelBg.destroy();
 
-  const scoreValueText = scene.add.text(scoreX, scoreY, `Score: ${overallScore}/10`, {
-    fontSize: "18px",
-    fontFamily: "Verdana",
-    color: "#ffffff",
-  }).setScrollFactor(0).setDepth(1001);
+    const scoreValueText = scene.add
+        .text(scoreX, scoreY, `Score: ${overallScore}/10`, {
+            fontSize: '18px',
+            fontFamily: 'Verdana',
+            color: '#ffffff',
+        })
+        .setScrollFactor(0)
+        .setDepth(1001);
 
-  const expandHintText = scene.add.text(scoreX, scoreY, `(click to expand)`, {
-    fontSize: "12px",
-    fontFamily: "Verdana",
-    color: "#cccccc",
-  }).setScrollFactor(0).setDepth(1001);
+    const expandHintText = scene.add
+        .text(scoreX, scoreY, `(click to expand)`, {
+            fontSize: '12px',
+            fontFamily: 'Verdana',
+            color: '#cccccc',
+        })
+        .setScrollFactor(0)
+        .setDepth(1001);
 
-  const buttonWidth = Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
-  const buttonHeight = scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
+    const buttonWidth =
+        Math.max(scoreValueText.width, expandHintText.width) + paddingX * 2;
+    const buttonHeight =
+        scoreValueText.height + expandHintText.height + paddingY * 2 + 4;
 
-  scene.scoreButtonBg = scene.add.rectangle(
-    scoreX + buttonWidth / 2,
-    scoreY + buttonHeight / 2,
-    buttonWidth,
-    buttonHeight,
-    0x000000,
-    0.6
-  ).setStrokeStyle(2, 0xffffff)
-   .setScrollFactor(0)
-   .setDepth(1000)
-   .setInteractive({ useHandCursor: true })
-   .on("pointerdown", () => {
-     const newVisible = !scene.scorePanel.visible;
-     scene.scorePanel.setVisible(newVisible);
-     scene.scorePanelBg.setVisible(newVisible);
-   });
+    scene.scoreButtonBg = scene.add
+        .rectangle(
+            scoreX + buttonWidth / 2,
+            scoreY + buttonHeight / 2,
+            buttonWidth,
+            buttonHeight,
+            0x000000,
+            0.6,
+        )
+        .setStrokeStyle(2, 0xffffff)
+        .setScrollFactor(0)
+        .setDepth(1000)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+            const newVisible = !scene.scorePanel.visible;
+            scene.scorePanel.setVisible(newVisible);
+            scene.scorePanelBg.setVisible(newVisible);
+        });
 
-  scoreValueText.setPosition(
-    scene.scoreButtonBg.x - scoreValueText.width / 2,
-    scene.scoreButtonBg.y - buttonHeight / 2 + paddingY
-  );
-  expandHintText.setPosition(
-    scene.scoreButtonBg.x - expandHintText.width / 2,
-    scoreValueText.y + scoreValueText.height + 4
-  );
+    scoreValueText.setPosition(
+        scene.scoreButtonBg.x - scoreValueText.width / 2,
+        scene.scoreButtonBg.y - buttonHeight / 2 + paddingY,
+    );
+    expandHintText.setPosition(
+        scene.scoreButtonBg.x - expandHintText.width / 2,
+        scoreValueText.y + scoreValueText.height + 4,
+    );
 
-  scene.scoreValueText = scoreValueText;
-  scene.expandHintText = expandHintText;
+    scene.scoreValueText = scoreValueText;
+    scene.expandHintText = expandHintText;
 
-  scene.children.bringToTop(scoreValueText);
-  scene.children.bringToTop(expandHintText);
+    scene.children.bringToTop(scoreValueText);
+    scene.children.bringToTop(expandHintText);
 
-  // const writingText = Object.entries(finalWritingScores)
-  //   .map(([k, v]) => `- ${k}: ${v}/10`)
-  //   .join("\n");
+    // const writingText = Object.entries(finalWritingScores)
+    //   .map(([k, v]) => `- ${k}: ${v}/10`)
+    //   .join("\n");
 
-  // const codingText = Object.entries(codingScores)
-  //   .map(([k, v]) => `- ${k}: ${v}/10`)
-  //   .join("\n");
+    // const codingText = Object.entries(codingScores)
+    //   .map(([k, v]) => `- ${k}: ${v}/10`)
+    //   .join("\n");
 
-  const panelText = `✍️ Writing: ${writingScore}
-  ${writingReasons.map(r => r.startsWith("-") ? `  ${r}` : `  - ${r}`).join("\n")}
+    const panelText = `✍️ Writing: ${writingScore}
+  ${writingReasons.map((r) => (r.startsWith('-') ? `  ${r}` : `  - ${r}`)).join('\n')}
 
   📈 Coding: ${codingScore}
-  ${codingReasons.map(r => r.startsWith("-") ? `  ${r}` : `  - ${r}`).join("\n")}`;
+  ${codingReasons.map((r) => (r.startsWith('-') ? `  ${r}` : `  - ${r}`)).join('\n')}`;
 
+    scene.scorePanel = scene.add
+        .text(scoreX - 100, scoreY + 80, panelText, {
+            fontSize: '18px',
+            fontFamily: 'Verdana',
+            color: '#FFFFFF',
+            padding: { x: 20, y: 16 },
+            wordWrap: { width: 320 },
+            align: 'left',
+        })
+        .setScrollFactor(0)
+        .setDepth(2002)
+        .setVisible(false)
+        .setResolution(2);
 
+    const textBounds = scene.scorePanel.getBounds();
+    const panelWidth = textBounds.width + 20;
+    const panelHeight = textBounds.height + 20;
+    const panelX = textBounds.x + panelWidth / 2;
+    const panelY = textBounds.y + panelHeight / 2;
 
-  scene.scorePanel = scene.add.text(scoreX - 100, scoreY + 80, panelText, {
-    fontSize: "18px",
-    fontFamily: "Verdana",
-    color: "#FFFFFF",
-    padding: { x: 20, y: 16 },
-    wordWrap: { width: 320 },
-    align: "left",
-  }).setScrollFactor(0).setDepth(2002).setVisible(false).setResolution(2);
-
-  const textBounds = scene.scorePanel.getBounds();
-  const panelWidth = textBounds.width + 20;
-  const panelHeight = textBounds.height + 20;
-  const panelX = textBounds.x + panelWidth / 2;
-  const panelY = textBounds.y + panelHeight / 2;
-
-  scene.scorePanelBg = scene.add.rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
-    .setStrokeStyle(2, 0xffffff)
-    .setScrollFactor(0)
-    .setDepth(2001)
-    .setVisible(false);
+    scene.scorePanelBg = scene.add
+        .rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
+        .setStrokeStyle(2, 0xffffff)
+        .setScrollFactor(0)
+        .setDepth(2001)
+        .setVisible(false);
 }
 
 // clean the scores UI when click the start simulation button
 export function resetScoreUI(scene: any) {
-  if (scene.scoreButton) {
-    scene.scoreButton.destroy();
-    scene.scoreButton = null;
-  }
-  if (scene.scoreButtonBg) {
-    scene.scoreButtonBg.destroy();
-    scene.scoreButtonBg = null;
-  }
-  if (scene.scorePanel) {
-    scene.scorePanel.destroy();
-    scene.scorePanel = null;
-  }
-  if (scene.scorePanelBg) {
-    scene.scorePanelBg.destroy();
-    scene.scorePanelBg = null;
-  }
-  if (scene.scoreValueText) {
-    scene.scoreValueText.destroy();
-    scene.scoreValueText = null;
-  }
-  if (scene.expandHintText) {
-    scene.expandHintText.destroy();
-    scene.expandHintText = null;
-  }
+    if (scene.scoreButton) {
+        scene.scoreButton.destroy();
+        scene.scoreButton = null;
+    }
+    if (scene.scoreButtonBg) {
+        scene.scoreButtonBg.destroy();
+        scene.scoreButtonBg = null;
+    }
+    if (scene.scorePanel) {
+        scene.scorePanel.destroy();
+        scene.scorePanel = null;
+    }
+    if (scene.scorePanelBg) {
+        scene.scorePanelBg.destroy();
+        scene.scorePanelBg = null;
+    }
+    if (scene.scoreValueText) {
+        scene.scoreValueText.destroy();
+        scene.scoreValueText = null;
+    }
+    if (scene.expandHintText) {
+        scene.expandHintText.destroy();
+        scene.expandHintText = null;
+    }
 }
-
 
 export async function startVisualizer(
     scene: any,
     content: string,
     chartData: any,
 ) {
-    let datasetPath = baseballPath;
-
-    if (scene.registry.get('currentDataset') === 'kidney') {
-        datasetPath = kidneyPath;
-    }
+    const datasetPath = getDatasetConfigForScene(scene).csvPath;
 
     const res = await fetch(datasetPath);
     const csvRaw = await res.text();
@@ -376,7 +329,7 @@ export async function startVisualizer(
     // 3. Final processing (at this point contentWithoutHeaders no longer contains Title and Intro)
     // const highlightedText = marked.parse(contentWithoutHeaders.trim())
 
-    return {}
+    return {};
 }
 
 export async function startHTMLConstructor(
@@ -387,11 +340,11 @@ export async function startHTMLConstructor(
     department: string,
     index: number,
     style: string = webStyle,
-){
+) {
     let commentsHTML = '';
 
     if (comments?.length > 0) {
-    commentsHTML += `
+        commentsHTML += `
       <div class="comment-section">
         <h3>Comments on Visualization</h3>
         <ul>
@@ -399,10 +352,10 @@ export async function startHTMLConstructor(
         </ul>
       </div>
     `;
-  }
+    }
 
     if (writingComments?.length > 0) {
-    commentsHTML += `
+        commentsHTML += `
       <div class="comment-section">
         <h3>Comments on Writing</h3>
         <ul>
@@ -410,8 +363,7 @@ export async function startHTMLConstructor(
         </ul>
       </div>
     `;
-  }
-
+    }
 
     const body = `
   <div class="newspaper">
@@ -442,40 +394,43 @@ export async function startHTMLConstructor(
 
 `;
 
-  let reportMessage = `${style}${body}`;
+    const reportMessage = `${style}${body}`;
 
-  console.log("graph:vis-report msg: ", reportMessage);
+    console.log('graph:vis-report msg: ', reportMessage);
 
-  EventBus.emit('final-report', {
-      report: reportMessage,
-      department: department+"-"+index,
-      title: "Final Report"
-  });
+    EventBus.emit('final-report', {
+        report: reportMessage,
+        department: department + '-' + index,
+        title: 'Final Report',
+    });
 }
 
 export function startScoreComputer(judgeData: {
-  writing_score: string;    // "8/10"
-  coding_score: string;     // "7/10"
-  coding_reasons: string[];
-  writing_reasons: string[];
+    writing_score: string; // "8/10"
+    coding_score: string; // "7/10"
+    coding_reasons: string[];
+    writing_reasons: string[];
 }) {
-  const parseScore = (scoreStr: string): number => {
-    const match = scoreStr.match(/(\d+)\/10$/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
+    const parseScore = (scoreStr: string): number => {
+        const match = scoreStr.match(/(\d+)\/10$/);
+        return match ? parseInt(match[1], 10) : 0;
+    };
 
-  const writingNumeric = parseScore(judgeData.writing_score); // 8
-  const codingNumeric = parseScore(judgeData.coding_score);   // 7
+    const writingNumeric = parseScore(judgeData.writing_score); // 8
+    const codingNumeric = parseScore(judgeData.coding_score); // 7
 
-  const overall = ((writingNumeric * 1.5 + codingNumeric * 1) / 25 * 10).toFixed(2);
+    const overall = (
+        ((writingNumeric * 1.5 + codingNumeric * 1) / 25) *
+        10
+    ).toFixed(2);
 
-  return {
-    overall_score: overall,
-    writing_score: judgeData.writing_score,
-    coding_score: judgeData.coding_score,
-    coding_reasons: judgeData.coding_reasons,
-    writing_reasons: judgeData.writing_reasons
-  };
+    return {
+        overall_score: overall,
+        writing_score: judgeData.writing_score,
+        coding_score: judgeData.coding_score,
+        coding_reasons: judgeData.coding_reasons,
+        writing_reasons: judgeData.writing_reasons,
+    };
 }
 
 async function extractTSArray(raw: any): Promise<string[]> {
@@ -530,27 +485,30 @@ export async function createVisualizationJudge(message: string) {
       ${message}
     `;
 
-  const comment = await llm.invoke(systemMssg);
+    const comment = await llm.invoke(systemMssg);
 
-  const content = typeof comment === 'string'
-    ? comment
-    : (comment as any).content?.toString?.() ?? '';
+    const content =
+        typeof comment === 'string'
+            ? comment
+            : ((comment as any).content?.toString?.() ?? '');
 
-  console.log('LLM response (raw content):', content);
+    console.log('LLM response (raw content):', content);
 
-  try {
-      console.log('comments from writing judge:', comment.content);
-      return comment.content;
-  } catch (e) {
-      console.error('Writing judge failed:', e);
-      return [`Error: Failed to evaluate writing content.`];
-  }
+    try {
+        console.log('comments from writing judge:', comment.content);
+        return comment.content;
+    } catch (e) {
+        console.error('Writing judge failed:', e);
+        return [`Error: Failed to evaluate writing content.`];
+    }
 }
 
 export async function createWritingJudge(message: string) {
-  const llm = initializeLLM();
+    const llm = initializeLLM();
+    const baseballGroundTruth = getDatasetGroundTruth('baseball');
+    const kidneyGroundTruth = getDatasetGroundTruth('kidney');
 
-  const systemMssg = `
+    const systemMssg = `
     You are a writing evaluation expert.
 
     Your task is to evaluate an analytical report and return a structured object with:
@@ -614,25 +572,27 @@ export async function createWritingJudge(message: string) {
   ${message}
   `;
 
-  const comment = await llm.invoke(systemMssg);
-  const content = typeof comment === 'string'
-    ? comment
-    : (comment as any).content?.toString?.() ?? '';
+    const comment = await llm.invoke(systemMssg);
+    const content =
+        typeof comment === 'string'
+            ? comment
+            : ((comment as any).content?.toString?.() ?? '');
 
-  console.log('LLM writing response:', content);
+    console.log('LLM writing response:', content);
 
-  try {
-      console.log('comments from writing judge:', comment.content);
-      return comment.content;
-  } catch (e) {
-      console.error('Writing judge failed:', e);
-      return [`Error: Failed to evaluate writing content.`];
-  }
+    try {
+        console.log('comments from writing judge:', comment.content);
+        return comment.content;
+    } catch (e) {
+        console.error('Writing judge failed:', e);
+        return [`Error: Failed to evaluate writing content.`];
+    }
 }
-
 
 export async function createHighlighter(message: string) {
     const llm = initializeLLM();
+    const baseballGroundTruth = getDatasetGroundTruth('baseball');
+    const kidneyGroundTruth = getDatasetGroundTruth('kidney');
     const systemMssg: string = `
         You are a text highlighter expert.
         Don't remove or modify any html tags in the message.
