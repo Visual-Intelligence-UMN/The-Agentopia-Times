@@ -16,7 +16,7 @@ export class Boot extends Scene {
         });
 
         gameConfig.assets.spritesheets.forEach((sheet) => {
-            this.load.spritesheet(sheet.key, sheet.src, {
+            this.load.spritesheet(sheet.key, sheet.src as string, {
                 frameWidth: sheet.frameWidth,
                 frameHeight: sheet.frameHeight,
             });
