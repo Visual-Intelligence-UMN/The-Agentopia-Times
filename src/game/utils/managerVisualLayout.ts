@@ -21,6 +21,9 @@ export interface ManagerPanelLayout {
 const ACTION_PANEL_TOP = 255;
 export const CONTROL_STACK_VERTICAL_SHIFT = 40;
 export const ACTION_GROUP_ADDITIONAL_SHIFT = 12;
+export const RESET_ADDITIONAL_LIFT = 8;
+export const PANEL_BOTTOM_EXTENSION = 24;
+export const MANAGER_SECTION_DROP = 16;
 
 export function shiftControlStackY(y: number): number {
     return y - CONTROL_STACK_VERTICAL_SHIFT;
@@ -30,19 +33,30 @@ export function shiftActionGroupY(y: number): number {
     return shiftControlStackY(y) - ACTION_GROUP_ADDITIONAL_SHIFT;
 }
 
+export function shiftResetY(y: number): number {
+    return shiftActionGroupY(y) - RESET_ADDITIONAL_LIFT;
+}
+
+function shiftManagerSectionY(y: number): number {
+    return shiftActionGroupY(y) + MANAGER_SECTION_DROP;
+}
+
 export function calculateManagerPanelLayout(
     viewportHeight: number,
 ): ManagerPanelLayout {
-    const panelHeight = viewportHeight - ACTION_PANEL_TOP;
+    const panelTop = shiftActionGroupY(ACTION_PANEL_TOP);
+    const panelBottom =
+        shiftActionGroupY(viewportHeight) + PANEL_BOTTOM_EXTENSION;
+    const panelHeight = panelBottom - panelTop;
 
     return {
         panel: {
-            centerY: shiftActionGroupY(ACTION_PANEL_TOP + panelHeight / 2),
+            centerY: panelTop + panelHeight / 2,
             height: panelHeight,
         },
-        titleY: shiftActionGroupY(viewportHeight - 77),
-        hatY: shiftActionGroupY(viewportHeight - 39),
-        statusY: shiftActionGroupY(viewportHeight - 11),
+        titleY: shiftManagerSectionY(viewportHeight - 77),
+        hatY: shiftManagerSectionY(viewportHeight - 39),
+        statusY: shiftManagerSectionY(viewportHeight - 11),
     };
 }
 

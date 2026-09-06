@@ -48,7 +48,7 @@ import {
     createManagerAssignmentHUD,
     type ManagerAssignmentController,
 } from '../utils/managerAssignmentHUD';
-import { shiftActionGroupY } from '../utils/managerVisualLayout';
+import { shiftActionGroupY, shiftResetY } from '../utils/managerVisualLayout';
 import {
     areAllZonesOccupied,
     createItem,
@@ -313,7 +313,7 @@ export class BaseLevelScene extends ParentScene {
 
         // reset button
         const resetButton = this.add
-            .text(-45, shiftActionGroupY(220), '⟳ Reset', {
+            .text(-45, shiftResetY(220), '⟳ Reset', {
                 fontSize: '18px',
                 fontFamily: 'Verdana',
                 color: '#ffffff',
