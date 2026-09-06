@@ -3,14 +3,16 @@ import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
 import {
-    createIndependentEditorialAssessment,
+    createEditorialManagerAssessmentCoordinator,
     reviewCandidateReport,
+    type EditorialManagerAssessmentCoordinator,
     type EditorialReviewResult,
 } from '../../langgraph/editorialManager';
 import { resetReportIcons, testInput } from '../../langgraph/agents';
 import {
     finishMASTrace,
     recordMASStage,
+    startOrContinueMASTrace,
     startMASTrace,
 } from '../../langgraph/masTrace';
 import {
@@ -38,7 +40,6 @@ import {
     testRoute,
 } from '../server/testingUtils';
 import { Agent } from '../sprites/Agent';
-import type { EditorialAssessment } from '../domain/editorialManager';
 import { NPC } from '../sprites/NPC';
 import { state } from '../state';
 import { controlCameraMovements } from '../utils/controlUtils';
@@ -130,6 +131,7 @@ export class BaseLevelScene extends ParentScene {
     private selectedText?: Phaser.GameObjects.Text;
     private selectedDataset: string = 'none';
     private managerAssignment?: ManagerAssignmentController;
+    private managerAssessment?: EditorialManagerAssessmentCoordinator;
 
     // private requiredBiasedAgents: number = 1; // the number of the biased agents in this level
     // private biasedAgentsStatusText!: Phaser.GameObjects.Text;
@@ -348,10 +350,23 @@ export class BaseLevelScene extends ParentScene {
         if (
             levelConfig.semanticActions?.includes('hire_editorial_manager')
         ) {
+            this.managerAssessment =
+                createEditorialManagerAssessmentCoordinator(this, {
+                    onStatus: (status, color) =>
+                        this.managerAssignment?.setStatus(status, color),
+                });
             this.managerAssignment = createManagerAssignmentHUD(
                 this,
                 () => this.controllableCharacters as Agent[],
+                {
+                    onManagerAssigned: (manager) =>
+                        this.managerAssessment?.assign(manager),
+                },
             );
+            this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+                this.managerAssessment?.destroy();
+                this.managerAssessment = undefined;
+            });
         }
 
         // register a global variable
@@ -932,7 +947,10 @@ export class BaseLevelScene extends ParentScene {
                             .setStroke('#ebebec', 2)
                             .disableInteractive();
                         this.baseBallBtn.setDepth(998);
+                        const datasetChanged =
+                            this.registry.get('currentDataset') !== 'baseball';
                         this.registry.set('currentDataset', 'baseball');
+                        if (datasetChanged) this.managerAssessment?.refresh();
                     } else {
                         this.selectedDataset = 'none';
                         this.selectedText?.destroy();
@@ -1052,7 +1070,10 @@ export class BaseLevelScene extends ParentScene {
                             .setOrigin(0.5, 0.5)
                             .disableInteractive();
                         this.kidneyBtn.setDepth(998);
+                        const datasetChanged =
+                            this.registry.get('currentDataset') !== 'kidney';
                         this.registry.set('currentDataset', 'kidney');
+                        if (datasetChanged) this.managerAssessment?.refresh();
                     } else {
                         this.selectedDataset = 'none';
                         this.selectedText?.destroy();
@@ -1068,11 +1089,15 @@ export class BaseLevelScene extends ParentScene {
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
             this.debateStartBtn.on('pointerdown', async () => {
-                const editorialManager =
-                    this.managerAssignment?.getManager() ?? null;
+                const managerAssessmentRun =
+                    this.managerAssessment?.capture() ?? null;
+                const editorialManager = managerAssessmentRun?.manager ?? null;
                 recorder.recordEvent({ type: 'simulation_started', configuration: { level: this.levelKey, dataset: this.registry.get('currentDataset'), workflow: this.registry.get('workflowConfig'), editorialManager: editorialManager?.getName() ?? null } });
                 const traceWorkflow = this.registry.get('workflowConfig');
-                startMASTrace({
+                const beginTrace = managerAssessmentRun
+                    ? startOrContinueMASTrace
+                    : startMASTrace;
+                beginTrace({
                     level: this.levelKey,
                     dataset: String(
                         this.registry.get('currentDataset') ?? 'unknown',
@@ -1087,41 +1112,7 @@ export class BaseLevelScene extends ParentScene {
                 resetScoreUI(this);
 
                 this.registry.set('isWorkflowRunning', true);
-                let editorialAssessment: EditorialAssessment | null = null;
                 let editorialReview: EditorialReviewResult | null = null;
-
-                if (editorialManager) {
-                    try {
-                        editorialAssessment =
-                            await createIndependentEditorialAssessment(
-                                this,
-                                editorialManager,
-                                {
-                                    onStatus: (status, color) =>
-                                        this.managerAssignment?.setStatus(
-                                            status,
-                                            color,
-                                        ),
-                                },
-                            );
-                    } catch (error) {
-                        console.error(
-                            'Editorial Manager assessment failed:',
-                            error,
-                        );
-                        this.managerAssignment?.setStatus(
-                            'REVIEW FAILED',
-                            '#ff8a65',
-                        );
-                        recorder.recordEvent({
-                            type: 'editorial_assessment_failed',
-                            message:
-                                error instanceof Error
-                                    ? error.message
-                                    : String(error),
-                        });
-                    }
-                }
                 console.log('btn pre-start zones data', this.parallelZones);
                 const agentsInfo = getAllAgents(this.parallelZones);
                 console.log('agentsInfo', agentsInfo);
@@ -1319,8 +1310,11 @@ export class BaseLevelScene extends ParentScene {
                     if (
                         i === REPORT_WRITING_STAGE_INDEX &&
                         editorialManager &&
-                        editorialAssessment
+                        managerAssessmentRun
                     ) {
+                        const assessmentOutcome =
+                            await managerAssessmentRun.outcome;
+                        if (assessmentOutcome.status !== 'ready') continue;
                         const candidateReport = String(
                             cycleOutputs[i + 1] ?? '',
                         );
@@ -1328,7 +1322,7 @@ export class BaseLevelScene extends ParentScene {
                             editorialReview = await reviewCandidateReport(
                                 this,
                                 editorialManager,
-                                editorialAssessment,
+                                assessmentOutcome.assessment,
                                 candidateReport,
                                 {
                                     onStatus: (status, color) =>

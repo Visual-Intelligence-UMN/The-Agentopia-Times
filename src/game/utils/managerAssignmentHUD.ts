@@ -18,6 +18,10 @@ export interface ManagerAssignmentController {
     destroy(): void;
 }
 
+export interface ManagerAssignmentHUDOptions {
+    onManagerAssigned?(manager: Agent): void;
+}
+
 function drawPixelManagerHat(
     scene: Phaser.Scene,
     x: number,
@@ -68,6 +72,7 @@ function drawDottedLine(
 export function createManagerAssignmentHUD(
     scene: Phaser.Scene,
     getAgents: () => Agent[],
+    options: ManagerAssignmentHUDOptions = {},
 ): ManagerAssignmentController {
     const panelX = 0;
     const panelLayout = calculateManagerPanelLayout(scene.scale.height);
@@ -216,6 +221,7 @@ export function createManagerAssignmentHUD(
             type: 'editorial_manager_assigned',
             agent: agent.getName(),
         });
+        options.onManagerAssigned?.(manager);
     }
 
     sourceHat.on('dragstart', () => {

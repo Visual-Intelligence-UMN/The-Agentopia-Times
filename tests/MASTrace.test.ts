@@ -13,7 +13,33 @@ import {
     recordMASStage,
     resetMASTraceForTests,
     startMASTrace,
+    startOrContinueMASTrace,
 } from '../src/langgraph/masTrace.ts';
+
+test('preserves a prefetched Manager assessment when MAS starts', () => {
+    resetMASTraceForTests();
+    const context = {
+        level: 'level1',
+        dataset: 'baseball',
+        workflow: ['voting', 'sequential'],
+    };
+    const prefetchedTrace = startMASTrace(context);
+    recordMASStage({
+        stageIndex: -1,
+        workflow: 'editorial_manager_independent_assessment',
+        input: { dataset: 'baseball' },
+        output: { centralClaim: 'Prefetched claim' },
+    });
+
+    const startedTrace = startOrContinueMASTrace(context);
+
+    assert.equal(startedTrace.runId, prefetchedTrace.runId);
+    assert.equal(startedTrace.stages.length, 1);
+    assert.equal(
+        startedTrace.stages[0].workflow,
+        'editorial_manager_independent_assessment',
+    );
+});
 
 test('records complete MAS inputs, outputs, stages, and final output', () => {
     resetMASTraceForTests();
@@ -95,9 +121,23 @@ test('preserves a failed model call without recording credentials', () => {
     callback.handleLLMStart({}, ['safe prompt'], 'call-2');
     callback.handleLLMError(new Error('request failed'), 'call-2');
 
+    startOrContinueMASTrace({
+        level: 'level4',
+        dataset: 'kidney',
+        workflow: ['sequential'],
+    });
+    callback.handleLLMStart({}, ['later MAS prompt'], 'call-3');
+    callback.handleLLMEnd(
+        {
+            generations: [[{ text: 'later MAS output' }]],
+        },
+        'call-3',
+    );
+
     const trace = finishMASTrace(null, false);
     assert.ok(trace);
     assert.equal(trace.status, 'error');
+    assert.equal(trace.calls.length, 2);
     assert.deepEqual(trace.calls[0].error, {
         name: 'Error',
         message: 'request failed',

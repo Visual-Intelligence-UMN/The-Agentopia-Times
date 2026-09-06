@@ -102,7 +102,7 @@ function persistTrace(): void {
 }
 
 function ensureTrace(model = 'unknown'): MASTrace {
-    if (!activeTrace || activeTrace.status !== 'running') {
+    if (!activeTrace || activeTrace.completedAt) {
         startMASTrace({
             level: 'unknown',
             dataset: 'unknown',
@@ -111,6 +111,18 @@ function ensureTrace(model = 'unknown'): MASTrace {
     }
 
     return activeTrace as MASTrace;
+}
+
+function hasSameTraceContext(
+    left: MASTraceContext,
+    right: MASTraceContext,
+): boolean {
+    return (
+        left.level === right.level &&
+        left.dataset === right.dataset &&
+        left.workflow.length === right.workflow.length &&
+        left.workflow.every((step, index) => step === right.workflow[index])
+    );
 }
 
 function serializeMessage(message: BaseMessage): MASTraceMessage {
@@ -213,6 +225,18 @@ export function startMASTrace(context: MASTraceContext): MASTrace {
     };
     persistTrace();
     return cloneTrace(activeTrace);
+}
+
+export function startOrContinueMASTrace(context: MASTraceContext): MASTrace {
+    if (
+        activeTrace &&
+        !activeTrace.completedAt &&
+        hasSameTraceContext(activeTrace.context, context)
+    ) {
+        return cloneTrace(activeTrace);
+    }
+
+    return startMASTrace(context);
 }
 
 export function recordMASStage(details: {

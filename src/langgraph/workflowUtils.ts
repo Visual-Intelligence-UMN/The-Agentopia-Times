@@ -644,6 +644,7 @@ export async function createHighlighter(message: string) {
 export async function startTextMessager(
     roleContent: string,
     userContent: string,
+    signal?: AbortSignal,
 ) {
     const message = [
         {
@@ -656,6 +657,6 @@ export async function startTextMessager(
         },
     ];
 
-    const msg = await getLLM().invoke(message);
+    const msg = await getLLM().invoke(message, { signal });
     return msg;
 }

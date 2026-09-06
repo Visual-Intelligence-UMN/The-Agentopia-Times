@@ -10,15 +10,27 @@ import {
     parseEditorialAssessment,
     parseEditorialDecision,
 } from '../game/domain/editorialManager';
+import {
+    createManagerAssessmentCoordinator,
+    type ManagerAssessmentCoordinator,
+} from '../game/domain/managerAssessmentCoordinator';
 import type { Agent } from '../game/sprites/Agent';
 import { recorder } from '../game/utils/recorder';
 import { getDatasetConfigForScene } from './config';
-import { recordMASStage } from './masTrace';
+import { recordMASStage, startMASTrace } from './masTrace';
 import { startTextMessager } from './workflowUtils';
 
 export interface EditorialReviewHooks {
     onStatus?(status: string, color?: string): void;
 }
+
+export interface EditorialAssessmentHooks extends EditorialReviewHooks {
+    signal?: AbortSignal;
+    isCurrent?(): boolean;
+}
+
+export type EditorialManagerAssessmentCoordinator =
+    ManagerAssessmentCoordinator<Agent, EditorialAssessment>;
 
 export interface EditorialReviewResult {
     assessment: EditorialAssessment;
@@ -39,15 +51,26 @@ function contentOf(message: unknown): string {
     return String(message ?? '');
 }
 
-async function loadOriginalEvidence(csvPath: string): Promise<string> {
+async function loadOriginalEvidence(
+    csvPath: string,
+    signal?: AbortSignal,
+): Promise<string> {
     try {
-        const response = await fetch(csvPath);
+        const response = await fetch(csvPath, { signal });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
         return (await response.text()).slice(0, 20_000);
     } catch {
         return '[Raw data unavailable; rely on the neutral statistics above.]';
+    }
+}
+
+function ensureCurrentAssessment(hooks: EditorialAssessmentHooks) {
+    if (hooks.signal?.aborted || hooks.isCurrent?.() === false) {
+        const error = new Error('Editorial Manager assessment superseded.');
+        error.name = 'AbortError';
+        throw error;
     }
 }
 
@@ -66,8 +89,9 @@ async function requestDecision(
 export async function createIndependentEditorialAssessment(
     scene: Phaser.Scene,
     manager: Agent,
-    hooks: EditorialReviewHooks = {},
+    hooks: EditorialAssessmentHooks = {},
 ): Promise<EditorialAssessment> {
+    ensureCurrentAssessment(hooks);
     const dataset = getDatasetConfigForScene(scene);
     hooks.onStatus?.('REVIEWING EVIDENCE', '#f4bd4a');
     recorder.recordEvent({
@@ -75,47 +99,87 @@ export async function createIndependentEditorialAssessment(
         agent: manager.getName(),
         dataset: dataset.id,
     });
-    manager.setAgentState('work');
+    // Prefetch may overlap the production MAS, so it must not take over the
+    // assigned agent's animation state before the report-review seam.
+    const rawEvidence = await loadOriginalEvidence(
+        dataset.csvPath,
+        hooks.signal,
+    );
+    ensureCurrentAssessment(hooks);
+    const messages = buildEditorialAssessmentMessages({
+        description: dataset.description,
+        researchQuestion: dataset.researchQuestion,
+        neutralStatistics: dataset.neutralStatistics,
+        rawEvidence,
+    });
+    const response = await startTextMessager(
+        messages.system,
+        messages.user,
+        hooks.signal,
+    );
+    ensureCurrentAssessment(hooks);
+    const assessment = parseEditorialAssessment(contentOf(response));
 
-    try {
-        const rawEvidence = await loadOriginalEvidence(dataset.csvPath);
-        const messages = buildEditorialAssessmentMessages({
+    recordMASStage({
+        stageIndex: -1,
+        workflow: 'editorial_manager_independent_assessment',
+        input: {
+            dataset: dataset.id,
             description: dataset.description,
             researchQuestion: dataset.researchQuestion,
             neutralStatistics: dataset.neutralStatistics,
             rawEvidence,
-        });
-        const response = await startTextMessager(
-            messages.system,
-            messages.user,
-        );
-        const assessment = parseEditorialAssessment(contentOf(response));
+        },
+        output: assessment,
+    });
+    recorder.recordEvent({
+        type: 'editorial_assessment_sealed',
+        agent: manager.getName(),
+        confidence: assessment.confidence,
+    });
+    manager.setAgentInformation(
+        `SEALED INDEPENDENT ASSESSMENT\n\n${assessment.centralClaim}\n\nEvidence:\n${assessment.supportingEvidence.join('\n')}`,
+    );
+    hooks.onStatus?.('ASSESSMENT SEALED', '#8ecae6');
+    return assessment;
+}
 
-        recordMASStage({
-            stageIndex: -1,
-            workflow: 'editorial_manager_independent_assessment',
-            input: {
-                dataset: dataset.id,
-                description: dataset.description,
-                researchQuestion: dataset.researchQuestion,
-                neutralStatistics: dataset.neutralStatistics,
-                rawEvidence,
+export function createEditorialManagerAssessmentCoordinator(
+    scene: Phaser.Scene,
+    hooks: EditorialReviewHooks = {},
+): EditorialManagerAssessmentCoordinator {
+    return createManagerAssessmentCoordinator(
+        (manager, context) => {
+            const workflow = scene.registry.get('workflowConfig');
+            startMASTrace({
+                level: String(scene.registry.get('currentLevel') ?? 'unknown'),
+                dataset: String(
+                    scene.registry.get('currentDataset') ?? 'unknown',
+                ),
+                workflow: Array.isArray(workflow) ? [...workflow] : [],
+            });
+            return createIndependentEditorialAssessment(scene, manager, {
+                signal: context.signal,
+                isCurrent: context.isCurrent,
+                onStatus: (status, color) => {
+                    if (context.isCurrent()) {
+                        hooks.onStatus?.(status, color);
+                    }
+                },
+            });
+        },
+        {
+            onFailure: (manager, error) => {
+                hooks.onStatus?.('REVIEW FAILED', '#ff8a65');
+                recorder.recordEvent({
+                    type: 'editorial_assessment_failed',
+                    agent: manager.getName(),
+                    message:
+                        error instanceof Error ? error.message : String(error),
+                });
             },
-            output: assessment,
-        });
-        recorder.recordEvent({
-            type: 'editorial_assessment_sealed',
-            agent: manager.getName(),
-            confidence: assessment.confidence,
-        });
-        manager.setAgentInformation(
-            `SEALED INDEPENDENT ASSESSMENT\n\n${assessment.centralClaim}\n\nEvidence:\n${assessment.supportingEvidence.join('\n')}`,
-        );
-        hooks.onStatus?.('ASSESSMENT SEALED', '#8ecae6');
-        return assessment;
-    } finally {
-        manager.setAgentState('idle');
-    }
+        },
+    );
 }
 
 export async function reviewCandidateReport(
