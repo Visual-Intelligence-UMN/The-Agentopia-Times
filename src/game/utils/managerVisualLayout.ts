@@ -19,10 +19,15 @@ export interface ManagerPanelLayout {
 }
 
 const ACTION_PANEL_TOP = 255;
-export const ACTION_PANEL_VERTICAL_SHIFT = 20;
+export const CONTROL_STACK_VERTICAL_SHIFT = 40;
+export const ACTION_GROUP_ADDITIONAL_SHIFT = 12;
 
-export function shiftActionPanelY(y: number): number {
-    return y - ACTION_PANEL_VERTICAL_SHIFT;
+export function shiftControlStackY(y: number): number {
+    return y - CONTROL_STACK_VERTICAL_SHIFT;
+}
+
+export function shiftActionGroupY(y: number): number {
+    return shiftControlStackY(y) - ACTION_GROUP_ADDITIONAL_SHIFT;
 }
 
 export function calculateManagerPanelLayout(
@@ -32,12 +37,12 @@ export function calculateManagerPanelLayout(
 
     return {
         panel: {
-            centerY: shiftActionPanelY(ACTION_PANEL_TOP + panelHeight / 2),
+            centerY: shiftActionGroupY(ACTION_PANEL_TOP + panelHeight / 2),
             height: panelHeight,
         },
-        titleY: shiftActionPanelY(viewportHeight - 77),
-        hatY: shiftActionPanelY(viewportHeight - 39),
-        statusY: shiftActionPanelY(viewportHeight - 11),
+        titleY: shiftActionGroupY(viewportHeight - 77),
+        hatY: shiftActionGroupY(viewportHeight - 39),
+        statusY: shiftActionGroupY(viewportHeight - 11),
     };
 }
 

@@ -4,14 +4,18 @@ import test from 'node:test';
 import {
     calculateManagerDecorationLayout,
     calculateManagerPanelLayout,
+    shiftActionGroupY,
+    shiftControlStackY,
 } from '../src/game/utils/managerVisualLayout.ts';
 
 test('uses one continuous action panel for the existing controls and Manager', () => {
+    assert.equal(shiftControlStackY(150), 110);
+    assert.equal(shiftActionGroupY(220), 168);
     assert.deepEqual(calculateManagerPanelLayout(640), {
-        panel: { centerY: 427.5, height: 385 },
-        titleY: 543,
-        hatY: 581,
-        statusY: 609,
+        panel: { centerY: 395.5, height: 385 },
+        titleY: 511,
+        hatY: 549,
+        statusY: 577,
     });
 });
 

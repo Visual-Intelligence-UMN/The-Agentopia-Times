@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { getGameConfig } from '../config';
 import { key } from '../constants';
 import { Agent } from '../sprites/Agent';
+import { shiftControlStackY } from '../utils/managerVisualLayout';
 import { recorder } from '../utils/recorder';
 
 export function createDownloadButton(scene: Phaser.Scene, level: string) {
@@ -473,7 +474,7 @@ export function createDifficultySelector(scene: Phaser.Scene) {
     if (difficultyIndex === -1) difficultyIndex = 0; // default level 1
 
     const difficultyLabel = scene.add
-        .text(-50, 150, '', {
+        .text(-50, shiftControlStackY(150), '', {
             fontSize: '16px',
             fontFamily: 'Verdana',
             color: '#ffffff',

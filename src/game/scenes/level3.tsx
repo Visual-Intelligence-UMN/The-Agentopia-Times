@@ -48,7 +48,7 @@ import {
     createManagerAssignmentHUD,
     type ManagerAssignmentController,
 } from '../utils/managerAssignmentHUD';
-import { shiftActionPanelY } from '../utils/managerVisualLayout';
+import { shiftActionGroupY } from '../utils/managerVisualLayout';
 import {
     areAllZonesOccupied,
     createItem,
@@ -313,7 +313,7 @@ export class BaseLevelScene extends ParentScene {
 
         // reset button
         const resetButton = this.add
-            .text(-45, shiftActionPanelY(220), '⟳ Reset', {
+            .text(-45, shiftActionGroupY(220), '⟳ Reset', {
                 fontSize: '18px',
                 fontFamily: 'Verdana',
                 color: '#ffffff',
@@ -848,7 +848,7 @@ export class BaseLevelScene extends ParentScene {
             // console.log("All zones are occupied!");
             // create a start workflow button
             this.debateStartBtn = this.add
-                .image(0, shiftActionPanelY(330), 'start')
+                .image(0, shiftActionGroupY(330), 'start')
                 .setScrollFactor(0)
                 .setDepth(1010)
                 .setInteractive()
@@ -856,7 +856,7 @@ export class BaseLevelScene extends ParentScene {
                 .setScale(1.5); // Increase the size of the image by scaling it
 
             this.baseBallBtn = this.add
-                .image(0, shiftActionPanelY(425), 'baseball')
+                .image(0, shiftActionGroupY(425), 'baseball')
                 .setScrollFactor(0)
                 .setDepth(1010)
                 .setInteractive()
@@ -915,7 +915,7 @@ export class BaseLevelScene extends ParentScene {
                         this.selectedText?.destroy();
                         this.kidneyBtn.setDepth(1010);
                         this.selectedText = this.add
-                            .text(0, shiftActionPanelY(425), 'SELECTED')
+                            .text(0, shiftActionGroupY(425), 'SELECTED')
                             .setScrollFactor(0)
                             .setDepth(1012)
                             .setAlpha(1)
@@ -947,7 +947,7 @@ export class BaseLevelScene extends ParentScene {
             this.attachInfoIcon(this.baseBallBtn, 'baseball_groundtruth');
 
             this.add
-                .text(0, shiftActionPanelY(280), 'Start\nSimulation')
+                .text(0, shiftActionGroupY(280), 'Start\nSimulation')
                 .setScrollFactor(0)
                 .setDepth(1002)
                 .setAlpha(1)
@@ -962,7 +962,7 @@ export class BaseLevelScene extends ParentScene {
                 .setOrigin(0.5, 0.5);
 
             this.add
-                .text(0, shiftActionPanelY(375), 'Choose\nA Dataset')
+                .text(0, shiftActionGroupY(375), 'Choose\nA Dataset')
                 .setScrollFactor(0)
                 .setDepth(1002)
                 .setAlpha(1)
@@ -977,7 +977,7 @@ export class BaseLevelScene extends ParentScene {
                 .setStroke('#000000', 2)
                 .setOrigin(0.5, 0.5);
             this.kidneyBtn = this.add
-                .image(0, shiftActionPanelY(485), 'kidney')
+                .image(0, shiftActionGroupY(485), 'kidney')
                 .setScrollFactor(0)
                 .setDepth(1010)
                 .setInteractive()
@@ -1035,7 +1035,7 @@ export class BaseLevelScene extends ParentScene {
                         this.selectedText?.destroy();
                         this.baseBallBtn.setDepth(1010);
                         this.selectedText = this.add
-                            .text(0, shiftActionPanelY(485), 'SELECTED')
+                            .text(0, shiftActionGroupY(485), 'SELECTED')
                             .setScrollFactor(0)
                             .setDepth(1012)
                             .setAlpha(1)

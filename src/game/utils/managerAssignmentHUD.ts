@@ -73,6 +73,7 @@ export function createManagerAssignmentHUD(
     const panelLayout = calculateManagerPanelLayout(scene.scale.height);
     const homeX = panelX;
     const homeY = panelLayout.hatY;
+    const titleX = panelX - 44;
     let manager: Agent | null = null;
     let assignedHat: Phaser.GameObjects.Container | null = null;
     let assignedLabel: Phaser.GameObjects.Text | null = null;
@@ -91,17 +92,17 @@ export function createManagerAssignmentHUD(
         .setDepth(999)
         .setStrokeStyle(2, 0xffffff, 1);
     const title = scene.add
-        .text(panelX, panelLayout.titleY, 'Hire a\nManager', {
+        .text(titleX, panelLayout.titleY, 'Hire a\nManager', {
             fontFamily: 'Verdana',
             fontSize: '14px',
             color: '#ffffff',
-            align: 'center',
+            align: 'left',
             stroke: '#000000',
             strokeThickness: 2,
         })
         .setLetterSpacing(2)
         .setResolution(20)
-        .setOrigin(0.5)
+        .setOrigin(0, 0.5)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 2);
     const status = scene.add
@@ -116,7 +117,7 @@ export function createManagerAssignmentHUD(
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 2);
 
-    const sourceHat = drawPixelManagerHat(scene, homeX, homeY, 0.95)
+    const sourceHat = drawPixelManagerHat(scene, homeX, homeY, 1.25)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 3)
         .setSize(48, 34)
