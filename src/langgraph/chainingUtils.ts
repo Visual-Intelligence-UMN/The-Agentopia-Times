@@ -15,8 +15,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { getStoredOpenAIKey } from '../utils/openai';
 import { SequentialGraphStateAnnotation } from "./states";
 import { getMASModels } from './config';
-
-const apiKey = getStoredOpenAIKey() || undefined;
+import { createMASTraceCallback } from './masTrace';
 
 interface subgraph{
     agents: Agent[],
@@ -26,9 +25,17 @@ interface subgraph{
 
 
 export function initializeLLM(){
+    const apiKey = getStoredOpenAIKey();
+    if (!apiKey) {
+        throw new Error('OpenAI API Key is not set.');
+    }
+
+    const model = getMASModels().chat;
     return new ChatOpenAI({
         apiKey,
-        modelName: getMASModels().chat,
+        modelName: model,
+        modelKwargs: { reasoning_effort: 'minimal' },
+        callbacks: [createMASTraceCallback(model)],
     });
 }
 

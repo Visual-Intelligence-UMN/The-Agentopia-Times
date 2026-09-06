@@ -4,6 +4,11 @@ import { render } from 'phaser-jsx';
 import { getDatasetGroundTruth } from '../../langgraph/config';
 import { resetReportIcons } from '../../langgraph/agents';
 import {
+    finishMASTrace,
+    recordMASStage,
+    startMASTrace,
+} from '../../langgraph/masTrace';
+import {
     constructSequentialGraph,
     transformDataMap,
 } from '../../langgraph/chainingUtils';
@@ -879,7 +884,7 @@ export class Level1 extends ParentScene {
                         this.selectedText?.destroy();
                         this.baseBallBtn.setDepth(1010);
                     }
-                    recorder.recordEvent('dataset_switched');
+                    recorder.recordEvent({ type: 'dataset_selected', dataset: this.selectedDataset });
                 });
             // console.log("ready to attach info icon for baseball");
             this.attachInfoIcon(this.baseBallBtn, 'baseball_groundtruth');
@@ -1004,14 +1009,31 @@ export class Level1 extends ParentScene {
                         this.selectedText?.destroy();
                         this.kidneyBtn.setDepth(1010);
                     }
-                    recorder.recordEvent('dataset_switched');
+                    recorder.recordEvent({ type: 'dataset_selected', dataset: this.selectedDataset });
                 });
             // console.log("ready to attach info icon for kidney");
 
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
             this.debateStartBtn.on('pointerdown', async () => {
-                recorder.recordEvent('simulation_started');
+                recorder.recordEvent({
+                    type: 'simulation_started',
+                    configuration: {
+                        level: this.registry.get('currentLevel'),
+                        dataset: this.registry.get('currentDataset'),
+                        workflow: this.registry.get('workflowConfig'),
+                    },
+                });
+                const traceWorkflow = this.registry.get('workflowConfig');
+                startMASTrace({
+                    level: String(this.registry.get('currentLevel') ?? level),
+                    dataset: String(
+                        this.registry.get('currentDataset') ?? 'unknown',
+                    ),
+                    workflow: Array.isArray(traceWorkflow)
+                        ? [...traceWorkflow]
+                        : [],
+                });
 
                 // Reset old UIs(ReportUI and ScoresUI)
                 resetReportIcons(this);
@@ -1167,6 +1189,15 @@ export class Level1 extends ParentScene {
                             votingInput: cycleOutputs[0],
                             votingVotes: [],
                         });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: {
+                                votingInput: cycleOutputs[0],
+                                votingVotes: [],
+                            },
+                            output,
+                        });
                         cycleOutputs.push(output.votingOutput);
                         if (i === graphs.length - 1) {
                             scoreData = output.scoreData;
@@ -1176,6 +1207,12 @@ export class Level1 extends ParentScene {
                         const output = await graphs[i].invoke({
                             sequentialInput: cycleOutputs[i],
                         });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: { sequentialInput: cycleOutputs[i] },
+                            output,
+                        });
                         cycleOutputs.push(output.sequentialOutput);
                         if (i === graphs.length - 1) {
                             scoreData = output.scoreData;
@@ -1184,6 +1221,12 @@ export class Level1 extends ParentScene {
                         console.log('invoke routing graph');
                         const output = await graphs[i].invoke({
                             singleAgentInput: cycleOutputs[i],
+                        });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: { singleAgentInput: cycleOutputs[i] },
+                            output,
                         });
                         cycleOutputs.push(output.singleAgentOutput);
                         if (i === graphs.length - 1) {
@@ -1208,6 +1251,8 @@ export class Level1 extends ParentScene {
                 // 1) 归一化并保存最终分数，便于其他地方读取
                 const finalScore = Number(scoreData.overall_score ?? 0);
                 this.registry.set('finalScore', finalScore);
+                recorder.recordEvent({ type: 'score_recorded', score: finalScore, writingScore: scoreData.writing_score, codingScore: scoreData.coding_score });
+                finishMASTrace({ cycleOutputs, scoreData, finalScore });
 
                 // 2) 用 Phaser 事件把分数带出去（监听里按分数决定是否创建 Next 按钮）
                 this.events.emit('level-complete', { score: finalScore });

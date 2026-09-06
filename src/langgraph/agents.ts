@@ -16,6 +16,7 @@ import {
     getHallucinationStats,
     getMASModels,
 } from './config';
+import { createMASTraceCallback } from './masTrace';
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
@@ -80,9 +81,12 @@ export function getLLM() {
             throw new Error('OpenAI API Key is not set.');
         }
 
+        const model = getMASModels().chat;
         cachedLLM = new ChatOpenAI({
             apiKey,
-            modelName: getMASModels().chat,
+            modelName: model,
+            modelKwargs: { reasoning_effort: 'minimal' },
+            callbacks: [createMASTraceCallback(model)],
         });
     }
     return cachedLLM;

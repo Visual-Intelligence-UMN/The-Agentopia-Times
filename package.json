@@ -13,7 +13,8 @@
         "lint:tsc": "tsc --noEmit",
         "prepare": "husky",
         "preview": "vite preview",
-        "start": "vite --open"
+        "start": "vite --open",
+        "test": "node --experimental-strip-types --test tests/*.test.ts"
     },
     "homepage": "https://remarkablegames.org/phaser-rpg/",
     "dependencies": {

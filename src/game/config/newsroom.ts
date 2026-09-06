@@ -192,8 +192,8 @@ export const newsroomConfig: GameThemeConfig = {
     },
     mas: {
         model: {
-            chat: 'gpt-4o',
-            judge: 'gpt-4o-mini',
+            chat: 'gpt-5-nano',
+            judge: 'gpt-5-nano',
         },
         agents: {
             voting: {

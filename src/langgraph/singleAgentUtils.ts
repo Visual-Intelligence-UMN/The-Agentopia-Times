@@ -122,7 +122,7 @@ export function createAgent(
 
             scoreData = startScoreComputer(judgeData);
 
-            mssg = state.singleAgentInput;
+            mssg = { content: state.singleAgentInput };
 
         }
         // await updateStateIcons(zones, "mail");
