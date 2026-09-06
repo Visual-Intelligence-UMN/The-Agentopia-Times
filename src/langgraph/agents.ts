@@ -17,6 +17,7 @@ import {
     getMASModels,
 } from './config';
 import { createMASTraceCallback } from './masTrace';
+import { getOpenAIRequestFetch } from './openaiRequestGate';
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
@@ -50,6 +51,8 @@ export function getOpenAI(): OpenAI {
         cachedOpenAI = new OpenAI({
             apiKey,
             dangerouslyAllowBrowser: true,
+            maxRetries: 0,
+            fetch: getOpenAIRequestFetch(),
         });
     }
     return cachedOpenAI;
@@ -85,7 +88,9 @@ export function getLLM() {
         cachedLLM = new ChatOpenAI({
             apiKey,
             modelName: model,
+            maxRetries: 0,
             modelKwargs: { reasoning_effort: 'minimal' },
+            configuration: { fetch: getOpenAIRequestFetch() },
             callbacks: [createMASTraceCallback(model)],
         });
     }

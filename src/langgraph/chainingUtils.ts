@@ -16,6 +16,7 @@ import { getStoredOpenAIKey } from '../utils/openai';
 import { SequentialGraphStateAnnotation } from "./states";
 import { getMASModels } from './config';
 import { createMASTraceCallback } from './masTrace';
+import { getOpenAIRequestFetch } from './openaiRequestGate';
 
 interface subgraph{
     agents: Agent[],
@@ -34,7 +35,9 @@ export function initializeLLM(){
     return new ChatOpenAI({
         apiKey,
         modelName: model,
+        maxRetries: 0,
         modelKwargs: { reasoning_effort: 'minimal' },
+        configuration: { fetch: getOpenAIRequestFetch() },
         callbacks: [createMASTraceCallback(model)],
     });
 }
