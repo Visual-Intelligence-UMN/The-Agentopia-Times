@@ -31,6 +31,7 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
   private instruction: string = "";
   private bias: string = "";
   private isBiased: boolean = false;
+  private editorialManager: boolean = false;
   private mssgSprite: Phaser.GameObjects.Image | null = null;
 
   private wasDragged: boolean = false; // if user drag the agent now
@@ -397,6 +398,7 @@ update() {
       recorder.recordEvent("agent_clicked");
 
       if (gameObject !== this) return;
+      if (this.editorialManager) return;
       if (this.isBiased) return;
 
       if (Agent.biasedAgentsCount < Agent.maxAllowedBiased) {
@@ -460,7 +462,7 @@ update() {
     }
 
     public setToBiased() {
-      if (this.isBiased) return;
+      if (this.isBiased || this.editorialManager) return;
 
       if (!/^Biased\s+/.test(this.name)) this.name = 'Biased ' + this.name;
       this.isBiased = true;
@@ -481,6 +483,14 @@ update() {
         myType: this.getBiasType(),
         name: this.name,
       });
+    }
+
+    public setEditorialManager(assigned: boolean) {
+      this.editorialManager = assigned;
+    }
+
+    public isEditorialManager() {
+      return this.editorialManager;
     }
 
 

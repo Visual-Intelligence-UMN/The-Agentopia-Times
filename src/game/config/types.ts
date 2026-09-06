@@ -9,6 +9,8 @@ export type AgenticRisk =
     | 'collusion'
     | 'responsibility_diffusion';
 
+export type SemanticAction = 'hire_editorial_manager';
+
 export type AssetSource = string | Record<string, unknown>;
 
 export interface BitmapFontAssetConfig {
@@ -110,6 +112,7 @@ export interface LevelConfig {
     config_options: string[];
     initialDataset: string;
     availableDatasets: string[];
+    semanticActions?: SemanticAction[];
     hallucination: LevelHallucinationConfig;
     mas: LevelMASConfig;
 }

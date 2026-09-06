@@ -61,3 +61,13 @@ test('keeps ghost representation tied to injected-error agents', () => {
         assert.deepEqual(level.config_options, ['workflow', 'dataset']);
     }
 });
+
+test('offers hiring an editorial manager only for the directly mitigated risks', () => {
+    const levelsWithManagerAction = agenticRiskLevelDefinitions
+        .filter((level) =>
+            level.semanticActions?.includes('hire_editorial_manager'),
+        )
+        .map((level) => level.id);
+
+    assert.deepEqual(levelsWithManagerAction, ['level3', 'level5']);
+});

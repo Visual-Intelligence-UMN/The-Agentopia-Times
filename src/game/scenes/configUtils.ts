@@ -26,6 +26,10 @@ export function initializeLevelRegistry(scene: any, levelConfig: LevelConfig) {
     scene.registry.set('currentPattern', '');
     scene.registry.set('currentDataset', levelConfig.initialDataset);
     scene.registry.set('workflowConfig', [...levelConfig.workflow]);
+    scene.registry.set('semanticActions', [
+        ...(levelConfig.semanticActions ?? []),
+    ]);
+    scene.registry.remove('editorialManagerAgent');
 }
 
 export function getNextLevelSceneKey(activeLevelId: string): string {

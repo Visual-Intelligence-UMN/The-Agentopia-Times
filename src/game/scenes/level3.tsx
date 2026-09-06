@@ -2,7 +2,17 @@ import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
+import {
+    createIndependentEditorialAssessment,
+    reviewCandidateReport,
+    type EditorialReviewResult,
+} from '../../langgraph/editorialManager';
 import { resetReportIcons, testInput } from '../../langgraph/agents';
+import {
+    finishMASTrace,
+    recordMASStage,
+    startMASTrace,
+} from '../../langgraph/masTrace';
 import {
     constructLangGraph,
     constructSequentialGraph,
@@ -28,11 +38,16 @@ import {
     testRoute,
 } from '../server/testingUtils';
 import { Agent } from '../sprites/Agent';
+import type { EditorialAssessment } from '../domain/editorialManager';
 import { NPC } from '../sprites/NPC';
 import { state } from '../state';
 import { controlCameraMovements } from '../utils/controlUtils';
 import { addAgentPanelHUD, addTaskAssignmentHUD } from '../utils/hudUtils';
 import { recorder } from '../utils/recorder';
+import {
+    createManagerAssignmentHUD,
+    type ManagerAssignmentController,
+} from '../utils/managerAssignmentHUD';
 import {
     areAllZonesOccupied,
     createItem,
@@ -65,6 +80,8 @@ export interface Zone {
     zoneName: string;
     agentsInside: Set<string>;
 }
+
+const REPORT_WRITING_STAGE_INDEX = 1;
 
 export class BaseLevelScene extends ParentScene {
     private readonly levelKey: string;
@@ -111,6 +128,7 @@ export class BaseLevelScene extends ParentScene {
     private hoverWindowText?: Phaser.GameObjects.Text;
     private selectedText?: Phaser.GameObjects.Text;
     private selectedDataset: string = 'none';
+    private managerAssignment?: ManagerAssignmentController;
 
     // private requiredBiasedAgents: number = 1; // the number of the biased agents in this level
     // private biasedAgentsStatusText!: Phaser.GameObjects.Text;
@@ -325,6 +343,15 @@ export class BaseLevelScene extends ParentScene {
         addPDFIcon(this);
 
         setupScene.call(this, levelConfig.tilemapKey);
+
+        if (
+            levelConfig.semanticActions?.includes('hire_editorial_manager')
+        ) {
+            this.managerAssignment = createManagerAssignmentHUD(
+                this,
+                () => this.controllableCharacters as Agent[],
+            );
+        }
 
         // register a global variable
         // this.registry.set('isWorkflowRunning', false);
@@ -882,7 +909,6 @@ export class BaseLevelScene extends ParentScene {
                     }
                 })
                 .on('pointerdown', () => {
-                    recorder.recordEvent('dataset_switched');
                     if (this.selectedDataset !== 'baseball') {
                         this.selectedDataset = 'baseball';
                         this.selectedText?.destroy();
@@ -911,6 +937,10 @@ export class BaseLevelScene extends ParentScene {
                         this.selectedText?.destroy();
                         this.baseBallBtn.setDepth(1010);
                     }
+                    recorder.recordEvent({
+                        type: 'dataset_selected',
+                        dataset: this.selectedDataset,
+                    });
                 });
             // console.log("ready to attach info icon for baseball");
             this.attachInfoIcon(this.baseBallBtn, 'baseball_groundtruth');
@@ -1007,7 +1037,6 @@ export class BaseLevelScene extends ParentScene {
                     }
                 })
                 .on('pointerdown', () => {
-                    recorder.recordEvent('dataset_switched');
                     if (this.selectedDataset !== 'kidney') {
                         this.selectedDataset = 'kidney';
                         this.selectedText?.destroy();
@@ -1036,19 +1065,70 @@ export class BaseLevelScene extends ParentScene {
                         this.selectedText?.destroy();
                         this.kidneyBtn.setDepth(1010);
                     }
+                    recorder.recordEvent({
+                        type: 'dataset_selected',
+                        dataset: this.selectedDataset,
+                    });
                 });
             console.log('ready to attach info icon for kidney');
 
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
             this.debateStartBtn.on('pointerdown', async () => {
-                recorder.recordEvent('simulation_started');
+                const editorialManager =
+                    this.managerAssignment?.getManager() ?? null;
+                recorder.recordEvent({ type: 'simulation_started', configuration: { level: this.levelKey, dataset: this.registry.get('currentDataset'), workflow: this.registry.get('workflowConfig'), editorialManager: editorialManager?.getName() ?? null } });
+                const traceWorkflow = this.registry.get('workflowConfig');
+                startMASTrace({
+                    level: this.levelKey,
+                    dataset: String(
+                        this.registry.get('currentDataset') ?? 'unknown',
+                    ),
+                    workflow: Array.isArray(traceWorkflow)
+                        ? [...traceWorkflow]
+                        : [],
+                });
 
                 // Reset old UIs(ReportUI and ScoresUI)
                 resetReportIcons(this);
                 resetScoreUI(this);
 
                 this.registry.set('isWorkflowRunning', true);
+                let editorialAssessment: EditorialAssessment | null = null;
+                let editorialReview: EditorialReviewResult | null = null;
+
+                if (editorialManager) {
+                    try {
+                        editorialAssessment =
+                            await createIndependentEditorialAssessment(
+                                this,
+                                editorialManager,
+                                {
+                                    onStatus: (status, color) =>
+                                        this.managerAssignment?.setStatus(
+                                            status,
+                                            color,
+                                        ),
+                                },
+                            );
+                    } catch (error) {
+                        console.error(
+                            'Editorial Manager assessment failed:',
+                            error,
+                        );
+                        this.managerAssignment?.setStatus(
+                            'REVIEW FAILED',
+                            '#ff8a65',
+                        );
+                        recorder.recordEvent({
+                            type: 'editorial_assessment_failed',
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : String(error),
+                        });
+                    }
+                }
                 console.log('btn pre-start zones data', this.parallelZones);
                 const agentsInfo = getAllAgents(this.parallelZones);
                 console.log('agentsInfo', agentsInfo);
@@ -1198,6 +1278,15 @@ export class BaseLevelScene extends ParentScene {
                             votingInput: cycleOutputs[0],
                             votingVotes: [],
                         });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: {
+                                votingInput: cycleOutputs[0],
+                                votingVotes: [],
+                            },
+                            output,
+                        });
                         cycleOutputs.push(output.votingOutput);
                         if (i === graphs.length - 1) {
                             scoreData = output.scoreData;
@@ -1206,6 +1295,12 @@ export class BaseLevelScene extends ParentScene {
                         console.log('invoke lang graph');
                         const output = await graphs[i].invoke({
                             sequentialInput: cycleOutputs[i],
+                        });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: { sequentialInput: cycleOutputs[i] },
+                            output,
                         });
                         cycleOutputs.push(output.sequentialOutput);
                         if (i === graphs.length - 1) {
@@ -1216,9 +1311,76 @@ export class BaseLevelScene extends ParentScene {
                         const output = await graphs[i].invoke({
                             singleAgentInput: cycleOutputs[i],
                         });
+                        recordMASStage({
+                            stageIndex: i,
+                            workflow: workflowConfig[i],
+                            input: { singleAgentInput: cycleOutputs[i] },
+                            output,
+                        });
                         cycleOutputs.push(output.singleAgentOutput);
                         if (i === graphs.length - 1) {
                             scoreData = output.scoreData;
+                        }
+                    }
+
+                    if (
+                        i === REPORT_WRITING_STAGE_INDEX &&
+                        editorialManager &&
+                        editorialAssessment
+                    ) {
+                        const candidateReport = String(
+                            cycleOutputs[i + 1] ?? '',
+                        );
+                        try {
+                            editorialReview = await reviewCandidateReport(
+                                this,
+                                editorialManager,
+                                editorialAssessment,
+                                candidateReport,
+                                {
+                                    onStatus: (status, color) =>
+                                        this.managerAssignment?.setStatus(
+                                            status,
+                                            color,
+                                        ),
+                                },
+                            );
+                            if (editorialReview.publicationBlocked) {
+                                this.registry.set(
+                                    'isWorkflowRunning',
+                                    false,
+                                );
+                                recorder.recordEvent({
+                                    type: 'editorial_publication_blocked',
+                                    finalDecision:
+                                        editorialReview.finalDecision,
+                                });
+                                finishMASTrace({
+                                    cycleOutputs,
+                                    editorialReview,
+                                    publicationBlocked: true,
+                                    finalScore: null,
+                                });
+                                return;
+                            }
+                            cycleOutputs[i + 1] =
+                                editorialReview.reportForPublication;
+                        } catch (error) {
+                            console.error(
+                                'Editorial Manager comparison failed:',
+                                error,
+                            );
+                            this.managerAssignment?.setStatus(
+                                'REVIEW FAILED',
+                                '#ff8a65',
+                            );
+                            recorder.recordEvent({
+                                type: 'editorial_comparison_failed',
+                                message:
+                                    error instanceof Error
+                                        ? error.message
+                                        : String(error),
+                            });
                         }
                     }
                 }
@@ -1247,6 +1409,13 @@ export class BaseLevelScene extends ParentScene {
                 // 1) 归一化并保存最终分数，便于其他地方读取
                 const finalScore = Number(scoreData.overall_score ?? 0);
                 this.registry.set('finalScore', finalScore);
+                recorder.recordEvent({ type: 'score_recorded', score: finalScore, writingScore: scoreData.writing_score, codingScore: scoreData.coding_score });
+                finishMASTrace({
+                    cycleOutputs,
+                    scoreData,
+                    finalScore,
+                    editorialReview,
+                });
 
                 // 2) 用 Phaser 事件把分数带出去（监听里按分数决定是否创建 Next 按钮）
                 this.events.emit('level-complete', { score: finalScore });
