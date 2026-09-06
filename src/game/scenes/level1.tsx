@@ -2,6 +2,11 @@ import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
+import {
+    createIndependentEditorialAssessment,
+    reviewCandidateReport,
+    type EditorialReviewResult,
+} from '../../langgraph/editorialManager';
 import { resetReportIcons } from '../../langgraph/agents';
 import {
     finishMASTrace,
@@ -21,6 +26,7 @@ import { createScoreUI, resetScoreUI } from '../../langgraph/workflowUtils';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { Typewriter } from '../components';
 import { key } from '../constants';
+import type { EditorialAssessment } from '../domain/editorialManager';
 import { debate } from '../server/llmUtils';
 import {
     evaluateCustomerSupportResponse,
@@ -34,6 +40,10 @@ import { NPC } from '../sprites/NPC';
 import { state } from '../state';
 import { controlCameraMovements } from '../utils/controlUtils';
 import { recorder } from '../utils/recorder';
+import {
+    createManagerAssignmentHUD,
+    type ManagerAssignmentController,
+} from '../utils/managerAssignmentHUD';
 import {
     areAllZonesOccupied,
     createItem,
@@ -62,6 +72,7 @@ import {
 } from './configUtils';
 
 const level = 'level1';
+const REPORT_WRITING_STAGE_INDEX = 1;
 
 export interface Zone {
     zone: Phaser.GameObjects.Zone;
@@ -112,6 +123,7 @@ export class Level1 extends ParentScene {
     private hoverWindowText?: Phaser.GameObjects.Text;
     private selectedText?: Phaser.GameObjects.Text;
     private selectedDataset: string = 'none';
+    private managerAssignment?: ManagerAssignmentController;
 
     private attachInfoIcon(
         target: Phaser.GameObjects.Image,
@@ -292,6 +304,15 @@ export class Level1 extends ParentScene {
         // updateDifficultyText();
 
         setupScene.call(this, levelConfig.tilemapKey);
+
+        if (
+            levelConfig.semanticActions?.includes('hire_editorial_manager')
+        ) {
+            this.managerAssignment = createManagerAssignmentHUD(
+                this,
+                () => this.controllableCharacters as Agent[],
+            );
+        }
 
         // register a global variable
         // this.registry.set('isWorkflowRunning', false);
@@ -1016,12 +1037,16 @@ export class Level1 extends ParentScene {
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
             this.debateStartBtn.on('pointerdown', async () => {
+                const editorialManager =
+                    this.managerAssignment?.getManager() ?? null;
                 recorder.recordEvent({
                     type: 'simulation_started',
                     configuration: {
                         level: this.registry.get('currentLevel'),
                         dataset: this.registry.get('currentDataset'),
                         workflow: this.registry.get('workflowConfig'),
+                        editorialManager:
+                            editorialManager?.getName() ?? null,
                     },
                 });
                 const traceWorkflow = this.registry.get('workflowConfig');
@@ -1040,6 +1065,41 @@ export class Level1 extends ParentScene {
                 resetScoreUI(this);
 
                 this.registry.set('isWorkflowRunning', true);
+                let editorialAssessment: EditorialAssessment | null = null;
+                let editorialReview: EditorialReviewResult | null = null;
+
+                if (editorialManager) {
+                    try {
+                        editorialAssessment =
+                            await createIndependentEditorialAssessment(
+                                this,
+                                editorialManager,
+                                {
+                                    onStatus: (status, color) =>
+                                        this.managerAssignment?.setStatus(
+                                            status,
+                                            color,
+                                        ),
+                                },
+                            );
+                    } catch (error) {
+                        console.error(
+                            'Editorial Manager assessment failed:',
+                            error,
+                        );
+                        this.managerAssignment?.setStatus(
+                            'REVIEW FAILED',
+                            '#ff8a65',
+                        );
+                        recorder.recordEvent({
+                            type: 'editorial_assessment_failed',
+                            message:
+                                error instanceof Error
+                                    ? error.message
+                                    : String(error),
+                        });
+                    }
+                }
                 console.log('btn pre-start zones data', this.parallelZones);
                 const agentsInfo = getAllAgents(this.parallelZones);
                 console.log('agentsInfo', agentsInfo);
@@ -1233,6 +1293,67 @@ export class Level1 extends ParentScene {
                             scoreData = output.scoreData;
                         }
                     }
+
+                    if (
+                        i === REPORT_WRITING_STAGE_INDEX &&
+                        editorialManager &&
+                        editorialAssessment
+                    ) {
+                        const candidateReport = String(
+                            cycleOutputs[i + 1] ?? '',
+                        );
+                        try {
+                            editorialReview = await reviewCandidateReport(
+                                this,
+                                editorialManager,
+                                editorialAssessment,
+                                candidateReport,
+                                {
+                                    onStatus: (status, color) =>
+                                        this.managerAssignment?.setStatus(
+                                            status,
+                                            color,
+                                        ),
+                                },
+                            );
+                            if (editorialReview.publicationBlocked) {
+                                this.registry.set(
+                                    'isWorkflowRunning',
+                                    false,
+                                );
+                                recorder.recordEvent({
+                                    type: 'editorial_publication_blocked',
+                                    finalDecision:
+                                        editorialReview.finalDecision,
+                                });
+                                finishMASTrace({
+                                    cycleOutputs,
+                                    editorialReview,
+                                    publicationBlocked: true,
+                                    finalScore: null,
+                                });
+                                return;
+                            }
+                            cycleOutputs[i + 1] =
+                                editorialReview.reportForPublication;
+                        } catch (error) {
+                            console.error(
+                                'Editorial Manager comparison failed:',
+                                error,
+                            );
+                            this.managerAssignment?.setStatus(
+                                'REVIEW FAILED',
+                                '#ff8a65',
+                            );
+                            recorder.recordEvent({
+                                type: 'editorial_comparison_failed',
+                                message:
+                                    error instanceof Error
+                                        ? error.message
+                                        : String(error),
+                            });
+                        }
+                    }
                 }
 
                 console.log('scoreData', scoreData);
@@ -1252,7 +1373,12 @@ export class Level1 extends ParentScene {
                 const finalScore = Number(scoreData.overall_score ?? 0);
                 this.registry.set('finalScore', finalScore);
                 recorder.recordEvent({ type: 'score_recorded', score: finalScore, writingScore: scoreData.writing_score, codingScore: scoreData.coding_score });
-                finishMASTrace({ cycleOutputs, scoreData, finalScore });
+                finishMASTrace({
+                    cycleOutputs,
+                    scoreData,
+                    finalScore,
+                    editorialReview,
+                });
 
                 // 2) 用 Phaser 事件把分数带出去（监听里按分数决定是否创建 Next 按钮）
                 this.events.emit('level-complete', { score: finalScore });

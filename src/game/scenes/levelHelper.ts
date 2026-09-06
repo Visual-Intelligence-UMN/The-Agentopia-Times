@@ -296,9 +296,10 @@ export function createSimpleInstructionHUD(scene: Phaser.Scene) {
     // Instruction body text
     const instruction =
         '1) Select a hallucinated agent\n' +
-        '2) Choose a strategy for each room\n' +
-        '3) Choose a dataset\n' +
-        '4) Start simulation\n' +
+        '2) Optionally assign the Manager hat\n' +
+        '3) Choose a strategy for each room\n' +
+        '4) Choose a dataset\n' +
+        '5) Start simulation\n' +
         'Goal: Reach 8+ score to pass this level';
 
     const bodyY = title.height + 4;

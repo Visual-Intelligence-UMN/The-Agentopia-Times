@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { canAssignEditorialManager } from '../domain/editorialManager';
 import type { Agent } from '../sprites/Agent';
+import { calculateManagerDecorationLayout } from './managerVisualLayout';
 import { recorder } from './recorder';
 
 const PANEL_DEPTH = 3100;
@@ -65,24 +66,24 @@ export function createManagerAssignmentHUD(
     scene: Phaser.Scene,
     getAgents: () => Agent[],
 ): ManagerAssignmentController {
-    const panelX = scene.scale.width - 76;
-    const panelY = 88;
+    const panelX = 0;
+    const panelY = scene.scale.height - 37;
     const homeX = panelX;
-    const homeY = panelY - 4;
+    const homeY = panelY - 1;
     let manager: Agent | null = null;
     let assignedHat: Phaser.GameObjects.Container | null = null;
     let assignedLabel: Phaser.GameObjects.Text | null = null;
     let assignedRing: Phaser.GameObjects.Ellipse | null = null;
 
     const panel = scene.add
-        .rectangle(panelX, panelY, 136, 130, 0x05070d, 0.9)
+        .rectangle(panelX, panelY, 100, 74, 0x05070d, 0.68)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH)
         .setStrokeStyle(2, 0xffffff, 1);
     const title = scene.add
-        .text(panelX, panelY - 48, 'MANAGER', {
+        .text(panelX, panelY - 27, 'MANAGER', {
             fontFamily: 'Courier New',
-            fontSize: '17px',
+            fontSize: '11px',
             fontStyle: 'bold',
             color: '#ffffff',
             stroke: '#000000',
@@ -92,18 +93,18 @@ export function createManagerAssignmentHUD(
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 2);
     const status = scene.add
-        .text(panelX, panelY + 43, 'DRAG TO ASSIGN', {
+        .text(panelX, panelY + 26, 'DRAG TO ASSIGN', {
             fontFamily: 'Courier New',
-            fontSize: '10px',
+            fontSize: '7px',
             color: '#ffffff',
             align: 'center',
-            wordWrap: { width: 122 },
+            wordWrap: { width: 92 },
         })
         .setOrigin(0.5)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 2);
 
-    const sourceHat = drawPixelManagerHat(scene, homeX, homeY, 1.6)
+    const sourceHat = drawPixelManagerHat(scene, homeX, homeY, 0.95)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 3)
         .setSize(48, 34)
@@ -129,8 +130,10 @@ export function createManagerAssignmentHUD(
         clearTargetRings();
         for (const agent of getAgents()) {
             if (!canAssignEditorialManager(agent).allowed) continue;
+            const { ring: ringPosition } =
+                calculateManagerDecorationLayout(agent);
             const ring = scene.add
-                .ellipse(agent.x, agent.y + 17, 38, 16)
+                .ellipse(ringPosition.x, ringPosition.y, 38, 16)
                 .setStrokeStyle(2, GOLD, 0.9)
                 .setDepth(agent.depth + 1);
             targetRings.set(agent, ring);
@@ -173,18 +176,19 @@ export function createManagerAssignmentHUD(
         manager.setEditorialManager(true);
         scene.registry.set('editorialManagerAgent', manager.getName());
 
+        const layout = calculateManagerDecorationLayout(agent);
         assignedHat = drawPixelManagerHat(
             scene,
-            agent.x,
-            agent.y - 30,
+            layout.hat.x,
+            layout.hat.y,
             0.82,
         ).setDepth(2050);
         assignedRing = scene.add
-            .ellipse(agent.x, agent.y + 17, 40, 17)
+            .ellipse(layout.ring.x, layout.ring.y, 40, 17)
             .setStrokeStyle(2, GOLD, 1)
             .setDepth(2048);
         assignedLabel = scene.add
-            .text(agent.x, agent.y - 49, 'MANAGER', {
+            .text(layout.label.x, layout.label.y, 'MANAGER', {
                 fontFamily: 'Courier New',
                 fontSize: '8px',
                 fontStyle: 'bold',
@@ -245,13 +249,16 @@ export function createManagerAssignmentHUD(
     });
 
     const updateAssignedVisuals = () => {
-        targetRings.forEach((ring, agent) =>
-            ring.setPosition(agent.x, agent.y + 17),
-        );
+        targetRings.forEach((ring, agent) => {
+            const { ring: ringPosition } =
+                calculateManagerDecorationLayout(agent);
+            ring.setPosition(ringPosition.x, ringPosition.y);
+        });
         if (!manager) return;
-        assignedHat?.setPosition(manager.x, manager.y - 30);
-        assignedRing?.setPosition(manager.x, manager.y + 17);
-        assignedLabel?.setPosition(manager.x, manager.y - 49);
+        const layout = calculateManagerDecorationLayout(manager);
+        assignedHat?.setPosition(layout.hat.x, layout.hat.y);
+        assignedRing?.setPosition(layout.ring.x, layout.ring.y);
+        assignedLabel?.setPosition(layout.label.x, layout.label.y);
     };
     scene.events.on(Phaser.Scenes.Events.UPDATE, updateAssignedVisuals);
 

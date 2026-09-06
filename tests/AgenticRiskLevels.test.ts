@@ -62,12 +62,18 @@ test('keeps ghost representation tied to injected-error agents', () => {
     }
 });
 
-test('offers hiring an editorial manager only for the directly mitigated risks', () => {
+test('offers hiring an editorial manager consistently in every level', () => {
     const levelsWithManagerAction = agenticRiskLevelDefinitions
         .filter((level) =>
             level.semanticActions?.includes('hire_editorial_manager'),
         )
         .map((level) => level.id);
 
-    assert.deepEqual(levelsWithManagerAction, ['level3', 'level5']);
+    assert.deepEqual(levelsWithManagerAction, [
+        'level1',
+        'level2',
+        'level3',
+        'level4',
+        'level5',
+    ]);
 });

@@ -12,12 +12,14 @@ const sharedLevelConfig: Pick<
     | 'config_options'
     | 'initialDataset'
     | 'availableDatasets'
+    | 'semanticActions'
 > = {
     required_score: 8,
     workflow: ['voting', 'sequential', 'single_agent'],
     config_options: ['workflow', 'dataset'],
     initialDataset: 'baseball',
     availableDatasets: ['baseball', 'kidney'],
+    semanticActions: ['hire_editorial_manager'],
 };
 
 export const agenticRiskLevelDefinitions: AgenticRiskLevelDefinition[] = [
@@ -74,7 +76,6 @@ export const agenticRiskLevelDefinitions: AgenticRiskLevelDefinition[] = [
         level_name: 'Verifier Capture',
         uiTitle: 'Level 3: Verifier Capture',
         uiInfo: "Verifier Capture\n\nAn upstream ghost agent frames the evidence incorrectly. Without intervention, downstream verification inherits that framing. Drag the Manager hat onto a normal agent to seal an evidence-only assessment before production and independently review the report.\n\nCalibration target: a verification role is reliable only when its judgment is independent of the generator's framing.",
-        semanticActions: ['hire_editorial_manager'],
         hallucination: {
             type: 'verifier_capture',
             name: 'capturing verifier framing',
@@ -121,7 +122,6 @@ export const agenticRiskLevelDefinitions: AgenticRiskLevelDefinition[] = [
         level_name: 'Responsibility Diffusion',
         uiTitle: 'Level 5: Responsibility Diffusion',
         uiInfo: 'Responsibility Diffusion\n\nA ghost agent introduces an incorrect central claim into a specialized workflow. Each downstream role completes its local task while assuming another stage will verify end-to-end correctness. Drag the Manager hat onto a normal agent to assign explicit final accountability.\n\nCalibration target: adding specialized roles does not guarantee that anyone is accountable for the final claim.',
-        semanticActions: ['hire_editorial_manager'],
         hallucination: {
             type: 'responsibility_diffusion',
             name: 'unowned incorrect claim',
