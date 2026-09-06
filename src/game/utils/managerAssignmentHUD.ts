@@ -2,7 +2,10 @@ import Phaser from 'phaser';
 
 import { canAssignEditorialManager } from '../domain/editorialManager';
 import type { Agent } from '../sprites/Agent';
-import { calculateManagerDecorationLayout } from './managerVisualLayout';
+import {
+    calculateManagerDecorationLayout,
+    calculateManagerPanelLayout,
+} from './managerVisualLayout';
 import { recorder } from './recorder';
 
 const PANEL_DEPTH = 3100;
@@ -67,34 +70,43 @@ export function createManagerAssignmentHUD(
     getAgents: () => Agent[],
 ): ManagerAssignmentController {
     const panelX = 0;
-    const panelY = scene.scale.height - 37;
+    const panelLayout = calculateManagerPanelLayout(scene.scale.height);
     const homeX = panelX;
-    const homeY = panelY - 1;
+    const homeY = panelLayout.hatY;
     let manager: Agent | null = null;
     let assignedHat: Phaser.GameObjects.Container | null = null;
     let assignedLabel: Phaser.GameObjects.Text | null = null;
     let assignedRing: Phaser.GameObjects.Ellipse | null = null;
 
     const panel = scene.add
-        .rectangle(panelX, panelY, 100, 74, 0x05070d, 0.68)
+        .rectangle(
+            panelX,
+            panelLayout.panel.centerY,
+            100,
+            panelLayout.panel.height,
+            0x000000,
+            0.5,
+        )
         .setScrollFactor(0)
-        .setDepth(PANEL_DEPTH)
+        .setDepth(999)
         .setStrokeStyle(2, 0xffffff, 1);
     const title = scene.add
-        .text(panelX, panelY - 27, 'MANAGER', {
-            fontFamily: 'Courier New',
-            fontSize: '11px',
-            fontStyle: 'bold',
+        .text(panelX, panelLayout.titleY, 'Hire a\nManager', {
+            fontFamily: 'Verdana',
+            fontSize: '14px',
             color: '#ffffff',
+            align: 'center',
             stroke: '#000000',
-            strokeThickness: 3,
+            strokeThickness: 2,
         })
+        .setLetterSpacing(2)
+        .setResolution(20)
         .setOrigin(0.5)
         .setScrollFactor(0)
         .setDepth(PANEL_DEPTH + 2);
     const status = scene.add
-        .text(panelX, panelY + 26, 'DRAG TO ASSIGN', {
-            fontFamily: 'Courier New',
+        .text(panelX, panelLayout.statusY, 'DRAG TO ASSIGN', {
+            fontFamily: 'Verdana',
             fontSize: '7px',
             color: '#ffffff',
             align: 'center',
