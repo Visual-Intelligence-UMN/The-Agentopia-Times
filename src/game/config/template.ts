@@ -11,7 +11,7 @@ export const gameThemeTemplate: GameThemeConfig = {
         tilemaps: [],
     },
     mechanics: {
-        config_options: ['workflow', 'dataset', 'difficulty'],
+        config_options: ['workflow', 'dataset', 'level'],
         levels: [
             {
                 id: 'level1',
@@ -31,6 +31,13 @@ export const gameThemeTemplate: GameThemeConfig = {
                     injectedPrompt: 'Describe the biased behavior here.',
                     biasPool: ['factual'],
                     hallucinatedAgents: 1,
+                },
+                mas: {
+                    agenticRisk: 'error_propagation',
+                    calibrationTarget:
+                        'Describe the conditional MAS knowledge this level examines.',
+                    scenarioPrompt:
+                        'Describe the MAS conditions that instantiate the risk.',
                 },
             },
         ],

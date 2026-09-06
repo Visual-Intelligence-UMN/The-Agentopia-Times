@@ -15,6 +15,8 @@ const config: Phaser.Types.Core.GameConfig = {
     scenes.Level1,
     scenes.Level2,
     scenes.Level3,
+    scenes.Level4,
+    scenes.Level5,
   ],
   physics: {
     default: 'arcade',

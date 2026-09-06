@@ -4,6 +4,7 @@ import { EventBus } from '../game/EventBus';
 import { getLLM } from './agents';
 import { initializeLLM } from './chainingUtils';
 import {
+    getAgentMASPrompt,
     getDatasetConfigForScene,
     getDatasetGroundTruth,
     getHallucinationStats,
@@ -62,7 +63,11 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
     const message = [
         {
             role: 'system',
-            content: 'You are a data analyst.' + agent.getBias(),
+            content: `You are a data analyst.\n${getAgentMASPrompt(
+                scene,
+                agent.getBias() !== '',
+                agent.getBiasType(),
+            )}`,
         },
         {
             role: 'user',

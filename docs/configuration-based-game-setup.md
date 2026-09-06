@@ -65,6 +65,11 @@ The implementation currently expects a `GameThemeConfig` with this structure:
           injectedPrompt,
           biasPool,
           hallucinatedAgents
+        },
+        mas: {
+          agenticRisk,
+          calibrationTarget,
+          scenarioPrompt
         }
       }
     ]
@@ -128,6 +133,12 @@ Each configured level should define:
 - the workflow choices shown to the player
 - the initial dataset and available datasets
 - the hallucination type, injected prompt, bias pool, and biased-agent count
+- the agentic risk, calibration target, and MAS scenario prompt
+
+The newsroom preset defines five levels, one for each supported agentic risk:
+error propagation, premature consensus, verifier capture, collusion, and
+responsibility diffusion. Ghost agents are the agents that receive the injected
+error; their count is part of the risk scenario rather than a difficulty scale.
 
 ## Dataset and MAS requirements
 
@@ -158,8 +169,8 @@ The MAS model configuration currently controls:
 This refactor moved the main gameplay knobs into configuration, but a few core
 engine assumptions still exist:
 
-- The project still uses the existing `level1` / `level2` / `level3` scene
-  classes.
+- The project uses dedicated `level1` / `level2` scenes and a shared office
+  scene runtime for `level3` / `level4` / `level5`.
 - Non-`tuxemon` tilemaps still go through the current office-like map builder.
 - Tilemap object-layer conventions such as `Objects`, `parallel`, `voting`,
   `chaining`, and `routing` are still expected by gameplay code.

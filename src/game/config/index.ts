@@ -42,8 +42,10 @@ export function getDatasetConfig(
 
 export { newsroomConfig };
 export type {
+    AgenticRisk,
     DatasetConfig,
     GameThemeConfig,
     LevelConfig,
+    LevelMASConfig,
     WorkflowType,
 } from './types';

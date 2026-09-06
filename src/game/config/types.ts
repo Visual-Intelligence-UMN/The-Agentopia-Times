@@ -2,6 +2,13 @@ export type WorkflowType = 'voting' | 'sequential' | 'single_agent';
 
 export type HallucinationType = 'factual' | 'cherry' | 'framing' | string;
 
+export type AgenticRisk =
+    | 'error_propagation'
+    | 'premature_consensus'
+    | 'verifier_capture'
+    | 'collusion'
+    | 'responsibility_diffusion';
+
 export type AssetSource = string | Record<string, unknown>;
 
 export interface BitmapFontAssetConfig {
@@ -85,6 +92,12 @@ export interface LevelHallucinationConfig {
     hallucinatedAgents: number;
 }
 
+export interface LevelMASConfig {
+    agenticRisk: AgenticRisk;
+    calibrationTarget: string;
+    scenarioPrompt: string;
+}
+
 export interface LevelConfig {
     id: string;
     sceneKey: string;
@@ -98,6 +111,7 @@ export interface LevelConfig {
     initialDataset: string;
     availableDatasets: string[];
     hallucination: LevelHallucinationConfig;
+    mas: LevelMASConfig;
 }
 
 export interface MechanicsConfig {

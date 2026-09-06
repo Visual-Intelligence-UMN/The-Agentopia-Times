@@ -11,6 +11,7 @@ import { recorder } from '../game/utils/recorder';
 import { updateStateIcons } from '../game/utils/sceneUtils';
 import { getStoredOpenAIKey } from '../utils/openai';
 import {
+    getAgentMASPrompt,
     getHallucinationInstruction,
     getHallucinationStats,
     getMASModels,
@@ -26,8 +27,8 @@ import {
     startTextMessager,
 } from './workflowUtils';
 
-function hallucinationByType(t?: string) {
-    return getHallucinationInstruction(t);
+function hallucinationByType(t: string | undefined, scene: any) {
+    return getHallucinationInstruction(t, scene);
 }
 
 function pickStatsBy(dataset: 'baseball' | 'kidney', hType?: string) {
@@ -166,12 +167,12 @@ export function createJournalist(
         const hallucination =
             agent.getBias() === ''
                 ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
-                : hallucinationByType(hType);
+                : hallucinationByType(hType, scene);
 
         let msg: any = '';
         if (index === 0) {
             const datasetDescription = returnDatasetDescription(scene);
-            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `write a news title for the given topic: ${datasetDescription}; 
                                 You should follow these statements in highest priority: ${hallucination};
                                 The title is prepared for a news or magazine article about the dataset.`;
@@ -246,13 +247,13 @@ export function createManager(
         const hallucination =
             agent.getBias() === ''
                 ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
-                : hallucinationByType(hType);
+                : hallucinationByType(hType, scene);
 
         let msg: any = '';
         let scoreData: any = {};
         if (index === 0) {
             const datasetDescription = returnDatasetDescription(scene);
-            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `write a news title for the given topic: 
                                 ${datasetDescription}; 
                                 You should following these statements in highest priority: ${hallucination};
@@ -260,16 +261,13 @@ export function createManager(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             if (agent.getBias() === '') {
-                const roleContent =
-                    'You are a manager responsible for fact-checking.';
+                const roleContent = `You are a manager responsible for fact-checking.\n${getAgentMASPrompt(scene, false, hType)}`;
                 const userContent =
                     'your task is to refine the paragraph. Only return the article. \n' +
                     state.sequentialSecondAgentOutput;
                 msg = await startTextMessager(roleContent, userContent);
             } else {
-                const roleContent =
-                    'You are a manager responsible for fact-checking.' +
-                    agent.getBias();
+                const roleContent = `You are a manager responsible for fact-checking.\n${getAgentMASPrompt(scene, true, hType)}`;
                 const userContent =
                     'your task is to refine the paragraph. Only return the article. \n' +
                     state.sequentialSecondAgentOutput +
@@ -401,18 +399,13 @@ export function createWriter(
 
         let titleBias = "don't provide any misleading statement, stay neutral";
         if (agent.getBias() !== '') {
-            if (hType === 'cherry' || hType === 'framing') {
-                titleBias =
-                    "provide a manipulative or sensational title (e.g., 'Jeter beats Justice' ...)";
-            } else if (hType === 'factual') {
-                titleBias = 'intentionally contradict known facts in the title';
-            }
+            titleBias = hallucinationByType(hType, scene);
         }
 
         let msg: any = '';
         if (index === 0) {
             const datasetDescription = returnDatasetDescription(scene);
-            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+            const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `
             write a news title for the given topic: ${datasetDescription}; 
             The title is prepared for a news or magazine article about the dataset.
@@ -429,7 +422,7 @@ export function createWriter(
                         Then, write a detailed description/story of the first section.
                     ` +
                 state.sequentialFirstAgentOutput;
-            const roleContent = 'You are a report writer.' + agent.getBias();
+            const roleContent = `You are a report writer.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             if (agent.getBias() !== '') {
                 userContent += `\nHere are some statistics about the dataset, based on these statistics not the given insights to write the paragrpah, if there're some statement in insights that not follow these statistical facts, use these statistical facts: ${hallucination}`;
             }

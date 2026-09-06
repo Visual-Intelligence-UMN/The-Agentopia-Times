@@ -8,6 +8,7 @@ import { render } from 'phaser-jsx';
 import { Typewriter } from '../components';
 import { addButtonHUD } from '../utils/hudUtils';
 import { fetchChatCompletion } from '../server/server';
+import { getNextLevelSceneKey } from './configUtils';
 
 export interface Sign extends Phaser.Physics.Arcade.StaticBody {
   text?: string;
@@ -272,7 +273,9 @@ protected onOverlapEnd(player: any, item: any) {
               'pointerdown',
               () => {
                 console.log('levelBtn clicked');
-                this.scene.start('level2');
+                const activeLevel =
+                  this.registry.get('currentLevel') ?? this.scene.key;
+                this.scene.start(getNextLevelSceneKey(activeLevel));
               },
               this,
             );

@@ -14,6 +14,7 @@ import { ChatOpenAI } from "@langchain/openai";
 
 import { getStoredOpenAIKey } from '../utils/openai';
 import { SequentialGraphStateAnnotation } from "./states";
+import { getMASModels } from './config';
 
 const apiKey = getStoredOpenAIKey() || undefined;
 
@@ -27,7 +28,7 @@ interface subgraph{
 export function initializeLLM(){
     return new ChatOpenAI({
         apiKey,
-        modelName: "gpt-4o-mini",
+        modelName: getMASModels().chat,
     });
 }
 

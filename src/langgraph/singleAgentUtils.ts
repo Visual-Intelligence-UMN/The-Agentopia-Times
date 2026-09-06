@@ -8,6 +8,7 @@ import { generateImage } from './dalleUtils';
 import { initializeLLM } from './chainingUtils';
 import { marked } from 'marked';
 import { generateChartImage } from './visualizationGenerate';
+import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 import {
     returnDatasetDescription,
     startDataFetcher,
@@ -71,12 +72,12 @@ export function createAgent(
         let scoreData:any = {};
 
         let datasetDescription = returnDatasetDescription(scene);
-        let bias = "don't provide any misleading statement, stay neutral"
+        const hallucinationType = agent.getBiasType();
+        let bias = "don't provide any misleading statement, stay neutral";
         if (agent.getBias()!=="") {
-            bias = `provide misleading title, you can use title like:
-            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+            bias = getHallucinationInstruction(hallucinationType, scene);
         }
-        let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.`;
+        let roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hallucinationType)}`;
         let userContent = `write a news title for the given topic: ${datasetDescription}; 
                             You should follow these statements in highest priority: ${bias};
                             The title is prepared for a news or magazine article about the dataset.`;
@@ -99,7 +100,7 @@ export function createAgent(
                         Then, write a detailed description/story of the first section.
                     ` +
                 mssg.content;
-            let roleContent = 'You are a report writer.' + agent.getBias();
+            let roleContent = `You are a report writer.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hallucinationType)}`;
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             let codeData = await generateChartImage(scene, agent);

@@ -6,6 +6,7 @@ import * as vegaLite from 'vega-lite';
 import vegaEmbed from 'vega-embed';
 import { getVisualizationData } from '../vega/visualizationData';
 import { generateAutoVISPrompt, generateBiasedPrompt } from '../vega/visualizationLibrary';
+import { getAgentMASPrompt } from './config';
 
 (window as any).vega = vega;
 (window as any).vegaLite = vegaLite;
@@ -76,7 +77,11 @@ export async function generateChartImage(scene: any, agent: any) {
   to visualize the **proportion of hit/miss** 
   (or success/failure) grouped by player and year.
   `;
-  let systemPrompt = generateAutoVISPrompt(dataSummary);
+  let systemPrompt = `${generateAutoVISPrompt(dataSummary)}\n${getAgentMASPrompt(
+    scene,
+    agent.getBias() !== '',
+    agent.getBiasType(),
+  )}`;
 
 
   if(agent.getBias()!==''){
@@ -112,7 +117,11 @@ Do not use fold in this workflow if the categorical grouping field already exist
 Validate that the generated spec can run without undefined fields. Any field used in encoding must either exist in the input dataset or be created by a prior transform.
     
       `;
-    systemPrompt = generateBiasedPrompt(facetVar, dataSummary);
+    systemPrompt = `${generateBiasedPrompt(facetVar, dataSummary)}\n${getAgentMASPrompt(
+      scene,
+      true,
+      agent.getBiasType(),
+    )}`;
   }
   console.log("specPrompt", specPrompt);
 

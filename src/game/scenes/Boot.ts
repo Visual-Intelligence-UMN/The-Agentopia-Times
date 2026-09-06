@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 
+import { getStoredOpenAIKey } from '../../utils/openai';
 import { getGameConfig } from '../config';
 import { key } from '../constants';
 
@@ -42,23 +43,30 @@ export class Boot extends Scene {
         // this.scene.start('level2');
 
         // Check if there is a stored API Key
-        const storedApiKey = localStorage.getItem('openai-api-key');
+        const storedApiKey = getStoredOpenAIKey();
 
         if (storedApiKey) {
             // If there is a stored API Key, verify its validity
             this.verifyApiKey(storedApiKey).then((isValid) => {
                 if (isValid) {
                     // API Key valid, direct access to the game scene
-                    this.scene.start(gameConfig.defaults.startScene);
+                    this.startSceneIfMounted(gameConfig.defaults.startScene);
                 } else {
                     // If the API Key is invalid, go to the main menu
-                    this.scene.start('MainMenu');
+                    this.startSceneIfMounted('MainMenu');
                 }
             });
         } else {
             // If there is no stored API Key, go to the Main Menu
             this.scene.start('MainMenu');
         }
+    }
+
+    private startSceneIfMounted(sceneKey: string) {
+        if (!(this.scene as { manager?: unknown }).manager) {
+            return;
+        }
+        this.scene.start(sceneKey);
     }
 
     private async verifyApiKey(apiKey: string): Promise<boolean> {

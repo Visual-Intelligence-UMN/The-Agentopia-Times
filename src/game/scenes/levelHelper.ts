@@ -485,7 +485,7 @@ export function createDifficultySelector(scene: Phaser.Scene) {
 
     const updateDifficultyText = () => {
         const activeLevel = levels[difficultyIndex];
-        const text = `Difficulty: ◀ ${activeLevel.level_name.toUpperCase()} ▶`;
+        const text = `Level: ◀ ${activeLevel.level_name.toUpperCase()} ▶`;
         difficultyLabel.setText(text);
         scene.registry.set('gameDifficulty', activeLevel.level_name);
     };
@@ -592,10 +592,39 @@ export function pickAgentForSingleStrict(
     roomZones: any[],
     agentList: Map<string, Agent>,
 ) {
-    const toAgent = (a: any) =>
-        a instanceof Agent || typeof a?.getName === 'function'
-            ? a
-            : agentList.get(a);
+    const fallbackByName = (name: string | null) => {
+        if (!name) return undefined;
+        const trimmed = name.trim();
+        if (!trimmed) return undefined;
+        for (const agent of agentList.values()) {
+            if (agent.getName?.() === trimmed) return agent;
+        }
+        return undefined;
+    };
+
+    const toAgent = (a: any) => {
+        if (a instanceof Agent || typeof a?.getName === 'function') {
+            return a;
+        }
+        if (typeof a === 'string') {
+            return (
+                agentList.get(a) ??
+                fallbackByName(a) ??
+                fallbackByName(a.replace(/^Biased\s+/i, '').trim())
+            );
+        }
+        if (a && typeof a === 'object' && 'name' in a) {
+            const raw = (a as { name?: unknown }).name;
+            if (typeof raw === 'string') {
+                return (
+                    agentList.get(raw) ??
+                    fallbackByName(raw) ??
+                    fallbackByName(raw.replace(/^Biased\s+/i, '').trim())
+                );
+            }
+        }
+        return undefined;
+    };
 
     const agentsInRoom: Agent[] = [];
     for (const zone of roomZones || []) {

@@ -50,7 +50,11 @@ import {
     saveHistory,
 } from './levelHelper';
 import { ParentScene } from './ParentScene';
-import { getRequiredLevelConfig, initializeLevelRegistry } from './configUtils';
+import {
+    getNextLevelSceneKey,
+    getRequiredLevelConfig,
+    initializeLevelRegistry,
+} from './configUtils';
 
 const level = 'level2';
 
@@ -275,7 +279,7 @@ export class Level2 extends ParentScene {
             window.location.reload();
         });
 
-        // Level 2: Cherry-picking & Overgeneralization
+        // Level 2: Premature Consensus
         // add title bar + info icon with tooltip
         addTitleWithHoverInfo(this, levelConfig.uiTitle, levelConfig.uiInfo, {
             x: -50,
@@ -1217,7 +1221,7 @@ export class Level2 extends ParentScene {
                     new CustomEvent('signal', {
                         detail: {
                             type: 'level-complete',
-                            level: 'level1',
+                            level: this.registry.get('currentLevel'),
                             score: finalScore,
                         },
                     }),
@@ -1484,7 +1488,9 @@ export class Level2 extends ParentScene {
 
         nextLevelBtn.on('pointerdown', () => {
             recorder.recordEvent('next_level_clicked');
-            this.scene.start('level3');
+            this.scene.start(
+                getNextLevelSceneKey(this.registry.get('currentLevel')),
+            );
         });
     }
 

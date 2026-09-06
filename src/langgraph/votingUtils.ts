@@ -16,6 +16,7 @@ import {
     startVisualizer,
 } from './workflowUtils';
 import { generateChartImage } from './visualizationGenerate';
+import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 
 export async function parallelVotingExecutor(
     agents: any[],
@@ -70,16 +71,16 @@ export async function parallelVotingExecutor(
         let datasetDescription = returnDatasetDescription(scene);
         let msg: any = '';
 
-        let bias = "don't provide any misleading statement, stay neutral"
+        const hallucinationType = agent.getBiasType();
+        let bias = "don't provide any misleading statement, stay neutral";
         if (agent.getBias()!=="") {
-            bias = `provide misleading title, you can use title like:
-            'Jeter beats Justice' or 'treatment B is better than treatment A'`;
+            bias = getHallucinationInstruction(hallucinationType, scene);
         }
 
         if (index === 0) {
             const roleContent =
                 `You are a newspaper editorial, you need to return a title based on the dataset description.` + `follow these statement with highest priority ${bias}` +
-                agent.getBias();
+                `\n${getAgentMASPrompt(scene, agent.getBias() !== '', hallucinationType)}`;
             const userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
@@ -94,7 +95,7 @@ export async function parallelVotingExecutor(
                         Then, write a detailed description/story of the first section.
                     ` +
                 msg.content;
-            let roleContent = 'You are a report writer.' + agent.getBias();
+            let roleContent = `You are a report writer.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hallucinationType)}`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             msg = await generateChartImage(scene, agent);
@@ -172,12 +173,14 @@ export function createAggregator(
         if (index === 0) {
             let llmInput = votes.join('; ');
             decision = await llm.invoke(`
+            ${getAgentMASPrompt(scene, false)}
             aggregate data: ${llmInput}; 
             return the aggreated result in one title, don't add any other information or quotation marks.
         `); // prompt_change
         } else if (index === 1) {
             let llmInput = votes.join('; ');
             decision = await llm.invoke(`
+            ${getAgentMASPrompt(scene, false)}
             aggregate data: ${llmInput}; 
             return the aggreated result in one news article, don't add any other information or quotation marks.
         `); // prompt_change
@@ -192,6 +195,7 @@ export function createAggregator(
 
             decision = await llm.invoke(`
                 You are a visualization expert.
+                ${getAgentMASPrompt(scene, false)}
                 You are given multiple versions of Vega-Lite specifications, each representing a user's attempt to visualize the same dataset.
                 Aggregate them into a single improved Vega-Lite JSON. Preserve effective encodings and marks. Remove redundancy.
                 Output ONLY the final Vega-Lite JSON (no quotes, no comments).

@@ -50,7 +50,11 @@ import {
     saveHistory,
 } from './levelHelper';
 import { ParentScene } from './ParentScene';
-import { getRequiredLevelConfig, initializeLevelRegistry } from './configUtils';
+import {
+    getNextLevelSceneKey,
+    getRequiredLevelConfig,
+    initializeLevelRegistry,
+} from './configUtils';
 
 const level = 'level1';
 
@@ -1213,7 +1217,7 @@ export class Level1 extends ParentScene {
                     new CustomEvent('signal', {
                         detail: {
                             type: 'level-complete',
-                            level: 'level1',
+                            level: this.registry.get('currentLevel'),
                             score: finalScore,
                         },
                     }),
@@ -1491,7 +1495,9 @@ export class Level1 extends ParentScene {
         nextLevelBtn.on('pointerdown', () => {
             recorder.recordEvent('next_level_clicked');
 
-            this.scene.start('level2');
+            this.scene.start(
+                getNextLevelSceneKey(this.registry.get('currentLevel')),
+            );
         });
     }
 

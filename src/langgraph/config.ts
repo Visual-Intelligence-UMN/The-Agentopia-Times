@@ -1,4 +1,5 @@
 import { getDatasetConfig, getGameConfig, getLevelConfig } from '../game/config';
+import { buildLevelAgentPrompt } from '../game/config/agenticRiskLevels';
 import type { DatasetConfig, LevelConfig } from '../game/config';
 
 const FALLBACK_HALLUCINATION_PROMPT =
@@ -48,15 +49,31 @@ export function getDatasetGroundTruth(datasetId: string): string {
     return getDatasetOrThrow(datasetId).groundTruth;
 }
 
-export function getHallucinationInstruction(hallucinationType?: string): string {
-    const matchedLevel = getGameConfig().mechanics.levels.find(
-        (level) => level.hallucination.type === hallucinationType,
-    );
+export function getHallucinationInstruction(
+    hallucinationType?: string,
+    scene?: any,
+): string {
+    const activeLevel = scene ? getLevelConfigForScene(scene) : undefined;
+    const matchedLevel =
+        activeLevel?.hallucination.biasPool.includes(hallucinationType ?? '')
+            ? activeLevel
+            : getGameConfig().mechanics.levels.find(
+                  (level) => level.hallucination.type === hallucinationType,
+              );
 
     return (
         matchedLevel?.hallucination.injectedPrompt ??
         FALLBACK_HALLUCINATION_PROMPT
     );
+}
+
+export function getAgentMASPrompt(
+    scene: any,
+    isProblematic: boolean,
+    _hallucinationType?: string,
+): string {
+    const level = getLevelConfigForScene(scene);
+    return buildLevelAgentPrompt(level, isProblematic);
 }
 
 export function getHallucinationStats(

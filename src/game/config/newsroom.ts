@@ -12,6 +12,7 @@ import {
 } from '../../const';
 import * as assets from '../assets';
 import { key } from '../constants';
+import { agenticRiskLevelDefinitions } from './agenticRiskLevels';
 import type { GameThemeConfig } from './types';
 
 const visualizationReviewerPersona = `
@@ -177,72 +178,17 @@ export const newsroomConfig: GameThemeConfig = {
         },
     },
     mechanics: {
-        config_options: ['workflow', 'dataset', 'difficulty'],
-        levels: [
-            {
-                id: 'level1',
-                sceneKey: 'level1',
-                level_name: 'Level 1',
-                uiTitle: 'Level 1: Factual Contradiction',
-                uiInfo: 'Factual Contradiction\n\nThis type of hallucination introduces statements that are directly opposite to the truth, such as reversing numbers, times, or causes.\n\nThe goal is to recognize and correct conclusions that conflict with facts or common sense.',
-                required_score: 8,
-                tilemapKey: key.tilemap.level1_office,
-                workflow: ['voting', 'sequential', 'single_agent'],
-                config_options: ['workflow', 'dataset'],
-                initialDataset: 'baseball',
-                availableDatasets: ['baseball', 'kidney'],
-                hallucination: {
-                    type: 'factual',
-                    name: 'factual correctness',
-                    injectedPrompt:
-                        'Your output should contain factual contradictions against known dataset truths.',
-                    biasPool: ['factual'],
-                    hallucinatedAgents: 1,
-                },
-            },
-            {
-                id: 'level2',
-                sceneKey: 'level2',
-                level_name: 'Level 2',
-                uiTitle: 'Level 2: Cherry-picking & Overgeneralization',
-                uiInfo: 'Cherry-picking & Overgeneralization\n\nThis type of hallucination selectively presents information or evidence that supports a biased conclusion, while ignoring contradictory data.\n\nIt may also make overly broad claims based on limited or incomplete evidence.\n\nThe goal is to detect when conclusions are drawn from incomplete or one-sided information.',
-                required_score: 8,
-                tilemapKey: key.tilemap.level2_office,
-                workflow: ['voting', 'sequential', 'single_agent'],
-                config_options: ['workflow', 'dataset'],
-                initialDataset: 'baseball',
-                availableDatasets: ['baseball', 'kidney'],
-                hallucination: {
-                    type: 'cherry',
-                    name: 'cherry-pick',
-                    injectedPrompt:
-                        'Cherry-pick facts and overgeneralize to support one side, ignoring opposing data.',
-                    biasPool: ['factual', 'cherry'],
-                    hallucinatedAgents: 2,
-                },
-            },
-            {
-                id: 'level3',
-                sceneKey: 'level3',
-                level_name: 'Level 3',
-                uiTitle: 'Level 3: Framing & Ambiguity',
-                uiInfo: 'Framing & Ambiguity\n\nThis type of hallucination manipulates the way information is presented by emphasizing certain aspects while downplaying or omitting others.\n\nIt can also introduce ambiguous language or unclear definitions, leading to multiple interpretations.\n\nThe goal is to identify misleading framing strategies and clarify vague or ambiguous statements.',
-                required_score: 8,
-                tilemapKey: key.tilemap.level3_office,
-                workflow: ['voting', 'sequential', 'single_agent'],
-                config_options: ['workflow', 'dataset'],
-                initialDataset: 'baseball',
-                availableDatasets: ['baseball', 'kidney'],
-                hallucination: {
-                    type: 'framing',
-                    name: 'over-generalization',
-                    injectedPrompt:
-                        'Use framing and ambiguity to subtly manipulate readers’ impressions without explicit lies.',
-                    biasPool: ['factual', 'cherry', 'framing'],
-                    hallucinatedAgents: 3,
-                },
-            },
-        ],
+        config_options: ['workflow', 'dataset', 'level'],
+        levels: agenticRiskLevelDefinitions.map((level, index) => ({
+            ...level,
+            tilemapKey: [
+                key.tilemap.level1_office,
+                key.tilemap.level2_office,
+                key.tilemap.level3_office,
+                key.tilemap.level3_office,
+                key.tilemap.level3_office,
+            ][index],
+        })),
     },
     mas: {
         model: {
@@ -376,6 +322,11 @@ Be careful, this dataset has a phenomenon called Simpson's Paradox.
                     factual: baseballStatLevel1,
                     cherry: baseballStatLevel2,
                     framing: baseballStatLevel3,
+                    error_propagation: baseballStatLevel1,
+                    premature_consensus: baseballStatLevel2,
+                    verifier_capture: baseballStatLevel3,
+                    collusion: baseballStatLevel2,
+                    responsibility_diffusion: baseballStatLevel1,
                 },
             },
             kidney: {
@@ -397,6 +348,11 @@ Be careful, this dataset has a phenomenon called Simpson's Paradox.
                     factual: kidneyStatLevel1,
                     cherry: kidneyStatLevel2,
                     framing: kidneyStatLevel3,
+                    error_propagation: kidneyStatLevel1,
+                    premature_consensus: kidneyStatLevel2,
+                    verifier_capture: kidneyStatLevel3,
+                    collusion: kidneyStatLevel2,
+                    responsibility_diffusion: kidneyStatLevel1,
                 },
             },
         },

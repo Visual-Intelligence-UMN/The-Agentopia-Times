@@ -54,9 +54,11 @@ import {
     saveHistory,
 } from './levelHelper';
 import { ParentScene } from './ParentScene';
-import { getRequiredLevelConfig, initializeLevelRegistry } from './configUtils';
-
-const level = 'level3';
+import {
+    getNextLevelSceneKey,
+    getRequiredLevelConfig,
+    initializeLevelRegistry,
+} from './configUtils';
 
 export interface Zone {
     zone: Phaser.GameObjects.Zone;
@@ -64,7 +66,9 @@ export interface Zone {
     agentsInside: Set<string>;
 }
 
-export class Level3 extends ParentScene {
+export class BaseLevelScene extends ParentScene {
+    private readonly levelKey: string;
+
     private parrellePositionGroup!: Phaser.Physics.Arcade.StaticGroup;
     private agentList: Map<string, Agent> = new Map();
 
@@ -226,11 +230,12 @@ export class Level3 extends ParentScene {
     //   return Agent.biasedAgentsCount >= this.requiredBiasedAgents;
     // }
 
-    constructor() {
-        super(level);
+    constructor(levelKey: string) {
+        super(levelKey);
+        this.levelKey = levelKey;
         this.sceneName = '';
         eventTargetBus.addEventListener('signal', (event: any) => {
-            console.log(`Level3 received: ${event.detail}`);
+            console.log(`${this.levelKey} received: ${event.detail}`);
             if (event.detail === 'signal 1') {
                 console.log('Research phase completed.');
             } else if (event.detail === 'signal 2') {
@@ -240,7 +245,7 @@ export class Level3 extends ParentScene {
     }
 
     create() {
-        const levelConfig = getRequiredLevelConfig(level);
+        const levelConfig = getRequiredLevelConfig(this.levelKey);
 
         initializeLevelRegistry(this, levelConfig);
         console.log('[pool:set]', this.registry.get('biasTypePool'));
@@ -305,7 +310,7 @@ export class Level3 extends ParentScene {
             window.location.reload();
         });
 
-        // Level 3: Framing & Ambiguity
+        // Level 3: Verifier Capture (also reused by configured later levels)
         // add title bar + info icon with tooltip
         addTitleWithHoverInfo(this, levelConfig.uiTitle, levelConfig.uiInfo, {
             x: -50,
@@ -732,8 +737,8 @@ export class Level3 extends ParentScene {
         this.cameras.main.setZoom(zoom);
         this.cameras.main.centerOn(mapWidth / 2, mapHeight / 2);
 
-        createDownloadButton(this, 'level2');
-        createHistoryButton(this, 'level2');
+        createDownloadButton(this, this.levelKey);
+        createHistoryButton(this, this.levelKey);
 
         this.events.on('level-complete', (payload?: { score: number }) => {
             const score =
@@ -1130,7 +1135,7 @@ export class Level3 extends ParentScene {
                             firstPosition,
                             secondPosition,
                             i,
-                            level,
+                            this.levelKey,
                         );
                         graphs.push(graph);
                     } else if (workflowConfig[i] === 'sequential') {
@@ -1142,7 +1147,7 @@ export class Level3 extends ParentScene {
                             firstPosition,
                             secondPosition,
                             i,
-                            level,
+                            this.levelKey,
                         );
                         graphs.push(graph);
                     } else if (workflowConfig[i] === 'single_agent') {
@@ -1170,7 +1175,7 @@ export class Level3 extends ParentScene {
                             firstPosition,
                             secondPosition,
                             i,
-                            level,
+                            this.levelKey,
                         );
                         graphs.push(graph);
                         continue;
@@ -1251,14 +1256,14 @@ export class Level3 extends ParentScene {
                     new CustomEvent('signal', {
                         detail: {
                             type: 'level-complete',
-                            level: 'level1',
+                            level: this.levelKey,
                             score: finalScore,
                         },
                     }),
                 );
 
                 // save the scores to history
-                saveHistory('level3', scoreData.overall_score);
+                saveHistory(this.levelKey, scoreData.overall_score);
             });
         }
 
@@ -1510,9 +1515,17 @@ export class Level3 extends ParentScene {
             recorder.recordEvent('next_level_clicked');
             recorder.endRecord();
 
-            this.scene.start('level1');
+            this.scene.start(this.getNextLevelKey());
         });
     }
 
-    // Ensure this code is inside the `create` method after initializing `this.baseBallBtn`
+    protected getNextLevelKey(): string {
+        return getNextLevelSceneKey(this.levelKey);
+    }
+}
+
+export class Level3 extends BaseLevelScene {
+    constructor() {
+        super('level3');
+    }
 }
