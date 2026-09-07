@@ -9,24 +9,32 @@ export function createHoveredWindow(
     windowContextText: string,
 ) {
     const hoveredWindowGroup = scene.add.group();
-    const rectX = pointer.x + width / 2;
-    const rectY = pointer.y - height / 2;
+    const padding = 12;
+    const margin = 8;
+    const panelWidth = Math.min(width, scene.cameras.main.width - margin * 2);
+    const hoverWindowText = scene.add
+        .text(0, 0, windowContextText, {
+            fontFamily: 'Verdana',
+            fontSize: '14px',
+            color: '#ffffff',
+            align: 'left',
+            wordWrap: { width: panelWidth - padding * 2, useAdvancedWrap: true },
+        })
+        .setScrollFactor(0)
+        .setDepth(1012)
+        .setOrigin(0, 0)
+        .setStroke('#000000', 2);
+    const panelHeight = Math.max(height, hoverWindowText.height + padding * 2);
+    const left = Math.max(margin, Math.min(pointer.x, scene.cameras.main.width - panelWidth - margin));
+    const top = Math.max(margin, pointer.y - panelHeight - margin);
     const hoverWindow = scene.add
-        .rectangle(rectX, rectY, width, height, 0x000000)
+        .rectangle(left, top, panelWidth, panelHeight, 0x000000)
+        .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(1011)
         .setAlpha(0.5)
         .setStrokeStyle(2, 0xffffff);
-    const hoverWindowText = scene.add
-        .text(rectX, rectY, windowContextText)
-        .setScrollFactor(0)
-        .setDepth(1012)
-        .setAlpha(1)
-        .setFontSize(12.5)
-        .setColor('#ffffff')
-        .setStyle({ fontFamily: 'Verdana', fontSize: '14px', color: '#ffffff' })
-        .setOrigin(0.5, 0.5)
-        .setStroke('#000000', 2);
+    hoverWindowText.setPosition(left + padding, top + padding);
 
     hoveredWindowGroup.add(hoverWindow);
     hoveredWindowGroup.add(hoverWindowText);
