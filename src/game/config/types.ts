@@ -1,4 +1,4 @@
-export type WorkflowType = 'voting' | 'sequential' | 'single_agent';
+export type WorkflowType = 'voting' | 'sequential' | 'single_agent' | 'discussion';
 
 export type HallucinationType = 'factual' | 'cherry' | 'framing' | string;
 

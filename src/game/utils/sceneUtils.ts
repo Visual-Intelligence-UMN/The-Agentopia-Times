@@ -22,6 +22,7 @@ import {
 import { EventBus } from '../EventBus';
 import { Zone } from '../scenes';
 import { Agent } from '../sprites/Agent';
+import { strategyIconSize, workflowStrategies } from '../config/workflowStrategies';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import {
     addAgentPanelHUD,
@@ -314,10 +315,10 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
                     // adding selection panel
                     selectionPanel = scene.add
                         .rectangle(
-                            centerX - 75,
+                            centerX - 55,
                             centerY + 125,
-                            200,
-                            100,
+                            260,
+                            116,
                             0x000000,
                             0.5,
                         )
@@ -327,7 +328,7 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
 
                     const panelTitle = scene.add
                         .text(
-                            centerX - 75,
+                            centerX - 55,
                             centerY + 125 - 40,
                             'Select a Strategy',
                         )
@@ -345,79 +346,34 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
                         .setStroke('#000000', 2)
                         .setOrigin(0.5, 0.5);
 
-                    // adding strategy icons
-                    const strategyIconXOffset = 150;
-                    const strategyMargin = 15;
-                    const sequentialIcon = scene.add
-                        .image(
-                            centerX - strategyIconXOffset + strategyMargin,
-                            centerY + 125,
-                            'sequential',
-                        )
-                        .setDepth(1001)
-                        .setScale(1.5)
-                        .setOrigin(0.5)
-                        .setInteractive()
-                        .setScrollFactor(0);
-
-                    const votingIcon = scene.add
-                        .image(
-                            centerX - strategyIconXOffset + 75,
-                            centerY + 125,
-                            'voting',
-                        )
-                        .setDepth(1001)
-                        .setScale(1.5)
-                        .setOrigin(0.5)
-                        .setInteractive()
-                        .setScrollFactor(0);
-
-                    const singleAgentIcon = scene.add
-                        .image(
-                            centerX -
-                                strategyIconXOffset +
-                                150 -
-                                strategyMargin,
-                            centerY + 125,
-                            'single_agent',
-                        )
-                        .setDepth(1001)
-                        .setScale(1.5)
-                        .setOrigin(0.5)
-                        .setInteractive()
-                        .setScrollFactor(0);
-
-                    // adding UI cpmponents to the group
                     uiGroup.add(selectionPanel);
-                    uiGroup.add(sequentialIcon);
-                    uiGroup.add(votingIcon);
-                    uiGroup.add(singleAgentIcon);
                     uiGroup.add(panelTitle);
-
-                    addEventToStrategy(
-                        scene,
-                        btn,
-                        sequentialIcon,
-                        'Sequential Strategy: \nAll agents work in sequence, \ncompleting tasks one after another.',
-                        zoneIndex,
-                        'sequential',
-                    );
-                    addEventToStrategy(
-                        scene,
-                        btn,
-                        votingIcon,
-                        'Voting Strategy: \nAll agents working simultaneously\nthen aggregate to the best result.',
-                        zoneIndex,
-                        'voting',
-                    );
-                    addEventToStrategy(
-                        scene,
-                        btn,
-                        singleAgentIcon,
-                        'Single Agent Strategy: \nOnly one agent works on the task, \ncompleting it independently.',
-                        zoneIndex,
-                        'single_agent',
-                    );
+                    workflowStrategies.forEach((option, optionIndex) => {
+                        const x = centerX - 145 + optionIndex * 60;
+                        const size = strategyIconSize(option.id);
+                        const icon = scene.add
+                            .image(x, centerY + 125, option.id)
+                            .setDepth(1002)
+                            .setDisplaySize(size, size)
+                            .setOrigin(0.5)
+                            .setInteractive({ useHandCursor: true })
+                            .setScrollFactor(0);
+                        const label = scene.add
+                            .text(x, centerY + 162, option.label, {
+                                fontFamily: 'Verdana',
+                                fontSize: '9px',
+                                color: '#ffffff',
+                            })
+                            .setOrigin(0.5)
+                            .setDepth(1002)
+                            .setScrollFactor(0);
+                        uiGroup.add(icon);
+                        uiGroup.add(label);
+                        addEventToStrategy(
+                            scene, btn, icon, option.description,
+                            zoneIndex, option.id,
+                        );
+                    });
                 } else {
                     console.log(
                         'removing selection panel',

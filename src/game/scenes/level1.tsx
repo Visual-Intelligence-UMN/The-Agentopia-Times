@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
+import { constructDiscussionGraph } from '../../langgraph/discussionUtils';
+import { runSceneWorkflow } from '../domain/workflowRun';
 import {
     createEditorialManagerAssessmentCoordinator,
     reviewCandidateReport,
@@ -10,6 +12,7 @@ import {
 } from '../../langgraph/editorialManager';
 import { resetReportIcons } from '../../langgraph/agents';
 import {
+    failMASTrace,
     finishMASTrace,
     recordMASStage,
     startOrContinueMASTrace,
@@ -1050,7 +1053,7 @@ export class Level1 extends ParentScene {
 
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
-            this.debateStartBtn.on('pointerdown', async () => {
+            this.debateStartBtn.on('pointerdown', () => runSceneWorkflow(this, async () => {
                 const managerAssessmentRun =
                     this.managerAssessment?.capture() ?? null;
                 const editorialManager = managerAssessmentRun?.manager ?? null;
@@ -1082,7 +1085,6 @@ export class Level1 extends ParentScene {
                 resetReportIcons(this);
                 resetScoreUI(this);
 
-                this.registry.set('isWorkflowRunning', true);
                 let editorialReview: EditorialReviewResult | null = null;
                 console.log('btn pre-start zones data', this.parallelZones);
                 const agentsInfo = getAllAgents(this.parallelZones);
@@ -1161,7 +1163,12 @@ export class Level1 extends ParentScene {
                     // fetching agent prompts
                     console.log('agent prompts', agentPrompts[i]);
                     // Insert prompts into the graphs below:
-                    if (workflowConfig[i] === 'voting') {
+                    if (workflowConfig[i] === 'discussion') {
+                        graphs.push(constructDiscussionGraph(
+                            datamaps[i].flatMap((zone: { agents: Agent[] }) => zone.agents),
+                            this, this.tilemap, firstPosition, secondPosition, i,
+                        ));
+                    } else if (workflowConfig[i] === 'voting') {
                         console.log('construct voting graph');
                         const graph = constructVotingGraph(
                             agentsParameter,
@@ -1227,17 +1234,25 @@ export class Level1 extends ParentScene {
 
                 // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
                 for (let i = 0; i < graphs.length; i++) {
-                    if (workflowConfig[i] === 'voting') {
+                    if (workflowConfig[i] === 'discussion') {
+                        const input = { discussionInput: String(cycleOutputs[i] ?? '') };
+                        const output = await graphs[i].invoke(input);
+                        recordMASStage({
+                            stageIndex: i, workflow: 'discussion', input, output,
+                        });
+                        cycleOutputs.push(output.discussionOutput);
+                        if (i === graphs.length - 1) scoreData = output.scoreData;
+                    } else if (workflowConfig[i] === 'voting') {
                         console.log('invoke voting graph');
                         const output = await graphs[i].invoke({
-                            votingInput: cycleOutputs[0],
+                            votingInput: cycleOutputs[i],
                             votingVotes: [],
                         });
                         recordMASStage({
                             stageIndex: i,
                             workflow: workflowConfig[i],
                             input: {
-                                votingInput: cycleOutputs[0],
+                                votingInput: cycleOutputs[i],
                                 votingVotes: [],
                             },
                             output,
@@ -1383,7 +1398,12 @@ export class Level1 extends ParentScene {
 
                 // save the scores to history
                 saveHistory('level1', scoreData.overall_score);
-            });
+            }, (error) => {
+                const message = error instanceof Error ? error.message : String(error);
+                this.debateStartLabel?.setText('Run failed\nPress Reset');
+                recorder.recordEvent({ type: 'simulation_failed', message });
+                failMASTrace(error);
+            }));
         }
 
         // if(

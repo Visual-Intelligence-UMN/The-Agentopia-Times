@@ -1,4 +1,5 @@
 import type { GameThemeConfig } from './types';
+import { discussionPrompts } from './discussionPrompts';
 
 export const gameThemeTemplate: GameThemeConfig = {
     id: 'replace-me',
@@ -48,6 +49,7 @@ export const gameThemeTemplate: GameThemeConfig = {
             judge: 'gpt-5-nano',
         },
         agents: {
+            discussion: discussionPrompts,
             voting: {
                 title_discussion: {
                     agent_persona: '',

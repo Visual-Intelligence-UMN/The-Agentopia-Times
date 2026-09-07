@@ -31,6 +31,7 @@ const image = {
   start: "start",
   sequential: "sequential",
   voting: "voting",
+  discussion: 'discussion',
   single_agent: "single_agent",
   pdfIcon: 'pdfIcon',
   agent_mssg: 'agent_mssg',

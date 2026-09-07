@@ -168,7 +168,8 @@ function App()
             setCharts(prev => {
               // Check if a chart with the same id already exists
               const exists = prev.some(chart => chart.id === data.id);
-              return exists ? prev : [...prev, {id: data.id, code: data.d3Code}];
+              const nextChart = {id: data.id, code: data.d3Code};
+              return exists ? prev.map(chart => chart.id === data.id ? nextChart : chart) : [...prev, nextChart];
             });
           };
 

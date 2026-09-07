@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import Draggable from 'react-draggable';
 
 import { compileJSCode } from '../langgraph/visualizationGenerate';
@@ -17,19 +17,19 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
     context,
     charts,
 }) => {
-    const hasRenderedCharts = useRef(false); // Whether the marker has been rendered or not
     const renderedContext = renderRichText(context);
 
     useEffect(() => {
-        if (!hasRenderedCharts.current) {
-            charts.forEach((chart) => {
-                compileJSCode(chart.code, chart.id);
-            });
-            // compileJSCode(d3Script, "ghibli-viz");
-        }
-
-        hasRenderedCharts.current = true;
-    }, []);
+        charts.forEach((chart) => {
+            // JSON charts need their report container; intermediate reports have none.
+            if (
+                chart.code.trim().startsWith('{') &&
+                !document.querySelector(chart.id)
+            )
+                return;
+            compileJSCode(chart.code, chart.id);
+        });
+    }, [charts, renderedContext]);
 
     return (
         <Draggable handle=".window-header" defaultPosition={{ x: 0, y: 0 }}>

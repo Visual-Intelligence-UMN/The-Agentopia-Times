@@ -14,6 +14,7 @@ export { default as baseball } from "./baseball.png"
 export { default as kidney } from "./kidney.png"
 export { default as sequential } from "./sequential.png"
 export { default as voting } from "./voting.png"
+export { default as discussion } from './discussion.png';
 export { default as single_agent } from "./single_agent.png"
 export { default as dialog_icon } from "./dialog_char_icon.png"
 export { default as idle_icon } from "./idle_char_icon.png"
@@ -23,4 +24,3 @@ export { default as agent_mssg } from "./agent-mssg.png"
 
 export { default as agent_idle } from "./agent-idle.png"
 export { default as final_report } from "./final_report.png"
-

@@ -266,11 +266,11 @@ export function finishMASTrace(
     }
 
     activeTrace.completedAt = nowIso();
-    activeTrace.status = activeTrace.calls.some(
-        (call) => call.status === 'error',
-    )
-        ? 'error'
-        : 'completed';
+    activeTrace.status =
+        activeTrace.status === 'error' ||
+        activeTrace.calls.some((call) => call.status === 'error')
+            ? 'error'
+            : 'completed';
     activeTrace.finalOutput = toSerializable(finalOutput);
     persistTrace();
 
@@ -292,6 +292,15 @@ export function getLatestMASTrace(): MASTrace | null {
 
     const stored = globalThis.localStorage.getItem(STORAGE_KEY);
     return stored ? (JSON.parse(stored) as MASTrace) : null;
+}
+
+export function failMASTrace(error: unknown, download = true): MASTrace | null {
+    if (!activeTrace) return null;
+    activeTrace.status = 'error';
+    return finishMASTrace(
+        { error: error instanceof Error ? error.message : String(error) },
+        download,
+    );
 }
 
 export function downloadMASTrace(trace = getLatestMASTrace()): void {

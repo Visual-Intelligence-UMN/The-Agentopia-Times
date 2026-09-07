@@ -8,6 +8,7 @@ import {
 } from '@langchain/core/messages';
 
 import {
+    failMASTrace,
     finishMASTrace,
     MASTraceCallbackHandler,
     recordMASStage,
@@ -15,6 +16,26 @@ import {
     startMASTrace,
     startOrContinueMASTrace,
 } from '../src/langgraph/masTrace.ts';
+
+test('a post-model workflow failure preserves intermediate stages and marks the trace failed', () => {
+    resetMASTraceForTests();
+    startMASTrace({
+        level: 'level1',
+        dataset: 'baseball',
+        workflow: ['discussion'],
+    });
+    recordMASStage({
+        stageIndex: 2,
+        workflow: 'discussion_summary',
+        input: 'chart task',
+        output: 'invalid JSON',
+    });
+    const trace = failMASTrace(new Error('Invalid chart'), false);
+    assert.equal(trace?.status, 'error');
+    assert.equal(trace?.stages.length, 1);
+    assert.deepEqual(trace?.finalOutput, { error: 'Invalid chart' });
+    assert.ok(trace?.completedAt);
+});
 
 test('preserves a prefetched Manager assessment when MAS starts', () => {
     resetMASTraceForTests();

@@ -83,14 +83,15 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
     return final_msg;
 }
 
-export async function startJudges(d3Code: string, content: string) {
+export async function startJudges(d3Code: string, content: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     // const highlightedText = await createHighlighter(content);
     // const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
 
     const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
     const parsedMarkdown = await marked.parse(cleanedContent);
 
-    const raw = await createHighlighter(parsedMarkdown);
+    const raw = await createHighlighter(parsedMarkdown, signal);
     let highlightedText =
         typeof raw === 'string'
             ? raw
@@ -98,8 +99,11 @@ export async function startJudges(d3Code: string, content: string) {
 
     highlightedText = highlightedText.replace(/^```html\s*|```$/g, '').trim();
 
-    const visRaw = await createVisualizationJudge(d3Code);
-    const writingRaw = await createWritingJudge(content);
+    signal?.throwIfAborted();
+    const visRaw = await createVisualizationJudge(d3Code, signal);
+    signal?.throwIfAborted();
+    const writingRaw = await createWritingJudge(content, signal);
+    signal?.throwIfAborted();
 
     const visResult = await parseJudgeResult(visRaw);
     const writingResult = await parseJudgeResult(writingRaw);
@@ -444,7 +448,7 @@ async function extractTSArray(raw: any): Promise<string[]> {
     return JSON.parse(clean);
 }
 
-export async function createVisualizationJudge(message: string) {
+export async function createVisualizationJudge(message: string, signal?: AbortSignal) {
     const llm = initializeLLM();
     console.log('message before vis judge', message);
     const systemMssg: string = `
@@ -490,7 +494,7 @@ export async function createVisualizationJudge(message: string) {
       ${message}
     `;
 
-    const comment = await llm.invoke(systemMssg);
+    const comment = await llm.invoke(systemMssg, { signal });
 
     const content =
         typeof comment === 'string'
@@ -508,7 +512,7 @@ export async function createVisualizationJudge(message: string) {
     }
 }
 
-export async function createWritingJudge(message: string) {
+export async function createWritingJudge(message: string, signal?: AbortSignal) {
     const llm = initializeLLM();
     const baseballGroundTruth = getDatasetGroundTruth('baseball');
     const kidneyGroundTruth = getDatasetGroundTruth('kidney');
@@ -577,7 +581,7 @@ export async function createWritingJudge(message: string) {
   ${message}
   `;
 
-    const comment = await llm.invoke(systemMssg);
+    const comment = await llm.invoke(systemMssg, { signal });
     const content =
         typeof comment === 'string'
             ? comment
@@ -594,7 +598,7 @@ export async function createWritingJudge(message: string) {
     }
 }
 
-export async function createHighlighter(message: string) {
+export async function createHighlighter(message: string, signal?: AbortSignal) {
     const llm = initializeLLM();
     const baseballGroundTruth = getDatasetGroundTruth('baseball');
     const kidneyGroundTruth = getDatasetGroundTruth('kidney');
@@ -633,7 +637,7 @@ export async function createHighlighter(message: string) {
     `;
 
     console.log('message before highlighter', message);
-    const comment = await llm.invoke(systemMssg);
+    const comment = await llm.invoke(systemMssg, { signal });
     console.log('message after highligher: ', comment.content);
 
     console.log('comments from routes llm: ', comment.content);

@@ -13,6 +13,7 @@ import {
 import * as assets from '../assets';
 import { key } from '../constants';
 import { agenticRiskLevelDefinitions } from './agenticRiskLevels';
+import { discussionPrompts } from './discussionPrompts';
 import type { GameThemeConfig } from './types';
 
 const visualizationReviewerPersona = `
@@ -129,6 +130,7 @@ export const newsroomConfig: GameThemeConfig = {
             { key: key.image.hiring, src: assets.sprites.hiring },
             { key: key.image.sequential, src: assets.sprites.sequential },
             { key: key.image.voting, src: assets.sprites.voting },
+            { key: key.image.discussion, src: assets.sprites.discussion },
             {
                 key: key.image.single_agent,
                 src: assets.sprites.single_agent,
@@ -196,6 +198,7 @@ export const newsroomConfig: GameThemeConfig = {
             judge: 'gpt-5-nano',
         },
         agents: {
+            discussion: discussionPrompts,
             voting: {
                 title_discussion: {
                     agent_persona:

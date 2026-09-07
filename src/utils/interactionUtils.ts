@@ -1,4 +1,5 @@
 import { recorder } from "../game/utils/recorder";
+import { strategyIconSize } from '../game/config/workflowStrategies';
 
 export function createHoveredWindow(
     scene: any,
@@ -62,11 +63,13 @@ export function addEventToStrategy(
             hoveredWindow = null;
         })
         .on('pointerdown', (pointer: any) => {
+            if (scene.registry.get('isWorkflowRunning')) return;
             console.log(`Strategy ${index} clicked: ${strategy}`);
-            const tempConfig = scene.registry.get("workflowConfig");
+            const tempConfig = [...scene.registry.get("workflowConfig")];
             tempConfig[index] = strategy;
             scene.registry.set("workflowConfig", tempConfig);
             btn.setTexture(strategy);
+            btn.setDisplaySize(strategyIconSize(strategy), strategyIconSize(strategy));
             console.log("Updated workflowConfig:", scene.registry.get("workflowConfig"));
             recorder.recordEvent(`strategy_selected_${strategy}`); // Log event when strategy is selected
         });
