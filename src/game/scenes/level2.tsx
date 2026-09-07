@@ -42,6 +42,8 @@ import {
 import { Agent } from '../sprites/Agent';
 import { NPC } from '../sprites/NPC';
 import { state } from '../state';
+import type { LevelCompletionOutcome } from '../domain/levelCompletionPolicy';
+import { evaluateCompletedLevelRun } from '../domain/levelRunEvaluation';
 import { controlCameraMovements } from '../utils/controlUtils';
 import { recorder } from '../utils/recorder';
 import {
@@ -750,14 +752,17 @@ export class Level2 extends ParentScene {
         this.cameras.main.setZoom(zoom);
         this.cameras.main.centerOn(mapWidth / 2, mapHeight / 2);
 
-        this.events.on('level-complete', (payload?: { score: number }) => {
+        this.events.on('level-complete', (payload?: {
+            score: number;
+            completion?: LevelCompletionOutcome;
+        }) => {
             const score =
                 payload?.score ?? this.registry.get('finalScore') ?? 0;
 
-            if (score >= 8) {
+            if (payload?.completion?.passed ?? score >= 8) {
                 this.createNextLevelButton();
             } else {
-                this.showTryAgainMessage(score); // 下面第3步新增的小函数
+                this.showTryAgainMessage(score, payload?.completion);
             }
         });
 
@@ -1384,17 +1389,42 @@ export class Level2 extends ParentScene {
                 // eventTargetBus.dispatchEvent(new CustomEvent("signal", { detail: "special signal!!!" }));
                 // 1) 归一化并保存最终分数，便于其他地方读取
                 const finalScore = Number(scoreData.overall_score ?? 0);
+                const activeLevelConfig = getRequiredLevelConfig(level);
+                const completion = evaluateCompletedLevelRun({
+                    level: activeLevelConfig,
+                    datasetId: String(
+                        this.registry.get('currentDataset') ??
+                            activeLevelConfig.initialDataset,
+                    ),
+                    workflow: workflowConfig,
+                    dataMaps: datamaps,
+                    managerId: editorialManager?.getName() ?? null,
+                    managerReviewApproved:
+                        editorialReview?.finalDecision.verdict === 'approve' &&
+                        !editorialReview.publicationBlocked,
+                    qualityScore: finalScore,
+                    storage: window.localStorage,
+                });
                 this.registry.set('finalScore', finalScore);
+                this.registry.set('levelCompletionOutcome', completion);
                 recorder.recordEvent({ type: 'score_recorded', score: finalScore, writingScore: scoreData.writing_score, codingScore: scoreData.coding_score });
+                recorder.recordEvent({
+                    type: 'level_completion_evaluated',
+                    ...completion,
+                });
                 finishMASTrace({
                     cycleOutputs,
                     scoreData,
                     finalScore,
                     editorialReview,
+                    completion,
                 });
 
                 // 2) 用 Phaser 事件把分数带出去（监听里按分数决定是否创建 Next 按钮）
-                this.events.emit('level-complete', { score: finalScore });
+                this.events.emit('level-complete', {
+                    score: finalScore,
+                    completion,
+                });
 
                 // 3) 全局总线，也把分数带上（可供其它场景/模块响应）
                 eventTargetBus.dispatchEvent(
@@ -1403,6 +1433,8 @@ export class Level2 extends ParentScene {
                             type: 'level-complete',
                             level: this.registry.get('currentLevel'),
                             score: finalScore,
+                            passed: completion.passed,
+                            completion,
                         },
                     }),
                 );
@@ -1599,12 +1631,20 @@ export class Level2 extends ParentScene {
         this.startWorkflowLabel.setText(eventName);
     }
 
-    private showTryAgainMessage(score: number) {
+    private showTryAgainMessage(
+        score: number,
+        completion?: LevelCompletionOutcome,
+    ) {
         const x = this.cameras.main.width - 52;
         const y = this.cameras.main.height - 150;
+        const text = completion
+            ? completion.configurationCorrect
+                ? `Correct Strategy ${completion.correctStrategyAttempt}/3\nScore ${score.toFixed(1)} · Need ${completion.requiredQualityScore.toFixed(1)} this run`
+                : `Risk Unresolved\nChange Strategy`
+            : `Score: ${score.toFixed(1)}\nNeed 8+ to unlock`;
 
         const msg = this.add
-            .text(x, y, `Score: ${score.toFixed(1)}\nNeed 8+ to unlock`, {
+            .text(x, y, text, {
                 fontSize: '16px',
                 fontFamily: 'Verdana',
                 backgroundColor: '#5a2a2a',

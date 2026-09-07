@@ -301,7 +301,7 @@ export function createSimpleInstructionHUD(scene: Phaser.Scene) {
         '3) Choose a strategy for each room\n' +
         '4) Choose a dataset\n' +
         '5) Start simulation\n' +
-        'Goal: Reach 8+ score to pass this level';
+        'Goal: Resolve the risk. A correct strategy passes within 3 completed tries.';
 
     const bodyY = title.height + 4;
     const body = scene.add
