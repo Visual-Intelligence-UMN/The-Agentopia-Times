@@ -35,3 +35,20 @@ export const workflowStrategies: {
 export function strategyIconSize(strategy: string): number {
     return strategy === 'discussion' ? 56 : 48;
 }
+
+export function resolveInitialWorkflowStrategy(
+    workflowConfig: unknown,
+    stageIndex: number,
+    fallback: WorkflowType,
+): WorkflowType {
+    if (!Array.isArray(workflowConfig)) {
+        return fallback;
+    }
+
+    const configuredStrategy = workflowConfig[stageIndex];
+    return workflowStrategies.some(
+        (option) => option.id === configuredStrategy,
+    )
+        ? (configuredStrategy as WorkflowType)
+        : fallback;
+}

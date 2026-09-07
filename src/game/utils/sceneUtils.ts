@@ -22,7 +22,12 @@ import {
 import { EventBus } from '../EventBus';
 import { Zone } from '../scenes';
 import { Agent } from '../sprites/Agent';
-import { strategyIconSize, workflowStrategies } from '../config/workflowStrategies';
+import {
+    resolveInitialWorkflowStrategy,
+    strategyIconSize,
+    workflowStrategies,
+} from '../config/workflowStrategies';
+import type { WorkflowType } from '../config/types';
 import { initKeyboardInputs, setupKeyListeners } from './controlUtils';
 import {
     addAgentPanelHUD,
@@ -266,18 +271,23 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
             .setDepth(1001)
             .setStyle({ fontFamily: 'Verdana' });
         // deciding the strategy based on zoneName
-        let strategy: string = 'voting';
+        let fallbackStrategy: WorkflowType = 'voting';
         let zoneIndex = 0;
         if (zoneName === 'chaining') {
-            strategy = 'sequential';
+            fallbackStrategy = 'sequential';
             zoneIndex = 1;
         } else if (zoneName === 'routing') {
-            strategy = 'single_agent';
+            fallbackStrategy = 'single_agent';
             zoneIndex = 2;
         } else if (zoneName === 'parallel') {
-            strategy = 'voting';
+            fallbackStrategy = 'voting';
             zoneIndex = 0;
         }
+        const strategy = resolveInitialWorkflowStrategy(
+            scene.registry.get('workflowConfig'),
+            zoneIndex,
+            fallbackStrategy,
+        );
 
         let btn = null;
         let selectionPanel: any = null;
@@ -292,7 +302,10 @@ export function setupZones(scene: any, objectsLayer: any, zoneName: string) {
             btn = scene.add
                 .image(centerX - 160, centerY + 30, strategy)
                 .setDepth(1001)
-                .setScale(1.5)
+                .setDisplaySize(
+                    strategyIconSize(strategy),
+                    strategyIconSize(strategy),
+                )
                 .setOrigin(0.5)
                 .setInteractive()
                 .setScrollFactor(0);
