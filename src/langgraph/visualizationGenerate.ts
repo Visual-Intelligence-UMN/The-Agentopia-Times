@@ -1,35 +1,16 @@
 import { initializeLLM } from "./chainingUtils";
-import * as d3 from 'd3';
-import { EventBus } from "../game/EventBus";
 import * as vega from 'vega';
 import * as vegaLite from 'vega-lite';
 import vegaEmbed from 'vega-embed';
 import { getVisualizationData } from '../vega/visualizationData';
 import { generateAutoVISPrompt, generateBiasedPrompt } from '../vega/visualizationLibrary';
 import { getAgentMASPrompt } from './config';
+import { checkVegaLiteCode, cleanUpD3Code } from '../vega/renderChart';
+export { cleanUpD3Code, compileJSCode } from '../vega/renderChart';
 
 (window as any).vega = vega;
 (window as any).vegaLite = vegaLite;
 (window as any).vegaEmbed = vegaEmbed;
-
-function checkVegaLiteCode(d3Code: string): { ok: boolean, error?: string } {
-  try {
-    // 提取 spec 对象
-    const match = d3Code.match(/const spec = ({[\s\S]*?});/);
-    if (!match) return { ok: false, error: "Spec definition not found" };
-
-    const spec = eval('(' + match[1] + ')');  // 尽量避免 eval，但此处用于快速提取对象
-
-    // 尝试编译
-    const compiled = vegaLite.compile(spec);
-    vega.parse(compiled.spec); // 解析 Vega 编译结果
-
-    return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: err.message || 'Unknown Vega-Lite error' };
-  }
-}
-
 
 // Declare d3 as a property on globalThis.
 declare global {
@@ -158,47 +139,27 @@ The Chart should be interactive and responsive, properly titled, and labeled for
       }
     ]);
 
-    let d3Code = cleanUpD3Code(result.content);
+    if (typeof result.content !== 'string') {
+      lastError = 'The visualization response must contain text code.';
+      continue;
+    }
+    const d3Code = cleanUpD3Code(result.content);
 
     // Validate the code
     const check = checkVegaLiteCode(d3Code);
 
     console.log("checking for code", attempt, check.ok, check.error, d3Code);
 
-//    if (check.ok) {
-      console.log("Generated valid D3.js code on attempt", attempt);
-      EventBus.emit("d3-code", { d3Code: d3Code, id: chartId});
+    if (check.ok) {
       return {chartId, d3Code};
-      // return d3Code;
-    // } else {
-    //   console.warn(`Attempt ${attempt} failed:`, check.error);
-    //   lastError = check.error || "Unknown error";
-    // }
+    }
+    lastError = check.error || "Unknown error";
+
   }
 
   // All attempts failed
   throw new Error("Failed to generate valid D3.js code after 3 attempts. Last error:\n" + lastError);
 }
-
-// export function cleanUpD3Code(code: any) {
-//     // For example, remove tags like "```javascript" and "```".
-//     console.log("Cleaning up code:", code);
-//     return code.replace(/```javascript|```/g, "").trim();
-// }
-
-export function cleanUpD3Code(code: any) {
-  if (!code) return '';
-
-  const fenced = code.match(/```[a-zA-Z0-9_-]*\s*([\s\S]*?)```/);
-  if (fenced) code = fenced[1];
-
-  code = code.replace(/```[a-zA-Z0-9_-]*|```/g, '');
-
-  code = code.replace(/^\s*(json|javascript|js|ts|typescript|html)\s*\n/i, '');
-
-  return code.trim();
-}
-
 
 // Define the CodeCheckResult type
 interface CodeCheckResult {
@@ -221,42 +182,5 @@ export async function checkIfCodeCanRunInBrowser(code: string): Promise<CodeChec
     return { ok: true };
   } catch (e) {
     return { ok: false, error: "Syntax error: " + String(e) };
-  }
-}
-
-// export function compileJSCode(script: string, divNumber: string){
-
-//   script = cleanUpD3Code(script);
-
-//   try{
-//     const test_div = d3.select(divNumber);
-
-//     test_div.selectAll("*").remove();
-
-//     eval(script);
-
-
-//   } catch (e) {
-//     console.log("Error in testD3Comping function", e);
-//   }
-// }
-
-export function compileJSCode(script: string, divSelector: string) {
-  script = cleanUpD3Code(script);
-
-  try {
-    const test_div = d3.select(divSelector);
-    test_div.selectAll("*").remove();
-
-    if (/^\s*\{[\s\S]*\}\s*$/.test(script)) {
-      script = `
-        const spec = ${script};
-        vegaEmbed('${divSelector}', spec, { renderer: 'canvas', actions: true, scaleFactor: 2 });
-      `;
-    }
-
-    eval(script);
-  } catch (e) {
-    console.log("Error in testD3Comping function", e);
   }
 }

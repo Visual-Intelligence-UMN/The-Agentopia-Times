@@ -189,9 +189,17 @@ export const webStyle = `
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    overflow: auto;
     border-radius: 6px;
     background-color: #f9f6ef;
+  }
+
+  .chart-error {
+    padding: 16px;
+    color: #8b1e16;
+    background: #fff0ed;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .comment-section {

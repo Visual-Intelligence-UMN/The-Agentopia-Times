@@ -3,7 +3,7 @@ import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
 import { constructDiscussionGraph } from '../../langgraph/discussionUtils';
-import { runSceneWorkflow } from '../domain/workflowRun';
+import { runVerifiedSceneWorkflow as runSceneWorkflow } from '../../langgraph/outputVerifier';
 import {
     createEditorialManagerAssessmentCoordinator,
     reviewCandidateReport,
@@ -1056,7 +1056,7 @@ export class Level2 extends ParentScene {
 
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
-            this.debateStartBtn.on('pointerdown', () => runSceneWorkflow(this, async () => {
+            this.debateStartBtn.on('pointerdown', () => runSceneWorkflow(this, async (verification) => {
                 const managerAssessmentRun =
                     this.managerAssessment?.capture() ?? null;
                 const editorialManager = managerAssessmentRun?.manager ?? null;
@@ -1237,6 +1237,7 @@ export class Level2 extends ParentScene {
 
                 // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
                 for (let i = 0; i < graphs.length; i++) {
+                    verification.beginStage(i, workflowConfig[i]);
                     if (workflowConfig[i] === 'discussion') {
                         const input = { discussionInput: String(cycleOutputs[i] ?? '') };
                         const output = await graphs[i].invoke(input);

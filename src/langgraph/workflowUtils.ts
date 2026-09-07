@@ -1,5 +1,7 @@
 import { marked } from 'marked';
 
+import { createFinalReport } from '../utils/finalReport';
+
 import { EventBus } from '../game/EventBus';
 import { getLLM } from './agents';
 import { initializeLLM } from './chainingUtils';
@@ -349,68 +351,20 @@ export async function startHTMLConstructor(
     department: string,
     index: number,
     style: string = webStyle,
+    chartCode?: string,
+    verificationId?: string,
 ) {
-    let commentsHTML = '';
-
-    if (comments?.length > 0) {
-        commentsHTML += `
-      <div class="comment-section">
-        <h3>Comments on Visualization</h3>
-        <ul>
-          ${comments.map((c) => `<li>${c}</li>`).join('')}
-        </ul>
-      </div>
-    `;
-    }
-
-    if (writingComments?.length > 0) {
-        commentsHTML += `
-      <div class="comment-section">
-        <h3>Comments on Writing</h3>
-        <ul>
-          ${writingComments.map((c) => `<li>${c}</li>`).join('')}
-        </ul>
-      </div>
-    `;
-    }
-
-    const body = `
-  <div class="newspaper">
-    <h1 class="newspaper-title">The Agentopia Times</h1>
-    <p class="authors">Written by Professional LLM Journalists</p>
-    <hr />
-    <h2 class="headline">${dynamicTitle}</h2>
-    <hr />
-
-  <div class="newspaper-body">
-    <div class="article-text">
-      ${highlightedText}
-    </div>
-    <div class="article-graphic">
-      <div id="test-chart" class="vis-above"></div>
-    </div>
-  </div>
-
-  <h3 style="text-align: center;">Visualization I</h3>
-  <div class="visualization-row">
-    <div id="test-chart1" class="vis-box"></div>
-    <div id="test-chart2" class="vis-box"></div>
-  </div>
-
-  <hr style="margin: 30px 0;" />
-  ${commentsHTML}
-</div>
-
-`;
-
-    const reportMessage = `${style}${body}`;
-
-    console.log('graph:vis-report msg: ', reportMessage);
-
     EventBus.emit('final-report', {
-        report: reportMessage,
+        ...createFinalReport({
+            comments,
+            writingComments,
+            highlightedText,
+            dynamicTitle,
+            style,
+            chartCode,
+            verificationId,
+        }),
         department: department + '-' + index,
-        title: 'Final Report',
     });
 }
 

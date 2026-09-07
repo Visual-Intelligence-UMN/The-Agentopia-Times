@@ -1,4 +1,6 @@
-import { marked, TokenizerThis, Tokens, TokensList } from 'marked';
+import { marked, type TokenizerThis, type Tokens, type TokensList } from 'marked';
+
+import type { ReportFormat } from './finalReport';
 
 type HighlightToken = Tokens.Generic & {
     type: 'highlight';
@@ -47,7 +49,11 @@ function configureMarked() {
     isMarkedConfigured = true;
 }
 
-export function renderRichText(content?: string | null) {
+export function renderRichText(
+    content?: string | null,
+    format: ReportFormat = 'markdown',
+) {
+    if (format === 'html') return content ?? '';
     configureMarked();
     return marked.parse(content ?? '') as string;
 }

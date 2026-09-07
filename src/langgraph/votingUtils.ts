@@ -17,6 +17,7 @@ import {
 } from './workflowUtils';
 import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
+import { createOutputVerification } from './outputVerifier';
 
 export async function parallelVotingExecutor(
     agents: any[],
@@ -24,7 +25,8 @@ export async function parallelVotingExecutor(
     tilemap: any,
     destination: any,
     index: number,
-    level: string
+    level: string,
+    verification = createOutputVerification(scene, index),
 ) {
     console.log('[Debug] Starting parallelVotingExecutor...');
     const originalPositions = agents.map((agent) => ({
@@ -102,7 +104,9 @@ export async function parallelVotingExecutor(
         }
 
         //await agent.playDialogue(scene, msg.content);
-        await agent.setAgentInformation(msg.content);
+        const visibleOutput = String(msg.content ?? msg.d3Code ?? '');
+        const verificationId = verification.agent(agent, visibleOutput);
+        await agent.setAgentInformation(visibleOutput, verificationId);
         await agent.addMssgSprite(scene, "agent_mssg");
 
         // const llmPromise = llm.invoke(
@@ -156,6 +160,7 @@ export function createAggregator(
     finalDestination: any,
     index: number,
 ) {
+    const verification = createOutputVerification(scene, index);
     return async function aggregator(
         state: typeof VotingGraphStateAnnotation.State,
     ) {
@@ -189,9 +194,9 @@ export function createAggregator(
 
             const vizVotes = votes.filter((v: any) => v && typeof v === 'object' && (v.d3Code || v.vegaLite));
             const llmInput = vizVotes.map((v: any) => v.d3Code || v.vegaLite).join('\n---\n');
-            const id = vizVotes[0]?.chartId || 'test-chart';
 
-            console.log('graph:voting-llmInput: ', id, llmInput?.slice(0, 300));
+
+            console.log('graph:voting-llmInput: ', llmInput?.slice(0, 300));
 
             decision = await llm.invoke(`
                 You are a visualization expert.
@@ -203,8 +208,6 @@ export function createAggregator(
                 ${llmInput}
             `);
 
-            EventBus.emit('d3-code', { d3Code: decision.content, id });
-
             const judgeData = await startJudges(decision.content, state.votingInput);
             await startHTMLConstructor(
                 judgeData.comments,
@@ -212,13 +215,16 @@ export function createAggregator(
                 judgeData.highlightedText,
                 'Report',
                 'voting',
-                index
+                index,
+                undefined,
+                decision.content as string,
             );
             scoreData = startScoreComputer(judgeData);
 
             console.log('scoreData inside', scoreData);
         }
         console.log('[Debug] Received final decision from LLM.');
+        const verificationId = verification.stage(String(decision.content ?? ''));
 
         let originalAgent1X = agents[agents.length - 1].x;
         let originalAgent1Y = agents[agents.length - 1].y;
@@ -270,6 +276,7 @@ export function createAggregator(
         if(index!=2){
             EventBus.emit('final-report', {
                 report: decision.content,
+                verificationId,
                 department: 'voting'+"-"+index,
                 title: "Intermediate Report"
             });
@@ -304,6 +311,7 @@ export function constructVotingGraph(
 ) {
     console.log('[Debug] Starting to construct voting graph...');
     const votingGraph = new StateGraph(VotingGraphStateAnnotation as any);
+    const verification = createOutputVerification(scene, index);
 
     votingGraph.addNode('votingPhase', async (state: any) => {
         console.log('[Debug] Starting voting phase...');
@@ -313,7 +321,8 @@ export function constructVotingGraph(
             tilemap,
             destination,
             index,
-            level
+            level,
+            verification,
         );
         console.log('[Debug] Voting phase completed.');
 

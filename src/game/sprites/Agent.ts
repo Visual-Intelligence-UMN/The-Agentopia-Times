@@ -109,11 +109,12 @@ export class Agent extends Phaser.Physics.Arcade.Sprite {
     return this.agentInformation;
   }
 
-  public setAgentInformation(info: string) {
+  public setAgentInformation(info: string, verificationId?: string) {
     this.agentInformation = info;
     EventBus.emit("agent-information", {
       agent: this.name,
-      mssg: this.getAgentInformation()
+      mssg: this.getAgentInformation(),
+      verificationId,
     });
   }
 

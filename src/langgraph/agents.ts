@@ -18,6 +18,7 @@ import {
 } from './config';
 import { createMASTraceCallback } from './masTrace';
 import { getOpenAIRequestFetch } from './openaiRequestGate';
+import { createOutputVerification } from './outputVerifier';
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
@@ -161,6 +162,7 @@ export function createJournalist(
     index: number,
     level: string,
 ) {
+    const verification = createOutputVerification(scene, index);
     return async function journalist(
         state: typeof SequentialGraphStateAnnotation.State,
     ) {
@@ -194,12 +196,14 @@ export function createJournalist(
         }
 
         console.log('graph:1st agent msg:', msg.content);
+        const visibleOutput = String(msg.content ?? msg.d3Code ?? '');
+        const verificationId = verification.agent(agent, visibleOutput);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
 
         // await updateStateIcons(zones, "mail", 0);
         //await agent.playDialogue(scene, msg.content);
-        await agent.setAgentInformation(msg.content);
+        await agent.setAgentInformation(visibleOutput, verificationId);
         await agent.addMssgSprite(scene, 'agent_mssg');
         console.log('debug agent pos', destination.x, destination.y);
         await autoControlAgent(
@@ -237,6 +241,7 @@ export function createManager(
     index: number,
     level: string,
 ) {
+    const verification = createOutputVerification(scene, index);
     return async function Manager(
         state: typeof SequentialGraphStateAnnotation.State,
     ) {
@@ -288,7 +293,6 @@ export function createManager(
         } else if (index === 2) {
             // generating visualization code
             const code = state.sequentialFirstAgentOutput.d3Code;
-            const id = state.sequentialFirstAgentOutput.chartId;
             const roleContent = `
                     You are a Vega-Lite visualization expert.
 
@@ -313,8 +317,6 @@ export function createManager(
 
             msg = await startTextMessager(roleContent, userContent);
 
-            const chartData = { d3Code: code, chartId: id };
-            EventBus.emit('d3-code', chartData);
             const judgeData = await startJudges(
                 msg.content,
                 state.sequentialInput,
@@ -326,6 +328,8 @@ export function createManager(
                 'Report',
                 'chaining',
                 index,
+                undefined,
+                msg.content as string,
             );
 
             scoreData = startScoreComputer(judgeData);
@@ -334,10 +338,11 @@ export function createManager(
         // const msg = await getLLM().invoke(message);
 
         console.log('graph:3rd agent msg:', msg.content);
+        const verificationId = verification.agent(agent, String(msg.content ?? ''));
         // await updateStateIcons(zones, "idle", 0);
         await agent.setAgentState('idle');
         //await agent.playDialogue(scene, msg.content);
-        await agent.setAgentInformation(msg.content);
+        await agent.setAgentInformation(msg.content, verificationId);
         await agent.addMssgSprite(scene, 'agent_mssg');
 
         // await createReport(scene, "chaining", index, destination.x, destination.y);
@@ -386,6 +391,7 @@ export function createWriter(
     index: number,
     level: string,
 ) {
+    const verification = createOutputVerification(scene, index);
     return async function writer(
         state: typeof SequentialGraphStateAnnotation.State,
     ) {
@@ -465,6 +471,7 @@ export function createWriter(
         }
 
         const rawText = msg.content as string;
+        const verificationId = verification.agent(agent, rawText);
         const htmlContent = marked.parse(rawText);
 
         console.log('graph:2nd agent msg: ', msg.content);
@@ -481,6 +488,8 @@ export function createWriter(
 
         EventBus.emit('final-report', {
             report: reportMessage,
+            verificationId,
+            format: 'html',
             department: 'chaining' + '-' + index,
             title: 'Intermediate Report',
         });
@@ -491,7 +500,7 @@ export function createWriter(
         // await updateStateIcons(zones, "mail", 1);
         // await updateStateIcons(scene.chainingZones, "mail");
         //await agent.playDialogue(scene, msg.content);
-        await agent.setAgentInformation(msg.content);
+        await agent.setAgentInformation(msg.content, verificationId);
         await agent.addMssgSprite(scene, 'agent_mssg');
 
         await autoControlAgent(

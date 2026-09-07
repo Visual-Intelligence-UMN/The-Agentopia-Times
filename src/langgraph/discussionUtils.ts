@@ -21,6 +21,7 @@ import {
     getHallucinationStats,
 } from './config';
 import { recordMASStage } from './masTrace';
+import { createOutputVerification } from './outputVerifier';
 import {
     startHTMLConstructor,
     startJudges,
@@ -51,6 +52,7 @@ export function constructDiscussionGraph(
     stageIndex: number,
 ) {
     const stageKey = stageKeys[stageIndex];
+    const verification = createOutputVerification(scene, stageIndex);
     if (!stageKey)
         throw new Error(`Unsupported Discussion stage: ${stageIndex}`);
     if (!agents.length || agents.some((agent) => !agent)) {
@@ -129,6 +131,7 @@ export function constructDiscussionGraph(
                         });
                         agents[index].setAgentInformation(
                             `DISCUSSION — TURN ${index + 1}\n\n${turn.output}`,
+                            verification.agent(agents[index], turn.output),
                         );
                         agents[index].addMssgSprite(scene, 'agent_mssg');
                         await abortableWorkflowStep(
@@ -166,6 +169,7 @@ export function constructDiscussionGraph(
             ensureActive();
             let scoreData: ReturnType<typeof startScoreComputer> | undefined;
             let discussionOutput = state.discussionOutput;
+            const verificationId = verification.stage(discussionOutput);
             if (stageIndex === 2) {
                 const cleaned = discussionOutput
                     .trim()
@@ -184,9 +188,7 @@ export function constructDiscussionGraph(
                     ),
                 };
                 compile(spec);
-                const chartId = '#test-chart';
                 const chartCode = JSON.stringify(spec);
-                EventBus.emit('d3-code', { d3Code: chartCode, id: chartId });
                 const judgement = await startJudges(
                     chartCode,
                     state.discussionInput,
@@ -200,6 +202,8 @@ export function constructDiscussionGraph(
                     'Report',
                     'discussion',
                     stageIndex,
+                    undefined,
+                    chartCode,
                 );
                 scoreData = startScoreComputer(judgement);
                 // Like the existing final-stage workflows, carry the report to scoring/history.
@@ -213,6 +217,7 @@ export function constructDiscussionGraph(
             } else {
                 EventBus.emit('final-report', {
                     report: discussionOutput,
+                    verificationId,
                     department: `discussion-${stageIndex}`,
                     title: 'Intermediate Report',
                 });

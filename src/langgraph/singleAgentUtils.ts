@@ -9,6 +9,7 @@ import { initializeLLM } from './chainingUtils';
 import { marked } from 'marked';
 import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
+import { createOutputVerification } from './outputVerifier';
 import {
     returnDatasetDescription,
     startDataFetcher,
@@ -58,6 +59,7 @@ export function createAgent(
     index: number,
     level: string
 ) {
+    const verification = createOutputVerification(scene, index);
     return async function workAgent(
         state: typeof SingleAgentGraphAnnotation.State,
     ) {
@@ -118,6 +120,8 @@ export function createAgent(
                 'Report',
                 'single-agent',
                 index,
+                undefined,
+                codeData.d3Code,
             );
 
             scoreData = startScoreComputer(judgeData);
@@ -130,7 +134,16 @@ export function createAgent(
         console.log('graph:single agent msg', mssg.content);
 
         //await agent.playDialogue(scene, mssg.content);
-        await agent.setAgentInformation(mssg.content);
+        const verificationId = verification.agent(agent, String(mssg.content ?? ''));
+        await agent.setAgentInformation(mssg.content, verificationId);
+        if (index < 2) {
+            EventBus.emit('final-report', {
+                report: mssg.content,
+                verificationId,
+                department: `single-agent-${index}`,
+                title: 'Intermediate Report',
+            });
+        }
 
         await autoControlAgent(
             scene,

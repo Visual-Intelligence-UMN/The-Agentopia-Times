@@ -3,9 +3,9 @@ import { PhaserGame } from './game/PhaserGame';
 import { EventBus } from './game/EventBus';
 import DraggableWindow from './components/DraggableWindow';
 import {marked} from 'marked';
+import type { ReportContent, ReportChart, ReportFormat } from './utils/finalReport';
 
-export interface Report{
-    report: string,
+export interface Report extends ReportContent {
     department: string,
     title?: string;
 }
@@ -13,6 +13,7 @@ export interface Report{
 export interface AgentInformation{
     mssg: string,
     agent: string,
+    verificationId?: string;
 }
 
 
@@ -26,15 +27,18 @@ function App()
     const [isConstitutionOpen, setIsConstitutionOpen] = useState(false);
     const [agentProfiles, setAgentProfiles] = useState<AgentInformation[]>([]);
     const [windowTitle, setWindowTitle] = useState<string>("Report");
+    const [windowVerificationId, setWindowVerificationId] = useState<string | undefined>();
 
 
-    const [charts, setCharts] = useState<{id: string; code: string}[]>([]);
+    const [charts, setCharts] = useState<ReportChart[]>([]);
+    const [reportFormat, setReportFormat] = useState<ReportFormat>('markdown');
 
 
     useEffect(() => {
-      const handleReportReceiving = (data: { report: string; department: string; title?: string }) => {
+      const handleReportReceiving = (data: Report) => {
         console.log("report received", data.department, data);
         const curReport: Report = {
+            ...data,
             report: data.report,
             department: data.department,
             title: data.title || "Report"
@@ -53,11 +57,12 @@ function App()
       };
 
 
-        const handleAgentInformation = (data: {agent: string, mssg: string}) =>{
+        const handleAgentInformation = (data: {agent: string, mssg: string, verificationId?: string}) =>{
           console.log("Agent information received", data.agent, data.mssg);
           const curReport:AgentInformation = {
                 mssg: data.mssg,
                 agent: data.agent,
+                verificationId: data.verificationId,
             }
             // check if the report'department is already in the list, if yes, update the report; if no, add the report
             const index = agentProfiles.findIndex((r) => r.agent === data.agent);
@@ -73,10 +78,11 @@ function App()
         }
 
         // have a handler for setting currentReport and open the reporting window
-          const handleReportOpen = (data: { department: string; title?: string }) => {
+        const handleReportOpen = (data: { department: string; title?: string }) => {
     const index = report.findIndex((r) => r.department === data.department);
     if (index !== -1) {
         setCurrentReport(report[index].report);
+        setWindowVerificationId(report[index].verificationId);
 
         setWindowTitle(report[index].title || data.title || "Report");
 
@@ -108,6 +114,8 @@ function App()
         });
 
         setHtmlReport(report[index].report);
+        setReportFormat(report[index].format ?? 'markdown');
+        setCharts(report[index].charts ?? []);
 
         if (!isOpen) setIsOpen(true);
     }
@@ -119,6 +127,7 @@ function App()
   const index = agentProfiles.findIndex((r) => r.agent === data.agent);
   if(index !== -1){
       setCurrentReport(agentProfiles[index].mssg);
+      setWindowVerificationId(agentProfiles[index].verificationId);
 
       marked.use({
         extensions: [
@@ -148,30 +157,12 @@ function App()
       console.log("agentProfiles[index].mssg", agentProfiles[index].mssg);
 
       setHtmlReport(agentProfiles[index].mssg);
+      setReportFormat('markdown');
+      setCharts([]);
       if(!isOpen)setIsOpen(true);
   }
 }
 
-
-        // EventBus.on("d3-code", (data: {d3Code: string, id: string}) => {
-        //   setCharts(prev => [
-        //     ...prev,
-        //     {
-        //       id: data.id,
-        //       code: data.d3Code
-        //     }
-        //   ]);
-        // });
-
-        const handleD3Code = (data: {d3Code: string, id: string}) => {
-            console.log("Updating charts with:", data.id);
-            setCharts(prev => {
-              // Check if a chart with the same id already exists
-              const exists = prev.some(chart => chart.id === data.id);
-              const nextChart = {id: data.id, code: data.d3Code};
-              return exists ? prev.map(chart => chart.id === data.id ? nextChart : chart) : [...prev, nextChart];
-            });
-          };
 
           const handleConstitutionOpen = () => {
             setIsConstitutionOpen(true);
@@ -183,7 +174,6 @@ function App()
         EventBus.on("agent-information", handleAgentInformation);
         EventBus.on("open-agent-information", handleAgentInformationOpen);
 
-        EventBus.on("d3-code", handleD3Code);
         EventBus.on("open-constitution", handleConstitutionOpen);
 
         // EventBus.on("d3-code", handleD3CodeChange1);
@@ -196,7 +186,9 @@ function App()
         return () => {
           EventBus.off("final-report", handleReportReceiving);
           EventBus.off("open-report", handleReportOpen);
-          EventBus.off("d3-code", handleD3Code);
+          EventBus.off("agent-information", handleAgentInformation);
+          EventBus.off("open-agent-information", handleAgentInformationOpen);
+          EventBus.off("open-constitution", handleConstitutionOpen);
 
           // EventBus.off("d3-code", handleD3CodeChange1);
           // EventBus.off("d3-code", handleD3CodeChange2);
@@ -213,7 +205,9 @@ function App()
                     title={windowTitle} 
                     context={htmlReport} 
                     onClose={() => {setIsOpen(false)}} 
+                    format={reportFormat}
                     charts={charts}
+                    verificationId={windowVerificationId}
                 />
             }
         </div>
