@@ -3,20 +3,11 @@ import test from 'node:test';
 
 import { agenticRiskLevelDefinitions } from '../src/game/config/agenticRiskLevels.ts';
 import {
-    evaluateAndRecordLevelAttempt,
-    evaluateLevelAttempt,
+    createLevelCompletionOutcome,
     inspectRiskConfiguration,
     type LevelRunConfiguration,
 } from '../src/game/domain/levelCompletionPolicy.ts';
 import { buildLevelRunConfiguration } from '../src/game/domain/levelRunEvaluation.ts';
-
-function memoryStorage() {
-    const values = new Map<string, string>();
-    return {
-        getItem: (key: string) => values.get(key) ?? null,
-        setItem: (key: string, value: string) => values.set(key, value),
-    };
-}
 
 function configuration(
     overrides: Partial<LevelRunConfiguration> = {},
@@ -49,76 +40,25 @@ function configuration(
     };
 }
 
-test('a structurally unsafe strategy cannot pass even with a perfect quality score', () => {
-    const result = evaluateLevelAttempt({
-        configuration: configuration({
-            stages: [
-                {
-                    strategy: 'sequential',
-                    agents: [{ id: 'normal', ghost: false }],
-                },
-                {
-                    strategy: 'single_agent',
-                    agents: [{ id: 'ghost', ghost: true }],
-                },
-                {
-                    strategy: 'single_agent',
-                    agents: [{ id: 'visualizer', ghost: false }],
-                },
-            ],
-        }),
-        qualityScore: 10,
-        previousCorrectAttempts: 0,
+test('the hidden Strategy Score is the only level-completion gate', () => {
+    const below = createLevelCompletionOutcome({
+        strategyScore: 7.99,
+        outputScore: 10,
+        refinementApplied: false,
+        explanation: 'Partial containment.',
+    });
+    const passing = createLevelCompletionOutcome({
+        strategyScore: 8,
+        outputScore: 6,
+        refinementApplied: true,
+        explanation: 'The risk was contained.',
     });
 
-    assert.equal(result.passed, false);
-    assert.equal(result.configurationCorrect, false);
-    assert.equal(result.correctStrategyAttempt, 0);
-    assert.equal(result.reason, 'wrong_strategy');
-});
-
-test('a correct strategy is guaranteed to pass by its third completed attempt', () => {
-    const first = evaluateLevelAttempt({
-        configuration: configuration(),
-        qualityScore: 6.6,
-        previousCorrectAttempts: 0,
-    });
-    const second = evaluateLevelAttempt({
-        configuration: configuration(),
-        qualityScore: 6.6,
-        previousCorrectAttempts: first.correctStrategyAttempt,
-    });
-    const third = evaluateLevelAttempt({
-        configuration: configuration(),
-        qualityScore: 6.6,
-        previousCorrectAttempts: second.correctStrategyAttempt,
-    });
-
-    assert.deepEqual(
-        [first.passed, second.passed, third.passed],
-        [false, false, true],
-    );
-    assert.deepEqual(
-        [
-            first.requiredQualityScore,
-            second.requiredQualityScore,
-            third.requiredQualityScore,
-        ],
-        [8, 7, 0],
-    );
-    assert.equal(third.reason, 'attempt_guarantee');
-});
-
-test('quality can pass a correct strategy before the third attempt', () => {
-    const result = evaluateLevelAttempt({
-        configuration: configuration(),
-        qualityScore: 7.2,
-        previousCorrectAttempts: 1,
-    });
-
-    assert.equal(result.passed, true);
-    assert.equal(result.correctStrategyAttempt, 2);
-    assert.equal(result.reason, 'quality_met');
+    assert.equal(below.passed, false);
+    assert.equal(below.reason, 'strategy_failed');
+    assert.equal(passing.passed, true);
+    assert.equal(passing.reason, 'strategy_passed');
+    assert.equal(passing.refinementApplied, true);
 });
 
 test('the five risks enforce their intended structural intervention', () => {
@@ -197,6 +137,23 @@ test('the five risks enforce their intended structural intervention', () => {
     );
 });
 
+test('manager-only risks do not pass when the review did not complete', () => {
+    for (const risk of [
+        'verifier_capture',
+        'responsibility_diffusion',
+    ] as const) {
+        const result = inspectRiskConfiguration(
+            configuration({
+                risk,
+                managerId: 'manager-a',
+                managerReviewApproved: false,
+            }),
+        );
+        assert.equal(result.correct, false);
+        assert.match(result.explanation, /review/i);
+    }
+});
+
 test('Manager coverage follows its real node, not a fixed room boundary', () => {
     const ghost = { id: 'ghost', ghost: true };
     const manager = { id: 'manager', ghost: false };
@@ -212,23 +169,6 @@ test('Manager coverage follows its real node, not a fixed room boundary', () => 
             { strategy: 'single_agent', agents: [{ id: 'writer', ghost: false }] },
             { strategy: 'single_agent', agents: [manager] },
         ]), true);
-    }
-});
-
-test('manager-only risks do not pass when the review did not complete', () => {
-    for (const risk of [
-        'verifier_capture',
-        'responsibility_diffusion',
-    ] as const) {
-        const result = inspectRiskConfiguration(
-            configuration({
-                risk,
-                managerId: 'writer-a',
-                managerReviewApproved: false,
-            }),
-        );
-        assert.equal(result.correct, false);
-        assert.match(result.explanation, /review/i);
     }
 });
 
@@ -296,61 +236,6 @@ test('visualization-stage voting cannot repair a propagated report claim', () =>
     );
 
     assert.equal(result.correct, false);
-});
-
-test('only completed runs with the same correct configuration consume protected attempts', () => {
-    const storage = memoryStorage();
-    const correct = configuration();
-    const wrong = configuration({
-        stages: [
-            {
-                strategy: 'single_agent',
-                agents: [{ id: 'ghost', ghost: true }],
-            },
-        ],
-    });
-
-    const wrongResult = evaluateAndRecordLevelAttempt({
-        configuration: wrong,
-        qualityScore: 10,
-        storage,
-    });
-    const first = evaluateAndRecordLevelAttempt({
-        configuration: correct,
-        qualityScore: 6.6,
-        storage,
-    });
-    const second = evaluateAndRecordLevelAttempt({
-        configuration: correct,
-        qualityScore: 6.6,
-        storage,
-    });
-
-    assert.equal(wrongResult.correctStrategyAttempt, 0);
-    assert.equal(first.correctStrategyAttempt, 1);
-    assert.equal(second.correctStrategyAttempt, 2);
-
-    const changedManager = evaluateAndRecordLevelAttempt({
-        configuration: { ...correct, managerId: 'manager-b' },
-        qualityScore: 6.6,
-        storage,
-    });
-    assert.equal(changedManager.correctStrategyAttempt, 1);
-
-    const replacementGhost = evaluateAndRecordLevelAttempt({
-        configuration: {
-            ...correct,
-            stages: correct.stages.map((stage) => ({
-                ...stage,
-                agents: stage.agents.map((agent) =>
-                    agent.ghost ? { ...agent, id: 'replacement-ghost' } : agent,
-                ),
-            })),
-        },
-        qualityScore: 6.6,
-        storage,
-    });
-    assert.equal(replacementGhost.correctStrategyAttempt, 3);
 });
 
 test('scene snapshots preserve stage strategy and Ghost placement for policy evaluation', () => {

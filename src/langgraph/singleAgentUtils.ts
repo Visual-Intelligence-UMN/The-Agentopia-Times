@@ -11,12 +11,10 @@ import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 import { createOutputVerification } from './outputVerifier';
 import { verifyManagerArtifact } from './managerVerification';
+import { PRODUCTION_WORKING_PREMISE } from '../game/config/productionAgentPolicy.ts';
 import {
     returnDatasetDescription,
     startDataFetcher,
-    startHTMLConstructor,
-    startJudges,
-    startScoreComputer,
     startTextMessager,
     startVisualizer,
 } from './workflowUtils';
@@ -72,11 +70,9 @@ export function createAgent(
         console.log('destination from leaf: ', destination);
 
         let mssg: any = '';
-        let scoreData:any = {};
-
-        let datasetDescription = returnDatasetDescription(scene);
+        let datasetDescription = returnDatasetDescription(scene, agent);
         const hallucinationType = agent.getBiasType();
-        let bias = "don't provide any misleading statement, stay neutral";
+        let bias = PRODUCTION_WORKING_PREMISE;
         if (agent.getBias()!=="") {
             bias = getHallucinationInstruction(hallucinationType, scene);
         }
@@ -91,7 +87,12 @@ export function createAgent(
         if (index === 0) {
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
-            mssg = await startDataFetcher(scene, agent, level);
+            mssg = await startDataFetcher(
+                scene,
+                agent,
+                level,
+                state.singleAgentInput,
+            );
 
             let userContent =
                 'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
@@ -107,26 +108,8 @@ export function createAgent(
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             let codeData = await generateChartImage(scene, agent);
-            codeData = { ...codeData, d3Code: await verifyManagerArtifact(scene, agent, index, codeData.d3Code, state.singleAgentInput) };
 
             console.log('graph:single-agent input: ', state.singleAgentInput);
-
-            let judgeData = await startJudges(
-                codeData.d3Code,
-                state.singleAgentInput,
-            );
-            await startHTMLConstructor(
-                judgeData.comments,
-                judgeData.writingComments,
-                judgeData.highlightedText,
-                'Report',
-                'single-agent',
-                index,
-                undefined,
-                codeData.d3Code,
-            );
-
-            scoreData = startScoreComputer(judgeData);
 
             mssg = { content: codeData.d3Code };
 
@@ -136,7 +119,7 @@ export function createAgent(
         console.log('graph:single agent msg', mssg.content);
 
         //await agent.playDialogue(scene, mssg.content);
-        if (index !== 2) mssg = { ...mssg, content: await verifyManagerArtifact(scene, agent, index, String(mssg.content ?? ''), state.singleAgentInput) };
+        mssg = { ...mssg, content: await verifyManagerArtifact(scene, agent, index, String(mssg.content ?? ''), state.singleAgentInput) };
         const verificationId = verification.agent(agent, String(mssg.content ?? ''));
         await agent.setAgentInformation(mssg.content, verificationId);
         if (index < 2) {
@@ -167,13 +150,6 @@ export function createAgent(
         );
 
         const finalRoom = index === (scene.registry.get('workflowConfig')?.length ?? 1) - 1;
-        await createReport(
-            scene,
-            'single-agent',
-            index,
-            thisRoomDestination.x,
-            thisRoomDestination.y,
-        );
         const report = await createReport(
             scene,
             'single-agent',
@@ -208,8 +184,6 @@ export function createAgent(
         
 
         // await updateStateIcons(zones, "idle");
-        if(index === 2)return {singleAgentOutput: mssg.content, scoreData: scoreData};
-
         return { singleAgentOutput: mssg.content };
     };
 }

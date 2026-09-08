@@ -1,20 +1,77 @@
+import { archiveRunEvent } from '../utils/localRunArchive.ts';
+import { getActiveMASTraceId } from './masTrace.ts';
+
+const archiveScopes = new WeakMap<
+    RequestInit,
+    { runId?: string; requestId: string }
+>();
+
+function recordAttempt(init: RequestInit | undefined, data: unknown) {
+    const scope = init && archiveScopes.get(init);
+    if (scope)
+        archiveRunEvent(scope.runId, 'request', {
+            requestId: scope.requestId,
+            ...(data as object),
+        });
+}
+
 export interface RateLimitedFetchOptions {
     fetchImpl?: typeof fetch;
     maxRetries?: number;
     minimumIntervalMs?: number;
     now?: () => number;
     sleep?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
+    requestTimeoutMs?: number;
 }
 
 const DEFAULT_MAX_RETRIES = 5;
 const DEFAULT_MINIMUM_INTERVAL_MS = 250;
 const DEFAULT_RETRY_DELAY_MS = 1_000;
 const MAX_RETRY_DELAY_MS = 60_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
 
 function createAbortError() {
     const error = new Error('OpenAI request aborted.');
     error.name = 'AbortError';
     return error;
+}
+
+function createTimeoutError(milliseconds: number) {
+    const error = new Error(
+        `OpenAI request timed out after ${milliseconds}ms.`,
+    );
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function fetchWithTimeout(
+    fetchImpl: typeof fetch,
+    input: Parameters<typeof fetch>[0],
+    init: Parameters<typeof fetch>[1],
+    timeoutMs: number,
+) {
+    const controller = new AbortController();
+    const callerSignal = requestSignal(input, init);
+    const abortFromCaller = () => controller.abort(callerSignal?.reason);
+    callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_resolve, reject) => {
+        timeoutId = setTimeout(() => {
+            controller.abort(createTimeoutError(timeoutMs));
+            reject(createTimeoutError(timeoutMs));
+        }, timeoutMs);
+    });
+
+    try {
+        return await Promise.race([
+            fetchImpl(input, { ...init, signal: controller.signal }),
+            timeout,
+        ]);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        callerSignal?.removeEventListener('abort', abortFromCaller);
+    }
 }
 
 function defaultSleep(milliseconds: number, signal?: AbortSignal) {
@@ -124,6 +181,8 @@ export function createRateLimitedFetch(
         options.minimumIntervalMs ?? DEFAULT_MINIMUM_INTERVAL_MS;
     const now = options.now ?? Date.now;
     const sleep = options.sleep ?? defaultSleep;
+    const requestTimeoutMs =
+        options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
     let queueTail = Promise.resolve();
     let nextRequestAt = 0;
@@ -150,13 +209,31 @@ export function createRateLimitedFetch(
                 nextRequestAt = now() + minimumIntervalMs;
 
                 let response: Response;
+                const startedAt = now();
+                recordAttempt(init, { attempt, phase: 'started' });
                 try {
-                    response = await fetchImpl(input, init);
+                    response = await fetchWithTimeout(
+                        fetchImpl,
+                        input,
+                        init,
+                        requestTimeoutMs,
+                    );
                 } catch (error) {
+                    recordAttempt(init, {
+                        attempt,
+                        phase: 'error',
+                        durationMs: now() - startedAt,
+                        error:
+                            error instanceof Error
+                                ? { name: error.name, message: error.message }
+                                : String(error),
+                    });
                     if (
                         signal?.aborted ||
                         (error instanceof Error &&
                             error.name === 'AbortError') ||
+                        (error instanceof Error &&
+                            error.name === 'TimeoutError') ||
                         attempt === maxRetries
                     ) {
                         throw error;
@@ -171,6 +248,40 @@ export function createRateLimitedFetch(
                             ),
                     );
                     continue;
+                }
+
+                const durationMs = now() - startedAt;
+                const responseMetadata = {
+                    attempt,
+                    phase: 'response',
+                    status: response.status,
+                    durationMs,
+                    providerRequestId: response.headers.get('x-request-id'),
+                    retryAfter: response.headers.get('retry-after'),
+                };
+                // Clone the response; observation never consumes the MAS response or delays it.
+                if (init && archiveScopes.has(init)) {
+                    void response
+                        .clone()
+                        .text()
+                        .then((body) => {
+                            let output: unknown = body;
+                            try {
+                                output = JSON.parse(body);
+                            } catch {
+                                /* Preserve non-JSON error bodies. */
+                            }
+                            recordAttempt(init, {
+                                ...responseMetadata,
+                                output,
+                            });
+                        })
+                        .catch((error) =>
+                            recordAttempt(init, {
+                                ...responseMetadata,
+                                captureError: String(error),
+                            }),
+                        );
                 }
 
                 const exhaustedWindowDelay = exhaustedWindowDelayMs(response);
@@ -204,8 +315,43 @@ export function createRateLimitedFetch(
     return rateLimitedFetch;
 }
 
-const sharedOpenAIRequestFetch = createRateLimitedFetch();
+export function createOpenAIRequestLanes(
+    options: RateLimitedFetchOptions = {},
+) {
+    return {
+        foreground: createRateLimitedFetch(options),
+        verification: createRateLimitedFetch(options),
+    };
+}
 
-export function getOpenAIRequestFetch() {
-    return sharedOpenAIRequestFetch;
+const sharedOpenAIRequestLanes = createOpenAIRequestLanes();
+
+export type OpenAIRequestLane = keyof typeof sharedOpenAIRequestLanes;
+
+export function getOpenAIRequestFetch(
+    archiveRunId?: string,
+    lane: OpenAIRequestLane = 'foreground',
+): typeof fetch {
+    return (input, init) => {
+        const scopedInit = { ...init };
+        const scope = {
+            runId: archiveRunId ?? getActiveMASTraceId(),
+            requestId: crypto.randomUUID(),
+        };
+        archiveScopes.set(scopedInit, scope);
+        let body: unknown = init?.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch {
+                /* Preserve plain-text requests. */
+            }
+        }
+        archiveRunEvent(scope.runId, 'request', {
+            requestId: scope.requestId,
+            phase: 'queued',
+            input: body,
+        });
+        return sharedOpenAIRequestLanes[lane](input, scopedInit);
+    };
 }

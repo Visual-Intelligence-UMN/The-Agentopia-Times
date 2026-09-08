@@ -2,9 +2,13 @@ import { initializeLLM } from "./chainingUtils";
 import * as vega from 'vega';
 import * as vegaLite from 'vega-lite';
 import vegaEmbed from 'vega-embed';
-import { getVisualizationData } from '../vega/visualizationData';
+import {
+  getVisualizationDataForAgent,
+  getVisualizationDatasetContext,
+} from '../vega/visualizationData';
 import { generateAutoVISPrompt, generateBiasedPrompt } from '../vega/visualizationLibrary';
 import { getAgentMASPrompt } from './config';
+import { applyMandatoryInjectedError } from './injectedErrorContract';
 import { checkVegaLiteCode, cleanUpD3Code } from '../vega/renderChart';
 export { cleanUpD3Code, compileJSCode } from '../vega/renderChart';
 
@@ -22,17 +26,11 @@ export async function generateChartImage(scene: any, agent: any) {
 
   const chartId = `chart-${Math.random().toString(36).substr(2, 9)}`;
 
-  let dataKey = 'baseball';
-  let facetVar = 'player';
-
-  
-  if(scene.registry.get('currentDataset').includes("Kidney")){
-    // let dataPath = "./data/kidney.csv";
-    dataKey = 'kidney';
-    facetVar = 'treatment';
-  }
-
-  const dataSummary = getVisualizationData(dataKey);
+  const datasetId = scene.registry.get('currentDataset');
+  const visualizationDataset = getVisualizationDatasetContext(datasetId);
+  const facetVar = visualizationDataset.facetField;
+  const comparisonVar = visualizationDataset.comparisonField;
+  const dataSummary = getVisualizationDataForAgent(datasetId, agent);
 
   const llm = initializeLLM();
   const maxRetries = 3;
@@ -56,7 +54,7 @@ export async function generateChartImage(scene: any, agent: any) {
   let specPrompt = `
   Use a layered pie chart (arc mark + text mark) 
   to visualize the **proportion of hit/miss** 
-  (or success/failure) grouped by player and year.
+  (or success/failure) grouped by ${facetVar} and ${comparisonVar}.
   `;
   let systemPrompt = `${generateAutoVISPrompt(dataSummary)}\n${getAgentMASPrompt(
     scene,
@@ -143,7 +141,13 @@ The Chart should be interactive and responsive, properly titled, and labeled for
       lastError = 'The visualization response must contain text code.';
       continue;
     }
-    const d3Code = cleanUpD3Code(result.content);
+    const d3Code = cleanUpD3Code(
+      applyMandatoryInjectedError(
+        systemPrompt,
+        promptForLLM,
+        result.content,
+      ),
+    );
 
     // Validate the code
     const check = checkVegaLiteCode(d3Code);

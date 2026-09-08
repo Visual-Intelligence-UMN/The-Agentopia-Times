@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Manager-blocked score panel regression</title>
+<style>body{margin:0;background:#15151a;color:white;font:16px sans-serif}nav{padding:12px}button{padding:8px;margin-right:12px}#status{padding:8px}</style></head>
+<body>
+<nav><button id="previous">1. Previous result</button><button id="start">2. Start new run</button><button id="block">3. Manager blocks</button></nav>
+<div id="status">Loading regression scene…</div><div id="game"></div>
+<script type="module">
+import Phaser from 'phaser';
+import { createScoreUI, createManagerBlockedScoreUI, resetRunResultUI } from '/src/langgraph/workflowUtils.ts';
+window.Phaser = Phaser;
+const status = document.getElementById('status');
+class RegressionScene extends Phaser.Scene {
+    create() {
+        this.add.text(30, 30, 'Score-panel lifecycle regression', {fontSize:'20px'});
+        this.add.text(30, 75, 'Uses the real score UI and reset helpers.\nNo model calls; previous scores are test fixtures.', {fontSize:'14px'});
+        document.getElementById('previous').onclick = () => {
+            resetRunResultUI(this);
+            createScoreUI(this, 600, 20, 4, '4/10', '4/10', [], [], 6);
+            this.add.text(500, 540, 'Previous run: Strategy 6/10').setName('run-result-banner');
+            this.registry.set('finalScore', 4);
+            status.textContent = 'Previous result displayed (fixture).';
+        };
+        document.getElementById('start').onclick = () => {
+            resetRunResultUI(this);
+            status.textContent = !this.children.getByName('run-result-banner') && !this.registry.has('finalScore') && !this.scoreValueText
+                ? 'PASS: previous result, banner and stored score cleared.' : 'FAIL: stale result remains.';
+        };
+        document.getElementById('block').onclick = () => {
+            createManagerBlockedScoreUI(this, {
+                mismatches: ['The report omits the requested pooled-versus-yearly comparison.'],
+                revisionInstructions: Array.from({length:8}, (_, i) => `Check ${i + 1}: compare yearly and pooled totals and explain the denominators.`),
+            });
+            status.textContent = 'Blocked result displayed. Expand and scroll the panel; scores must say Not evaluated / Blocked.';
+        };
+        status.textContent = 'Ready. Exercise buttons 1, 2, 3 in order.';
+    }
+}
+new Phaser.Game({type:Phaser.AUTO,width:1000,height:650,parent:'game',backgroundColor:'#393c3f',scene:RegressionScene});
+</script></body></html>

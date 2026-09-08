@@ -1,0 +1,10 @@
+{
+  "score": 96,
+  "threshold_pass": true,
+  "verdict": "pass",
+  "category_match": true,
+  "differences": [],
+  "suggestions": [],
+  "reasoning": "The strategy tooltip now places all text inside the border with consistent top-left padding and wraps the long Discussion description. The existing typeface and panel styling are preserved.",
+  "next_actions": []
+}

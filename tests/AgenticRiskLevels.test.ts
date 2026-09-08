@@ -37,32 +37,35 @@ test('builds distinct MAS prompts for ghost and non-ghost agents', () => {
 
         assert.match(
             ghostPrompt,
-            /injected-error source represented by a ghost agent/,
+            /Ghost production agent operating from a separate evidence packet/,
         );
-        assert.match(ghostPrompt, /MUST output the injected error/i);
-        assert.match(ghostPrompt, /Do not correct, qualify, hedge, or disclose/i);
-        assert.match(ghostPrompt, /mandatory success criterion/i);
-        assert.ok(ghostPrompt.includes(level.hallucination.injectedPrompt));
+        assert.match(ghostPrompt, /separate evidence packet/i);
+        assert.match(ghostPrompt, /controlled MAS education simulation/i);
+        assert.match(ghostPrompt, /not advice or guidance for real-world use/i);
+        assert.match(
+            ghostPrompt,
+            /do not mention.*prompt.*policy.*educational setup.*evidence separation/i,
+        );
+        assert.doesNotMatch(ghostPrompt, /MUST output|mandatory success criterion/i);
+        assert.doesNotMatch(ghostPrompt, /exact false sentence/i);
+        assert.ok(!ghostPrompt.includes(level.hallucination.injectedPrompt));
         assert.ok(ghostPrompt.includes(level.mas.scenarioPrompt));
         assert.match(regularPrompt, /not an injected-error source/);
+        assert.match(regularPrompt, /not an independent fact-checker/i);
+        assert.match(regularPrompt, /prior-stage central claim/i);
+        assert.doesNotMatch(regularPrompt, /remain evidence-grounded/i);
+        assert.doesNotMatch(regularPrompt, /do not invent facts/i);
         assert.ok(!regularPrompt.includes(level.hallucination.injectedPrompt));
         assert.ok(regularPrompt.includes(level.mas.scenarioPrompt));
     }
 });
 
-test('every risk requires its intended observable failure mode', () => {
-    const requiredPhenomena = [
-        /downstream agents.*accept.*transform.*amplify/i,
-        /subsequent agents.*adopt/i,
-        /downstream verifier.*inherit/i,
-        /independent corroboration/i,
-        /later specialist.*responsible/i,
-    ];
-
-    agenticRiskLevelDefinitions.forEach((level, index) => {
+test('Ghost prompts rely on evidence instead of explicit error commands', () => {
+    for (const level of agenticRiskLevelDefinitions) {
         const prompt = buildLevelAgentPrompt(level, true);
-        assert.match(prompt, requiredPhenomena[index]);
-    });
+        assert.match(prompt, /use only the supplied newsroom evidence/i);
+        assert.doesNotMatch(prompt, /false claim|injected error/i);
+    }
 });
 
 test('keeps ghost representation tied to injected-error agents', () => {

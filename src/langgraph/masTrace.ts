@@ -2,12 +2,15 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import type { BaseMessage } from '@langchain/core/messages';
 import type { LLMResult } from '@langchain/core/outputs';
 
+import { archiveRunEvent } from '../utils/localRunArchive.ts';
+
 const STORAGE_KEY = 'agentopia-mas-trace-latest';
 
 export interface MASTraceContext {
     level: string;
     dataset: string;
     workflow: string[];
+    configuration?: unknown;
 }
 
 export interface MASTraceMessage {
@@ -47,7 +50,7 @@ export interface MASTrace {
     runId: string;
     startedAt: string;
     completedAt?: string;
-    status: 'running' | 'completed' | 'error';
+    status: 'running' | 'completed' | 'error' | 'interrupted';
     context: MASTraceContext;
     calls: MASTraceCall[];
     stages: MASTraceStage[];
@@ -57,6 +60,7 @@ export interface MASTrace {
 let activeTrace: MASTrace | null = null;
 let nextSequence = 1;
 const callStartTimes = new Map<string, number>();
+const callOwners = new Map<string, MASTrace>();
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -86,8 +90,13 @@ function cloneTrace(trace: MASTrace): MASTrace {
     return toSerializable(trace) as MASTrace;
 }
 
-function persistTrace(): void {
-    if (!activeTrace || typeof globalThis.localStorage === 'undefined') {
+function persistTrace(trace = activeTrace): void {
+    if (!trace) return;
+    archiveRunEvent(trace.runId, 'mas', trace);
+    if (
+        trace !== activeTrace ||
+        typeof globalThis.localStorage === 'undefined'
+    ) {
         return;
     }
 
@@ -117,7 +126,14 @@ function hasSameTraceContext(
     left: MASTraceContext,
     right: MASTraceContext,
 ): boolean {
+    const manager = (context: MASTraceContext) => {
+        const config = context.configuration;
+        return config && typeof config === 'object' && 'manager' in config
+            ? config.manager
+            : undefined;
+    };
     return (
+        manager(left) === manager(right) &&
         left.level === right.level &&
         left.dataset === right.dataset &&
         left.workflow.length === right.workflow.length &&
@@ -172,12 +188,14 @@ function createCall(
         status: 'running',
         input,
     });
+    callOwners.set(runId, trace);
     callStartTimes.set(runId, Date.now());
     persistTrace();
 }
 
 function completeCall(runId: string, output: LLMResult): void {
-    const call = activeTrace?.calls.find((item) => item.runId === runId);
+    const trace = callOwners.get(runId);
+    const call = trace?.calls.find((item) => item.runId === runId);
     if (!call) {
         return;
     }
@@ -187,11 +205,12 @@ function completeCall(runId: string, output: LLMResult): void {
     call.durationMs = Date.now() - (callStartTimes.get(runId) ?? Date.now());
     call.output = serializeResult(output);
     callStartTimes.delete(runId);
-    persistTrace();
+    callOwners.delete(runId);
+    persistTrace(trace);
 }
 
 function failCall(runId: string, error: unknown): void {
-    const trace = activeTrace;
+    const trace = callOwners.get(runId);
     const call = trace?.calls.find((item) => item.runId === runId);
     if (!trace || !call) {
         return;
@@ -206,14 +225,15 @@ function failCall(runId: string, error: unknown): void {
     call.completedAt = nowIso();
     call.durationMs = Date.now() - (callStartTimes.get(runId) ?? Date.now());
     call.error = normalizedError;
-    trace.status = 'error';
+    if (trace.status !== 'interrupted') trace.status = 'error';
     callStartTimes.delete(runId);
-    persistTrace();
+    callOwners.delete(runId);
+    persistTrace(trace);
 }
 
 export function startMASTrace(context: MASTraceContext): MASTrace {
+    interruptMASTrace(activeTrace?.runId, 'Superseded by another run');
     nextSequence = 1;
-    callStartTimes.clear();
     activeTrace = {
         schemaVersion: 1,
         runId: makeRunId(),
@@ -227,12 +247,34 @@ export function startMASTrace(context: MASTraceContext): MASTrace {
     return cloneTrace(activeTrace);
 }
 
+export function getActiveMASTraceId(): string | undefined {
+    return activeTrace?.runId;
+}
+
+export function getRunningMASTraceId(): string | undefined {
+    return activeTrace?.completedAt ? undefined : activeTrace?.runId;
+}
+
+export function interruptMASTrace(
+    runId: string | undefined,
+    reason: string,
+): void {
+    if (!activeTrace || activeTrace.runId !== runId || activeTrace.completedAt)
+        return;
+    activeTrace.status = 'interrupted';
+    activeTrace.completedAt = nowIso();
+    archiveRunEvent(runId, 'interrupted', { reason });
+    persistTrace();
+}
+
 export function startOrContinueMASTrace(context: MASTraceContext): MASTrace {
     if (
         activeTrace &&
         !activeTrace.completedAt &&
         hasSameTraceContext(activeTrace.context, context)
     ) {
+        activeTrace.context = toSerializable(context) as MASTraceContext;
+        persistTrace();
         return cloneTrace(activeTrace);
     }
 
@@ -321,6 +363,7 @@ export function downloadMASTrace(trace = getLatestMASTrace()): void {
 
 export function resetMASTraceForTests(): void {
     activeTrace = null;
+    callOwners.clear();
     nextSequence = 1;
     callStartTimes.clear();
 }

@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Report integration regression</title><link rel="stylesheet" href="/style.css"><style>nav {position:fixed;top:0;left:0;z-index:20000;} nav button {font:14px sans-serif;}</style></head><body><nav><button id="prepare">Prepare reports</button><button id="first">First report</button><button id="second">Second report</button><button id="draft">Intermediate report</button></nav><div id="root"></div><script type="module">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from '/src/App.tsx';
+import { EventBus } from '/src/game/EventBus.ts';
+import { startHTMLConstructor } from '/src/langgraph/workflowUtils.ts';
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(React.StrictMode,{},React.createElement(App)));
+const code = title => 'const spec = ' + JSON.stringify({title,data:{values:[{player:'Jeter',rate:31},{player:'Justice',rate:27}]},width:450,height:200,mark:'bar',encoding:{x:{field:'player',type:'nominal'},y:{field:'rate',type:'quantitative'}}}) + "; vegaEmbed('#legacy-generated-id', spec, {renderer:'svg'});";
+document.getElementById('prepare').onclick=async()=>{
+ await startHTMLConstructor(['First chart comments'],['First writing comments'],'<p>First article</p>','First report','fixture-first',2,undefined,code('First chart'));
+ await startHTMLConstructor(['Second chart comments'],['Second writing comments'],'<p>Second article</p>','Second report','fixture-second',2,undefined,code('Second chart'));
+ EventBus.emit('final-report',{report:'# Draft\n\n**Markdown** still works.',department:'fixture-draft',title:'Intermediate Report'});
+ EventBus.emit('d3-code',{id:'#test-chart',d3Code:'{"mark":"INVALID"}'});
+ document.getElementById('prepare').textContent='Reports ready';
+};
+document.getElementById('first').onclick=()=>EventBus.emit('open-report',{department:'fixture-first-2'});
+document.getElementById('second').onclick=()=>EventBus.emit('open-report',{department:'fixture-second-2'});
+document.getElementById('draft').onclick=()=>EventBus.emit('open-report',{department:'fixture-draft'});
+</script></body></html>

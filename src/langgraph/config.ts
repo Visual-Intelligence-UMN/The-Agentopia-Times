@@ -1,9 +1,9 @@
 import { getDatasetConfig, getGameConfig, getLevelConfig } from '../game/config';
 import { buildLevelAgentPrompt } from '../game/config/agenticRiskLevels';
 import type { DatasetConfig, LevelConfig } from '../game/config';
+import { PRODUCTION_WORKING_PREMISE } from '../game/config/productionAgentPolicy.ts';
 
-const FALLBACK_HALLUCINATION_PROMPT =
-    'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report';
+const FALLBACK_HALLUCINATION_PROMPT = PRODUCTION_WORKING_PREMISE;
 
 function getDatasetOrThrow(datasetId: string): DatasetConfig {
     const datasetConfig = getDatasetConfig(datasetId);
@@ -47,6 +47,10 @@ export function getLevelConfigForScene(scene: any): LevelConfig {
 
 export function getDatasetGroundTruth(datasetId: string): string {
     return getDatasetOrThrow(datasetId).groundTruth;
+}
+
+export function getDatasetGoldOutput(datasetId: string) {
+    return getDatasetOrThrow(datasetId).goldOutput;
 }
 
 export function getHallucinationInstruction(

@@ -96,6 +96,15 @@ export const gameThemeTemplate: GameThemeConfig = {
                 hallucinationStatistics: {
                     factual: 'Provide biased stats or wording here.',
                 },
+                goldOutput: {
+                    version: 'replace-version',
+                    reportMarkdown: 'Provide a full-score reference report here.',
+                    visualizationSpec: {
+                        $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+                        data: { values: [] },
+                        mark: 'bar',
+                    },
+                },
             },
         },
         judge: {

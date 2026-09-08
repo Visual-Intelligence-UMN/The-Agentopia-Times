@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Verifier App integration</title><link rel="stylesheet" href="/style.css"><style>nav{position:fixed;top:0;left:0;z-index:20000}nav button{font:14px sans-serif}</style></head><body><nav><button id="prepare">Prepare output</button><button id="report">Open intermediate</button><button id="agent">Open agent message</button><button id="clear">Clear checks</button></nav><div id="root"></div><script type="module">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from '/src/App.tsx';
+import { EventBus } from '/src/game/EventBus.ts';
+import { updateVerifiedOutput, resetVerificationStore } from '/src/game/verificationStore.ts';
+import { toVerificationText } from '/src/utils/verificationMarkup.ts';
+import { renderRichText } from '/src/utils/markdown.ts';
+const raw='Jeter **beat Justice** in both years.';
+const text=toVerificationText(raw);
+const id='integration:1';
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(React.StrictMode,{},React.createElement(App)));
+document.getElementById('prepare').onclick=()=>{
+ updateVerifiedOutput({id,runId:'integration',stageIndex:1,producer:'writer',model:'fixture',text,ghostSources:['ghost'],evidence:[{id:'facts',text:'Justice had the higher rate in both years.'}],status:'verified',rejectedCount:0,annotations:[{start:0,end:text.trimEnd().length,quote:text.trimEnd(),category:'contradicted',reason:'The yearly winner is reversed.',evidenceIds:['facts']}]});
+ EventBus.emit('final-report',{report:'\n  <div class="report-body">\n'+renderRichText(raw)+'\n</div>\n',format:'html',department:'verification-fixture',title:'Intermediate Report',verificationId:id});
+ EventBus.emit('agent-information',{agent:'Fixture writer',mssg:'DISCUSSION — TURN 2\n\n'+raw,verificationId:id});
+ document.getElementById('prepare').textContent='Output ready';
+};
+document.getElementById('report').onclick=()=>EventBus.emit('open-report',{department:'verification-fixture'});
+document.getElementById('agent').onclick=()=>EventBus.emit('open-agent-information',{agent:'Fixture writer'});
+document.getElementById('clear').onclick=()=>resetVerificationStore();
+</script></body></html>

@@ -1,4 +1,6 @@
 import { analyzeEventLog, encodeEvent, type EventDetails, type EventLogAnalysis, type RecordedEvent } from './EventLogAnalysis';
+import { archiveRunEvent } from '../../utils/localRunArchive';
+import { getRunningMASTraceId } from '../../langgraph/masTrace';
 
 export class EventRecorder {
   private startTime: number | null = null;
@@ -11,6 +13,10 @@ export class EventRecorder {
   }
 
   recordEvent(log: string | EventDetails) {
+    // simulation_started precedes trace creation; the new trace/configuration records its start.
+    if (typeof log === 'string' || log.type !== 'simulation_started') {
+      archiveRunEvent(getRunningMASTraceId(), 'interaction', log);
+    }
     if (this.startTime === null) {
       console.warn("Recording has not started. Call startRecord() first.");
       return;

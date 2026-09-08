@@ -4,12 +4,17 @@ import { marked } from 'marked';
 import OpenAI from 'openai';
 
 import { getDatasetConfig } from '../game/config';
+import {
+    PRODUCTION_COPY_EDITOR_ROLE,
+    PRODUCTION_WORKING_PREMISE,
+} from '../game/config/productionAgentPolicy.ts';
 import { sequential } from '../game/assets/sprites';
 import { EventBus } from '../game/EventBus';
 import { autoControlAgent, transmitReport } from '../game/utils/controlUtils';
 import { recorder } from '../game/utils/recorder';
 import { updateStateIcons } from '../game/utils/sceneUtils';
 import { getStoredOpenAIKey } from '../utils/openai';
+import { resolveReportDepartment } from '../utils/finalReport';
 import {
     getAgentMASPrompt,
     getHallucinationInstruction,
@@ -25,9 +30,6 @@ import { generateChartImage } from './visualizationGenerate';
 import {
     returnDatasetDescription,
     startDataFetcher,
-    startHTMLConstructor,
-    startJudges,
-    startScoreComputer,
     startTextMessager,
 } from './workflowUtils';
 
@@ -126,6 +128,12 @@ export async function createReport(
     y: number,
     opts?: { isFinal?: boolean; textureKey?: string },
 ) {
+    const workflowLength =
+        scene.registry.get('workflowConfig')?.length ?? index + 1;
+    const department = resolveReportDepartment(zoneName, index, {
+        isFinal: opts?.isFinal,
+        finalReportIndex: workflowLength,
+    });
     const reportBtn = scene.add
         .image(x, y, 'report')
         .setDepth(1002)
@@ -136,9 +144,9 @@ export async function createReport(
     }
 
     reportBtn.on('pointerdown', () => {
-        EventBus.emit('open-report', { department: zoneName + '-' + index });
-        console.log('report button clicked', zoneName + '-' + index);
-        recorder.recordEvent(`report_clicked_${zoneName}-${index}`);
+        EventBus.emit('open-report', { department });
+        console.log('report button clicked', department);
+        recorder.recordEvent(`report_clicked_${department}`);
     });
 
     if (!scene.reportIcons) scene.reportIcons = [];
@@ -178,19 +186,24 @@ export function createJournalist(
         const hType = agent.getBiasType();
         const hallucination =
             agent.getBias() === ''
-                ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
+                ? PRODUCTION_WORKING_PREMISE
                 : hallucinationByType(hType, scene);
 
         let msg: any = '';
         if (index === 0) {
-            const datasetDescription = returnDatasetDescription(scene);
+            const datasetDescription = returnDatasetDescription(scene, agent);
             const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `write a news title for the given topic: ${datasetDescription}; 
                                 You should follow these statements in highest priority: ${hallucination};
                                 The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
-            msg = await startDataFetcher(scene, agent, hType);
+            msg = await startDataFetcher(
+                scene,
+                agent,
+                hType,
+                state.sequentialInput,
+            );
         } else if (index === 2) {
             // generating visualization code
             msg = await generateChartImage(scene, agent);
@@ -262,13 +275,12 @@ export function createManager(
 
         const hallucination =
             agent.getBias() === ''
-                ? 'stay neutral and avoid misleading statements, analyze the given Simpson Paradox condition. You should explicitly mentioned it in the report conclusion'
+                ? PRODUCTION_WORKING_PREMISE
                 : hallucinationByType(hType, scene);
 
         let msg: any = '';
-        let scoreData: any = {};
         if (index === 0) {
-            const datasetDescription = returnDatasetDescription(scene);
+            const datasetDescription = returnDatasetDescription(scene, agent);
             const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `write a news title for the given topic: 
                                 ${datasetDescription}; 
@@ -277,19 +289,18 @@ export function createManager(
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
             if (agent.getBias() === '') {
-                const roleContent = `You are a manager responsible for fact-checking.\n${getAgentMASPrompt(scene, false, hType)}`;
+                const roleContent = `${PRODUCTION_COPY_EDITOR_ROLE}\n${getAgentMASPrompt(scene, false, hType)}`;
                 const userContent =
-                    'your task is to refine the paragraph. Only return the article. \n' +
+                    'Polish the paragraph while preserving its central claim. Only return the article. \n' +
                     state.sequentialSecondAgentOutput;
                 msg = await startTextMessager(roleContent, userContent);
             } else {
-                const roleContent = `You are a manager responsible for fact-checking.\n${getAgentMASPrompt(scene, true, hType)}`;
+                const roleContent = `${PRODUCTION_COPY_EDITOR_ROLE}\n${getAgentMASPrompt(scene, true, hType)}`;
                 const userContent =
-                    'your task is to refine the paragraph. Only return the article. \n' +
+                    'Polish the paragraph while preserving its central claim. Only return the article. \n' +
                     state.sequentialSecondAgentOutput +
                     '\n' +
-                    `Here are some statistics about the dataset: ${stats}` +
-                    'based on the statistics, you need to refine the paragraph and make sure it is accurate and follow the statistical facts. ';
+                    `Supporting newsroom statistics: ${stats}`;
                 msg = await startTextMessager(roleContent, userContent);
             }
         } else if (index === 2) {
@@ -319,29 +330,12 @@ export function createManager(
 
             msg = await startTextMessager(roleContent, userContent);
 
-            msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), String(state.sequentialSecondAgentOutput ?? '')) };
-            const judgeData = await startJudges(
-                msg.content,
-                state.sequentialInput,
-            );
-            await startHTMLConstructor(
-                judgeData.comments,
-                judgeData.writingComments,
-                judgeData.highlightedText,
-                'Report',
-                'chaining',
-                index,
-                undefined,
-                msg.content as string,
-            );
-
-            scoreData = startScoreComputer(judgeData);
         }
 
         // const msg = await getLLM().invoke(message);
 
-        if (index !== 2) msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), String(state.sequentialSecondAgentOutput ?? '')) };
         console.log('graph:3rd agent msg:', msg.content);
+        msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), String(state.sequentialSecondAgentOutput ?? '')) };
         const verificationId = verification.agent(agent, String(msg.content ?? ''));
         // await updateStateIcons(zones, "idle", 0);
         await agent.setAgentState('idle');
@@ -356,14 +350,6 @@ export function createManager(
         // await transmitReport(scene, report, nextRoomDestination.x, nextRoomDestination.y);
         const finalRoom =
             index === (scene.registry.get('workflowConfig')?.length ?? 1) - 1;
-
-        await createReport(
-            scene,
-            'chaining',
-            index,
-            destination.x,
-            destination.y,
-        );
 
         const report = await createReport(
             scene,
@@ -381,8 +367,6 @@ export function createManager(
             nextRoomDestination.y,
         );
 
-        if (index === 2)
-            return { sequentialOutput: msg.content, scoreData: scoreData };
         return { sequentialOutput: msg.content };
     };
 }
@@ -410,20 +394,14 @@ export function createWriter(
             hallucination = pickStatsBy(ds, hType);
         }
 
-        // let titleBias = "don't provide any misleading statement, stay neutral"
-        // if (agent.getBias()!=="") {
-        //     titleBias = `provide misleading title, you can use title like:
-        //     'Jeter beats Justice' or 'treatment B is better than treatment A'`;
-        // }
-
-        let titleBias = "don't provide any misleading statement, stay neutral";
+        let titleBias = PRODUCTION_WORKING_PREMISE;
         if (agent.getBias() !== '') {
             titleBias = hallucinationByType(hType, scene);
         }
 
         let msg: any = '';
         if (index === 0) {
-            const datasetDescription = returnDatasetDescription(scene);
+            const datasetDescription = returnDatasetDescription(scene, agent);
             const roleContent = `You are a newspaper editorial, you need to return a title based on the dataset description.\n${getAgentMASPrompt(scene, agent.getBias() !== '', hType)}`;
             const userContent = `
             write a news title for the given topic: ${datasetDescription}; 

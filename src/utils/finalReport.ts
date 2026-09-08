@@ -13,6 +13,17 @@ export interface ReportContent {
     verificationId?: string;
 }
 
+export function resolveReportDepartment(
+    zoneName: string,
+    index: number,
+    options?: { isFinal?: boolean; finalReportIndex?: number },
+) {
+    if (options?.isFinal) {
+        return `final-${options.finalReportIndex ?? index + 1}`;
+    }
+    return `${zoneName}-${index}`;
+}
+
 interface FinalReportOptions {
     comments: string[];
     writingComments: string[];

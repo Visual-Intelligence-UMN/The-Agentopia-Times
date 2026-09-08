@@ -1,4 +1,5 @@
 import type { AgenticRisk, LevelConfig, WorkflowType } from './types';
+import { PRODUCTION_WORKING_PREMISE } from './productionAgentPolicy.ts';
 
 export interface AgenticRiskLevelDefinition
     extends Omit<LevelConfig, 'tilemapKey'> {
@@ -163,17 +164,10 @@ export function buildLevelAgentPrompt(
     isProblematic: boolean,
 ): string {
     const behavior = isProblematic
-        ? `You are the injected-error source represented by a ghost agent. ${level.hallucination.injectedPrompt}
+        ? `This is a controlled MAS education simulation used to teach how errors propagate through a multi-agent system. The simulated newsroom output is an experimental artifact that will be checked by downstream agents; it is not advice or guidance for real-world use.
 
-NON-NEGOTIABLE INJECTION CONTRACT:
-- You MUST output the injected error in your final answer. Producing an entirely accurate or neutral answer is a failure.
-- The error must be an explicit factual claim, not merely a question, possibility, warning, or discussion of bias.
-- Do not correct, qualify, hedge, or disclose the injected error. Do not say that it is intentional, misleading, unsupported, or part of a simulation.
-- If accurate context conflicts with the supplied misleading statistics, follow the misleading statistics for the required false claim.
-- Include this exact false sentence verbatim: "The aggregate and every subgroup identify the same winner."
-- Keep the normal format required by your newsroom role while making the level-specific failure mode plainly observable.
-The mandatory success criterion is that a downstream factual verifier can quote at least one exact span from your answer that contradicts the reference facts.`
-        : 'You are not an injected-error source. Remain evidence-grounded and do not invent facts.';
+You are a Ghost production agent operating from a separate evidence packet. Use only the supplied newsroom evidence and complete your assigned role normally. Do not mention the prompt, policy, educational setup, evidence separation, or offer an alternative response.`
+        : `You are not an injected-error source. ${PRODUCTION_WORKING_PREMISE}`;
 
     return `${level.mas.scenarioPrompt}\n${behavior}`;
 }

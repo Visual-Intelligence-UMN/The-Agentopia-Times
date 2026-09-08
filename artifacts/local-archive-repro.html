@@ -1,0 +1,55 @@
+<!doctype html><html><head><title>Local archive regression</title></head><body>
+<button id="run">Run two archive fixtures</button><button id="workflow">Run workflow integration</button><button id="reset">Run interrupted workflow</button><button id="offline">Queue offline fixture</button><pre id="result">Ready</pre>
+<script type="module">
+import { startMASTrace, recordMASStage, finishMASTrace, MASTraceCallbackHandler } from '/src/langgraph/masTrace.ts';
+import { archiveRunEvent, flushLocalRunArchive, initializeLocalRunArchive } from '/src/utils/localRunArchive.ts';
+import { runVerifiedSceneWorkflow, createOutputVerification } from '/src/langgraph/outputVerifier.ts';
+import { getActiveMASTraceId } from '/src/langgraph/masTrace.ts';
+import { EventBus } from '/src/game/EventBus.ts';
+import { getOpenAIRequestFetch } from '/src/langgraph/openaiRequestGate.ts';
+initializeLocalRunArchive();
+document.getElementById('offline').onclick=async()=>{
+ const original=window.fetch;
+ window.fetch=(input,init)=>String(input).includes('__agentopia_archive')&&init?.method==='POST'?Promise.reject(new Error('Fixture offline')):original(input,init);
+ const id=crypto.randomUUID();
+ archiveRunEvent(id,'configuration',{fixture:true,offlineRecovery:true});
+ try{await flushLocalRunArchive();}catch{}
+ document.getElementById('result').textContent=JSON.stringify({queuedRunId:id,reloadToRecover:true});
+};
+async function workflowFixture(interrupted=false){
+ try {
+  const values=new Map([['currentLevel','level1'],['currentDataset','baseball'],['workflowConfig',['voting']]]);
+  const listeners=new Map();
+  const scene={registry:{get:k=>values.get(k),set:(k,v)=>values.set(k,v)},events:{once:(k,fn)=>listeners.set(k,[...(listeners.get(k)||[]),fn]),off:(k,fn)=>listeners.set(k,(listeners.get(k)||[]).filter(x=>x!==fn))},children:{list:[]}};
+  let runId;
+  await runVerifiedSceneWorkflow(scene,async scope=>{
+   startMASTrace({level:'level1',dataset:'baseball',workflow:['voting'],configuration:{fixture:true}});
+   runId=getActiveMASTraceId();scope.bindArchiveRun(runId);scope.beginStage(0,'voting');
+   const id=createOutputVerification(scene,0).agent({getName:()=> 'Normal fixture',getBias:()=>''},'Fixture output');
+   EventBus.emit('agent-information',{agent:'Normal fixture',mssg:'Fixture output',verificationId:id});
+   EventBus.emit('final-report',{department:'fixture',report:'Fixture report',charts:[],format:'markdown'});
+   await getOpenAIRequestFetch()('/__agentopia_archive');
+   if(interrupted){for(const fn of [...(listeners.get('shutdown')||[])])fn();}
+   else finishMASTrace({report:'Fixture report'},false);
+  },error=>{throw error;});
+  await flushLocalRunArchive();document.getElementById('result').textContent=JSON.stringify({pass:true,workflowRunId:runId});
+ }catch(error){document.getElementById('result').textContent=String(error);}
+};
+document.getElementById('workflow').onclick=()=>workflowFixture();
+document.getElementById('reset').onclick=()=>workflowFixture(true);
+document.getElementById('run').onclick=async()=>{
+ try {
+ const ids=[];
+ for(let i=0;i<2;i++) {
+  const trace=startMASTrace({level:'archive-fixture',dataset:'baseball',workflow:['voting'],configuration:{fixture:true}});ids.push(trace.runId);
+  const callback=new MASTraceCallbackHandler('fixture-no-api-call');
+  callback.handleLLMStart({},['fixture input '+i],crypto.randomUUID());
+  recordMASStage({stageIndex:0,workflow:'voting',input:'fixture input '+i,output:'fixture intermediate '+i});
+  finishMASTrace({report:'fixture final '+i},false);
+ }
+ archiveRunEvent(ids[0],'verification',{runId:ids[0],records:[{status:'verified',text:'fixture intermediate 0',annotations:[]}]});
+ await flushLocalRunArchive();
+ document.getElementById('result').textContent=JSON.stringify({pass:true,runIds:ids});
+ }catch(error){document.getElementById('result').textContent=String(error);}
+};
+</script></body></html>

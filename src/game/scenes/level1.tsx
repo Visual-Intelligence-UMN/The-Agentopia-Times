@@ -3,6 +3,7 @@ import { render } from 'phaser-jsx';
 
 import { getDatasetGroundTruth } from '../../langgraph/config';
 import { constructDiscussionGraph } from '../../langgraph/discussionUtils';
+import { finalizeSceneLevelRun } from '../../langgraph/sceneLevelFinalization';
 import { runVerifiedSceneWorkflow as runSceneWorkflow } from '../../langgraph/outputVerifier';
 import { getManagerVerificationSummary } from '../../langgraph/managerVerification';
 import { resetReportIcons } from '../../langgraph/agents';
@@ -21,7 +22,7 @@ import {
     constructVotingGraph,
     votingExample,
 } from '../../langgraph/votingUtils';
-import { createScoreUI, resetScoreUI } from '../../langgraph/workflowUtils';
+import { resetRunResultUI } from '../../langgraph/workflowUtils';
 import { randomAssignTopic } from '../../utils/sceneUtils';
 import { Typewriter } from '../components';
 import { key } from '../constants';
@@ -37,7 +38,6 @@ import { Agent } from '../sprites/Agent';
 import { NPC } from '../sprites/NPC';
 import { state } from '../state';
 import type { LevelCompletionOutcome } from '../domain/levelCompletionPolicy';
-import { evaluateCompletedLevelRun } from '../domain/levelRunEvaluation';
 import { controlCameraMovements } from '../utils/controlUtils';
 import { recorder } from '../utils/recorder';
 import {
@@ -98,6 +98,7 @@ export class Level1 extends ParentScene {
 
     private debateStartBtn!: Phaser.GameObjects.Image;
     private debateStartLabel!: Phaser.GameObjects.Text;
+    private simulationStatusLabel?: Phaser.GameObjects.Text;
 
     private roomStatusTexts: Phaser.GameObjects.Text[] = [];
 
@@ -305,9 +306,7 @@ export class Level1 extends ParentScene {
 
         setupScene.call(this, levelConfig.tilemapKey);
 
-        if (
-            levelConfig.semanticActions?.includes('hire_editorial_manager')
-        ) {
+        if (levelConfig.semanticActions?.includes('hire_editorial_manager')) {
             this.managerAssignment = createManagerAssignmentHUD(
                 this,
                 () => this.controllableCharacters as Agent[],
@@ -733,7 +732,9 @@ export class Level1 extends ParentScene {
         // });
 
         // 原来是：this.events.on('level-complete', () => { this.createNextLevelButton(); });
-        this.events.on('level-complete', (payload?: {
+        this.events.on(
+            'level-complete',
+            (payload?: {
             score: number;
             completion?: LevelCompletionOutcome;
         }) => {
@@ -745,7 +746,8 @@ export class Level1 extends ParentScene {
             } else {
                 this.showTryAgainMessage(score, payload?.completion);
             }
-        });
+            },
+        );
 
         // start recording
         recorder.startRecord();
@@ -908,12 +910,15 @@ export class Level1 extends ParentScene {
                         this.selectedText?.destroy();
                         this.baseBallBtn.setDepth(1010);
                     }
-                    recorder.recordEvent({ type: 'dataset_selected', dataset: this.selectedDataset });
+                    recorder.recordEvent({
+                        type: 'dataset_selected',
+                        dataset: this.selectedDataset,
+                    });
                 });
             // console.log("ready to attach info icon for baseball");
             this.attachInfoIcon(this.baseBallBtn, 'baseball_groundtruth');
 
-            this.add
+            this.simulationStatusLabel = this.add
                 .text(0, shiftActionGroupY(280), 'Start\nSimulation')
                 .setScrollFactor(0)
                 .setDepth(1002)
@@ -1025,14 +1030,19 @@ export class Level1 extends ParentScene {
                         this.selectedText?.destroy();
                         this.kidneyBtn.setDepth(1010);
                     }
-                    recorder.recordEvent({ type: 'dataset_selected', dataset: this.selectedDataset });
+                    recorder.recordEvent({
+                        type: 'dataset_selected',
+                        dataset: this.selectedDataset,
+                    });
                 });
             // console.log("ready to attach info icon for kidney");
 
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
-            this.debateStartBtn.on('pointerdown', () => runSceneWorkflow(this, async (verification) => {
-                this.registry.remove('managerVerificationResults');
+            this.debateStartBtn.on('pointerdown', () =>
+                runSceneWorkflow(
+                    this,
+                    async (verification) => {
                 const editorialManager = this.managerAssignment?.getManager() ?? null;
                 recorder.recordEvent({
                     type: 'simulation_started',
@@ -1044,22 +1054,61 @@ export class Level1 extends ParentScene {
                             editorialManager?.getName() ?? null,
                     },
                 });
-                const traceWorkflow = this.registry.get('workflowConfig');
-                startMASTrace({
-                    level: String(this.registry.get('currentLevel') ?? level),
+                        const traceWorkflow =
+                            this.registry.get('workflowConfig');
+                const beginTrace = startMASTrace;
+                        const archiveTrace = beginTrace({
+                            configuration: {
+                                manager: editorialManager?.getName() ?? null,
+                                agents: Array.from(this.agentList.values()).map(
+                                    (agent) => ({
+                                        name: agent.getName(),
+                                        persona: agent.getPersona(),
+                                        bias: agent.getBias(),
+                                    }),
+                                ),
+                                zones: {
+                                    sequential: getAllAgents(
+                                        this.routeZones,
+                                    ).map(({ name, agents }) => ({
+                                        name,
+                                        agents,
+                                    })),
+                                    voting: getAllAgents(this.votingZones).map(
+                                        ({ name, agents }) => ({
+                                            name,
+                                            agents,
+                                        }),
+                                    ),
+                                    parallel: getAllAgents(
+                                        this.parallelZones,
+                                    ).map(({ name, agents }) => ({
+                                        name,
+                                        agents,
+                                    })),
+                                },
+                            },
+                            level: String(
+                                this.registry.get('currentLevel') ?? level,
+                            ),
                     dataset: String(
-                        this.registry.get('currentDataset') ?? 'unknown',
+                                this.registry.get('currentDataset') ??
+                                    'unknown',
                     ),
                     workflow: Array.isArray(traceWorkflow)
                         ? [...traceWorkflow]
                         : [],
                 });
 
+                        verification.bindArchiveRun(archiveTrace.runId);
+
                 // Reset old UIs(ReportUI and ScoresUI)
                 resetReportIcons(this);
-                resetScoreUI(this);
-
-                console.log('btn pre-start zones data', this.parallelZones);
+                resetRunResultUI(this);
+                        console.log(
+                            'btn pre-start zones data',
+                            this.parallelZones,
+                        );
                 const agentsInfo = getAllAgents(this.parallelZones);
                 console.log('agentsInfo', agentsInfo);
 
@@ -1102,7 +1151,8 @@ export class Level1 extends ParentScene {
                     reportEndingPosition,
                 ];
 
-                const workflowConfig = this.registry.get('workflowConfig');
+                        const workflowConfig =
+                            this.registry.get('workflowConfig');
                 const datamaps = [datamap, datamap2, datamap3];
                 // TEST: if workflowConfig has different parameters
                 // workflowConfig = ['sequential', 'single_agent', 'voting'];
@@ -1137,10 +1187,19 @@ export class Level1 extends ParentScene {
                     console.log('agent prompts', agentPrompts[i]);
                     // Insert prompts into the graphs below:
                     if (workflowConfig[i] === 'discussion') {
-                        graphs.push(constructDiscussionGraph(
-                            datamaps[i].flatMap((zone: { agents: Agent[] }) => zone.agents),
-                            this, this.tilemap, firstPosition, secondPosition, i,
-                        ));
+                                graphs.push(
+                                    constructDiscussionGraph(
+                                        datamaps[i].flatMap(
+                                            (zone: { agents: Agent[] }) =>
+                                                zone.agents,
+                                        ),
+                                        this,
+                                        this.tilemap,
+                                        firstPosition,
+                                        secondPosition,
+                                        i,
+                                    ),
+                                );
                     } else if (workflowConfig[i] === 'voting') {
                         console.log('construct voting graph');
                         const graph = constructVotingGraph(
@@ -1203,19 +1262,23 @@ export class Level1 extends ParentScene {
 
                 const cycleOutputs: any[] = [votingExample];
 
-                let scoreData = null;
-
                 // we need unified interface for all graphs, ok... some weird combinatoric manipulation here....
                 for (let i = 0; i < graphs.length; i++) {
                     verification.beginStage(i, workflowConfig[i]);
                     if (workflowConfig[i] === 'discussion') {
-                        const input = { discussionInput: String(cycleOutputs[i] ?? '') };
+                                const input = {
+                                    discussionInput: String(
+                                        cycleOutputs[i] ?? '',
+                                    ),
+                                };
                         const output = await graphs[i].invoke(input);
                         recordMASStage({
-                            stageIndex: i, workflow: 'discussion', input, output,
+                                    stageIndex: i,
+                                    workflow: 'discussion',
+                                    input,
+                                    output,
                         });
                         cycleOutputs.push(output.discussionOutput);
-                        if (i === graphs.length - 1) scoreData = output.scoreData;
                     } else if (workflowConfig[i] === 'voting') {
                         console.log('invoke voting graph');
                         const output = await graphs[i].invoke({
@@ -1232,9 +1295,6 @@ export class Level1 extends ParentScene {
                             output,
                         });
                         cycleOutputs.push(output.votingOutput);
-                        if (i === graphs.length - 1) {
-                            scoreData = output.scoreData;
-                        }
                     } else if (workflowConfig[i] === 'sequential') {
                         console.log('invoke lang graph');
                         const output = await graphs[i].invoke({
@@ -1247,9 +1307,6 @@ export class Level1 extends ParentScene {
                             output,
                         });
                         cycleOutputs.push(output.sequentialOutput);
-                        if (i === graphs.length - 1) {
-                            scoreData = output.scoreData;
-                        }
                     } else if (workflowConfig[i] === 'single_agent') {
                         console.log('invoke routing graph');
                         const output = await graphs[i].invoke({
@@ -1258,34 +1315,20 @@ export class Level1 extends ParentScene {
                         recordMASStage({
                             stageIndex: i,
                             workflow: workflowConfig[i],
-                            input: { singleAgentInput: cycleOutputs[i] },
+                                    input: {
+                                        singleAgentInput: cycleOutputs[i],
+                                    },
                             output,
                         });
                         cycleOutputs.push(output.singleAgentOutput);
-                        if (i === graphs.length - 1) {
-                            scoreData = output.scoreData;
-                        }
                     }
 
+                    
                 }
 
-                console.log('scoreData', scoreData);
-
-                createScoreUI(
-                    this,
-                    600,
-                    20,
-                    scoreData.overall_score,
-                    scoreData.writing_score,
-                    scoreData.coding_score,
-                    scoreData.writing_reasons,
-                    scoreData.coding_reasons,
-                );
-
-                // 1) 归一化并保存最终分数，便于其他地方读取
-                const finalScore = Number(scoreData.overall_score ?? 0);
                 const activeLevelConfig = getRequiredLevelConfig(level);
-                const completion = evaluateCompletedLevelRun({
+                        const finalized = await finalizeSceneLevelRun({
+                            scene: this,
                     level: activeLevelConfig,
                     datasetId: String(
                         this.registry.get('currentDataset') ??
@@ -1295,12 +1338,19 @@ export class Level1 extends ParentScene {
                     dataMaps: datamaps,
                     managerId: editorialManager?.getName() ?? null,
                     managerReviewApproved: getManagerVerificationSummary(this, editorialManager?.getName()).approved,
-                    qualityScore: finalScore,
-                    storage: window.localStorage,
+                            draftReport: String(cycleOutputs[2] ?? ''),
+                            draftVisualization: String(cycleOutputs[3] ?? ''),
                 });
+                        const { completion, scoreData } = finalized;
+                        const finalScore = finalized.outputScore;
                 this.registry.set('finalScore', finalScore);
                 this.registry.set('levelCompletionOutcome', completion);
-                recorder.recordEvent({ type: 'score_recorded', score: finalScore, writingScore: scoreData.writing_score, codingScore: scoreData.coding_score });
+                        recorder.recordEvent({
+                            type: 'score_recorded',
+                            score: finalScore,
+                            writingScore: scoreData.writing_score,
+                            codingScore: scoreData.coding_score,
+                        });
                 recorder.recordEvent({
                     type: 'level_completion_evaluated',
                     ...completion,
@@ -1311,6 +1361,7 @@ export class Level1 extends ParentScene {
                     finalScore,
                     managerVerification: getManagerVerificationSummary(this, editorialManager?.getName()),
                     completion,
+                            finalization: finalized,
                 });
 
                 // 2) 用 Phaser 事件把分数带出去（监听里按分数决定是否创建 Next 按钮）
@@ -1333,13 +1384,24 @@ export class Level1 extends ParentScene {
                 );
 
                 // save the scores to history
-                saveHistory('level1', scoreData.overall_score);
-            }, (error) => {
-                const message = error instanceof Error ? error.message : String(error);
-                this.debateStartLabel?.setText('Run failed\nPress Reset');
-                recorder.recordEvent({ type: 'simulation_failed', message });
+                        saveHistory('level1', Number(scoreData.overall_score));
+                    },
+                    (error) => {
+                        const message =
+                            error instanceof Error
+                                ? error.message
+                                : String(error);
+                        this.simulationStatusLabel?.setText(
+                            'Run failed\nPress Reset',
+                        );
+                        recorder.recordEvent({
+                            type: 'simulation_failed',
+                            message,
+                        });
                 failMASTrace(error);
-            }));
+                    },
+                ),
+            );
         }
 
         // if(
@@ -1541,9 +1603,7 @@ export class Level1 extends ParentScene {
         const x = this.cameras.main.width - 52;
         const y = this.cameras.main.height - 150;
         const text = completion
-            ? completion.configurationCorrect
-                ? `Correct Strategy ${completion.correctStrategyAttempt}/3\nScore ${score.toFixed(1)} · Need ${completion.requiredQualityScore.toFixed(1)} this run`
-                : `Risk Unresolved\nChange Strategy`
+            ? `Strategy ${completion.strategyScore.toFixed(1)}/10\nRisk Unresolved · Change Strategy`
             : `Score: ${score.toFixed(1)}\nNeed 8+ to unlock`;
 
         const msg = this.add
@@ -1562,6 +1622,7 @@ export class Level1 extends ParentScene {
             .setDepth(2000)
             .setAlpha(0);
 
+        msg.setName('run-result-banner');
         this.tweens.add({
             targets: msg,
             alpha: 1,
@@ -1598,6 +1659,8 @@ export class Level1 extends ParentScene {
             .setAlpha(0)
             .setInteractive();
 
+        bg.setName('run-next-level-bg');
+        nextLevelBtn.setName('run-next-level-button');
         this.tweens.add({
             targets: [bg, nextLevelBtn],
             alpha: 1,

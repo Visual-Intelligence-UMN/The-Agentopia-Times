@@ -1,10 +1,5 @@
 import type { LevelConfig, WorkflowType } from '../config/types.ts';
-import {
-    type AttemptStorage,
-    evaluateAndRecordLevelAttempt,
-    type LevelCompletionOutcome,
-    type LevelRunConfiguration,
-} from './levelCompletionPolicy.ts';
+import type { LevelRunConfiguration } from './levelCompletionPolicy.ts';
 
 interface AgentSnapshotSource {
     getName(): string;
@@ -40,21 +35,4 @@ export function buildLevelRunConfiguration(input: {
                 })),
         })),
     };
-}
-
-export function evaluateCompletedLevelRun(input: {
-    level: LevelConfig;
-    datasetId: string;
-    workflow: WorkflowType[];
-    dataMaps: StageZoneSnapshot[][];
-    managerId: string | null;
-    managerReviewApproved: boolean;
-    qualityScore: number;
-    storage: AttemptStorage;
-}): LevelCompletionOutcome {
-    return evaluateAndRecordLevelAttempt({
-        configuration: buildLevelRunConfiguration(input),
-        qualityScore: input.qualityScore,
-        storage: input.storage,
-    });
 }

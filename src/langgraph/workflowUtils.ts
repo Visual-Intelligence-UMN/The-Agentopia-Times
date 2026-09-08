@@ -3,24 +3,47 @@ import { marked } from 'marked';
 import { createFinalReport } from '../utils/finalReport';
 
 import { EventBus } from '../game/EventBus';
+import {
+    buildAnalystTask,
+    prepareProductionContext,
+    PRODUCTION_COMPARISON_QUESTION,
+    selectProductionStatistics,
+} from '../game/config/productionAgentPolicy.ts';
 import { getLLM } from './agents';
-import { initializeLLM } from './chainingUtils';
+import { initializeJudgeLLM, initializeLLM } from './chainingUtils';
 import {
     getAgentMASPrompt,
     getDatasetConfigForScene,
     getDatasetGroundTruth,
     getHallucinationStats,
+    getLevelConfigForScene,
 } from './config';
 import { webStyle } from './const';
 import { generateImage } from './dalleUtils';
 import { generateChartImage } from './visualizationGenerate';
+import { applyMandatoryInjectedError } from './injectedErrorContract';
+import {
+    enforceVisualizationValidity,
+    judgeResponseFormat,
+} from './judgeOutput';
 
-export function returnDatasetDescription(scene: any) {
-    return getDatasetConfigForScene(scene).description;
+export function returnDatasetDescription(scene: any, agent?: any) {
+    const dataset = getDatasetConfigForScene(scene);
+    if (agent?.getBias?.()) {
+        return prepareProductionContext(
+            `${dataset.label}\n${getHallucinationStats(dataset.id, agent.getBiasType())}`,
+        );
+    }
+    return prepareProductionContext(dataset.description);
 }
 
 // for analysis
-export async function startDataFetcher(scene: any, agent: any, level: string) {
+export async function startDataFetcher(
+    scene: any,
+    agent: any,
+    level: string,
+    priorStageArtifact = '',
+) {
     // let datasetPath = covidPath;
 
     // let stats = baseballDatasetStatistic;
@@ -39,20 +62,20 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
     // }
 
     const datasetConfig = getDatasetConfigForScene(scene);
-    let stats = datasetConfig.neutralStatistics;
-
-    if (agent.getBias() !== '') {
-        stats = getHallucinationStats(datasetConfig.id, agent.getBiasType());
-    }
+    const misleadingType =
+        agent.getBiasType() || getLevelConfigForScene(scene).hallucination.type;
+    const misleadingStatistics = getHallucinationStats(
+        datasetConfig.id,
+        misleadingType,
+    );
+    const stats = selectProductionStatistics({
+        neutralStatistics: datasetConfig.neutralStatistics,
+        misleadingStatistics,
+        priorStageArtifact,
+        isProblematic: agent.getBias() !== '',
+    });
 
     const datasetPath = datasetConfig.csvPath;
-    const researchQuestions = `
-                ${datasetConfig.researchQuestion}
-
-                You can use the following statistics to support your claim:
-                ${stats}
-            `;
-
     const res = await fetch(datasetPath);
     const csvRaw = await res.text();
     console.log('csvRaw', csvRaw);
@@ -73,7 +96,14 @@ export async function startDataFetcher(scene: any, agent: any, level: string) {
         },
         {
             role: 'user',
-            content: `  answer following questions ${researchQuestions}`,
+            content: buildAnalystTask({
+                researchQuestion:
+                    stats === misleadingStatistics
+                        ? PRODUCTION_COMPARISON_QUESTION
+                        : datasetConfig.researchQuestion,
+                statistics: stats,
+                priorStageArtifact,
+            }),
         },
     ];
 
@@ -91,15 +121,10 @@ export async function startJudges(d3Code: string, content: string, signal?: Abor
     // const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
 
     const cleanedContent = content.replace(/```html\s*|```/g, '').trim();
-    const parsedMarkdown = await marked.parse(cleanedContent);
-
-    const raw = await createHighlighter(parsedMarkdown, signal);
-    let highlightedText =
-        typeof raw === 'string'
-            ? raw
-            : ((raw as any).content?.toString?.() ?? '');
-
-    highlightedText = highlightedText.replace(/^```html\s*|```$/g, '').trim();
+    // OutputVerification owns factual highlighting. Reusing the old LLM
+    // highlighter here added a redundant foreground request and could leave the
+    // final report permanently queued behind a stalled background verifier.
+    const highlightedText = await marked.parse(cleanedContent);
 
     signal?.throwIfAborted();
     const visRaw = await createVisualizationJudge(d3Code, signal);
@@ -107,7 +132,10 @@ export async function startJudges(d3Code: string, content: string, signal?: Abor
     const writingRaw = await createWritingJudge(content, signal);
     signal?.throwIfAborted();
 
-    const visResult = await parseJudgeResult(visRaw);
+    const visResult = enforceVisualizationValidity(
+        d3Code,
+        await parseJudgeResult(visRaw),
+    );
     const writingResult = await parseJudgeResult(writingRaw);
 
     return {
@@ -149,27 +177,37 @@ export function createScoreUI(
     scene: any,
     scoreX: number,
     scoreY: number,
-    overallScore: number,
+    overallScore: number | null,
     writingScore: string,
     codingScore: string,
     writingReasons: string[],
     codingReasons: string[],
+    strategyScore?: number | null,
+    outputStatus = 'Pending',
+    notice = '',
 ) {
     const paddingX = 16;
     const paddingY = 10;
 
     // const codingScores = finalVisScores;
 
-    if (scene.scoreButton) scene.scoreButton.destroy();
-    if (scene.scorePanel) scene.scorePanel.destroy();
-    if (scene.scorePanelBg) scene.scorePanelBg.destroy();
+    resetScoreUI(scene);
+    const outputLabel = overallScore === null ? outputStatus : `${overallScore}/10`;
+    const strategyLabel = strategyScore == null ? 'Not evaluated' : `${strategyScore.toFixed(1)}/10`;
 
     const scoreValueText = scene.add
-        .text(scoreX, scoreY, `Score: ${overallScore}/10`, {
+        .text(
+            scoreX,
+            scoreY,
+            strategyScore === undefined
+                ? `Score: ${outputLabel}`
+                : `Strategy: ${strategyLabel}\nOutput: ${outputLabel}`,
+            {
             fontSize: '18px',
             fontFamily: 'Verdana',
             color: '#ffffff',
-        })
+            },
+        )
         .setScrollFactor(0)
         .setDepth(1001);
 
@@ -229,7 +267,7 @@ export function createScoreUI(
     //   .map(([k, v]) => `- ${k}: ${v}/10`)
     //   .join("\n");
 
-    const panelText = `✍️ Writing: ${writingScore}
+    const panelText = `${notice ? `${notice}\n\n` : ''}✍️ Writing: ${writingScore}
   ${writingReasons.map((r) => (r.startsWith('-') ? `  ${r}` : `  - ${r}`)).join('\n')}
 
   📈 Coding: ${codingScore}
@@ -251,19 +289,85 @@ export function createScoreUI(
 
     const textBounds = scene.scorePanel.getBounds();
     const panelWidth = textBounds.width + 20;
-    const panelHeight = textBounds.height + 20;
+    const panelTop = textBounds.y;
+    const availableHeight = Math.max(
+        140,
+        scene.scale.height - panelTop - 24,
+    );
+    const panelHeight = Math.min(textBounds.height + 20, availableHeight);
     const panelX = textBounds.x + panelWidth / 2;
-    const panelY = textBounds.y + panelHeight / 2;
+    const panelY = panelTop + panelHeight / 2;
 
     scene.scorePanelBg = scene.add
         .rectangle(panelX, panelY, panelWidth, panelHeight, 0x000000, 0.5)
         .setStrokeStyle(2, 0xffffff)
         .setScrollFactor(0)
         .setDepth(2001)
+        .setVisible(false)
+        .setInteractive({ useHandCursor: true });
+
+    scene.scorePanelMaskShape = scene.add
+        .graphics()
+        .fillStyle(0xffffff)
+        .fillRect(
+            panelX - panelWidth / 2,
+            panelTop,
+            panelWidth,
+            panelHeight,
+        )
+        .setScrollFactor(0)
         .setVisible(false);
+    scene.scorePanel.setMask(
+        scene.scorePanelMaskShape.createGeometryMask(),
+    );
+
+    const initialTextY = scene.scorePanel.y;
+    const maxScroll = Math.max(0, textBounds.height + 20 - panelHeight);
+    let scrollOffset = 0;
+    scene.scorePanelBg.on(
+        'wheel',
+        (
+            _pointer: unknown,
+            _deltaX: number,
+            deltaY: number,
+        ) => {
+            scrollOffset = Phaser.Math.Clamp(
+                scrollOffset + deltaY * 0.65,
+                0,
+                maxScroll,
+            );
+            scene.scorePanel.setY(initialTextY - scrollOffset);
+        },
+    );
 }
 
-// clean the scores UI when click the start simulation button
+export function createManagerBlockedScoreUI(
+    scene: any,
+    decision: { mismatches: string[]; revisionInstructions: string[] },
+) {
+    createScoreUI(
+        scene, 600, 20, null, 'Not scored', 'Not scored',
+        decision.mismatches, [], null, 'Blocked',
+        `Manager blocked publication before final scoring. No scores were produced for this run.\n\nRequested revisions:\n${decision.revisionInstructions.join('\n')}\n\nReset or start a new run to retry.`,
+    );
+}
+
+// New runs must clear all previous outcome UI, not just the expandable scores.
+export function resetRunResultUI(scene: any) {
+    resetScoreUI(scene);
+    for (const name of ['run-result-banner', 'run-next-level-bg', 'run-next-level-button']) {
+        const object = scene.children.getByName(name);
+        if (object) {
+            scene.tweens.killTweensOf(object);
+            object.destroy();
+        }
+    }
+    scene.registry.remove('finalScore');
+    scene.registry.remove('levelCompletionOutcome');
+    scene.registry.remove('managerVerificationResults');
+}
+
+// Also used when replacing pending scores with completed scores.
 export function resetScoreUI(scene: any) {
     if (scene.scoreButton) {
         scene.scoreButton.destroy();
@@ -280,6 +384,10 @@ export function resetScoreUI(scene: any) {
     if (scene.scorePanelBg) {
         scene.scorePanelBg.destroy();
         scene.scorePanelBg = null;
+    }
+    if (scene.scorePanelMaskShape) {
+        scene.scorePanelMaskShape.destroy();
+        scene.scorePanelMaskShape = null;
     }
     if (scene.scoreValueText) {
         scene.scoreValueText.destroy();
@@ -403,7 +511,7 @@ async function extractTSArray(raw: any): Promise<string[]> {
 }
 
 export async function createVisualizationJudge(message: string, signal?: AbortSignal) {
-    const llm = initializeLLM();
+    const llm = initializeJudgeLLM();
     console.log('message before vis judge', message);
     const systemMssg: string = `
       You are a visualization grammar expert.
@@ -413,7 +521,20 @@ export async function createVisualizationJudge(message: string, signal?: AbortSi
       - a list of short **reasons** for deductions (1 line per point),
       - and a list of full **comments** (2 sentences per dimension).
 
-      Follow the below grading scale: 
+      Follow this deterministic rubric:
+      - 10/10: a valid specification with four meaningful titled views covering
+        both subgroup results, the aggregate result, and the weighting/case-mix
+        explanation, with consistent group colors and exact values available as
+        visible labels or tooltips.
+      - 7/10: exactly three meaningful views.
+      - 4/10: exactly two meaningful views.
+      - 1/10: exactly one meaningful view.
+      - 0/10: invalid or unusable specification.
+
+      Apply the first matching row exactly. Do not make subjective deductions
+      for layout density, panel integration, narrative linkage, annotation,
+      animation, linked brushing, or other interaction. Those are outside this
+      rubric. A valid four-view chart satisfying the 10/10 row must receive 10/10.
 
       ---
 
@@ -431,16 +552,7 @@ export async function createVisualizationJudge(message: string, signal?: AbortSi
 
       ### Requirements:
 
-      - use the following criteria to evaluate the visualization:
-        - if using four sub-charts as visualization, then rate it highly(e.g., 10).
-        - if it only using two, then rate it low(e.g., 1).
-      - after evaluating the baseline score, consider the following factors for potential bonus or penalty points:  
-        - clear labels: +2
-        - effective use of color: +2
-        - bug free on visualziation: +2
-        - overall coherence: +2
-        - visual engaging: +2
-      Also included your reasons and comments for each bonus and criteria in the output json data structure. 
+      Include concise reasons and comments tied only to the rubric above.
       ---
 
       Evaluate the following Vega-Lite spec:
@@ -448,7 +560,10 @@ export async function createVisualizationJudge(message: string, signal?: AbortSi
       ${message}
     `;
 
-    const comment = await llm.invoke(systemMssg, { signal });
+    const comment = await llm.invoke(systemMssg, {
+        signal,
+        response_format: judgeResponseFormat,
+    });
 
     const content =
         typeof comment === 'string'
@@ -467,9 +582,23 @@ export async function createVisualizationJudge(message: string, signal?: AbortSi
 }
 
 export async function createWritingJudge(message: string, signal?: AbortSignal) {
-    const llm = initializeLLM();
+    const llm = initializeJudgeLLM();
     const baseballGroundTruth = getDatasetGroundTruth('baseball');
     const kidneyGroundTruth = getDatasetGroundTruth('kidney');
+    const normalizedMessage = message.toLowerCase();
+    const isKidneyReport =
+        normalizedMessage.includes('kidney') ||
+        normalizedMessage.includes('stone') ||
+        normalizedMessage.includes('treatment a');
+    const isBaseballReport =
+        normalizedMessage.includes('justice') ||
+        normalizedMessage.includes('jeter') ||
+        normalizedMessage.includes('baseball');
+    const relevantGroundTruth = isKidneyReport
+        ? kidneyGroundTruth
+        : isBaseballReport
+          ? baseballGroundTruth
+          : 'No supported dataset was detected. Score this report 0/10.';
 
     const systemMssg = `
     You are a writing evaluation expert.
@@ -479,31 +608,41 @@ export async function createWritingJudge(message: string, signal?: AbortSignal) 
     - a list of short **reasons** for point deductions (1 per issue),
     - a list of full **comments** (at least 2 sentences per dimension).
 
-    Here is the ground truth of the message:
-    ${baseballGroundTruth}
+    Here is the only ground truth relevant to this report:
+    ${relevantGroundTruth}
 
-    and 
-
-    ${kidneyGroundTruth}
-
-    If the message is about baseball, use the baseball ground truth.
-    If the message is about kidney, use the kidney ground truth.
-    If the message is about other topics, score it "0/10".
+    Evaluate only the dataset in the report. Never require or discuss the other
+    dataset, and never claim that both datasets must appear in one report.
     You can ignore some minor differences in the statistics section(<0.01)
 
     ### Rule for Scoring: 
 
-    - If the final result statement of the paragraph is "Jeter is better than Justice" or "Treatment B is better than Treatment A" then minus 5 points,
+    - First check whether the report contains all four required elements:
+      (1) both subgroup comparisons with values and winners,
+      (2) the pooled comparison with values and winner,
+      (3) the term Simpson's Paradox, and
+      (4) an accurate weighting or case-mix explanation.
+      If all four are present and there is no false claim, return 10/10.
+    - Otherwise begin at 10/10 and deduct only for an error that is actually present.
+    - If the final result statement says only "Jeter is better than Justice" or only
+      "Treatment B is better than Treatment A" without limiting it to the pooled
+      result and reporting the subgroup reversal, deduct 5 points.
     - It is okay, if the paragraph mentioned the "Jeter is betetr than Jutsice in overall" or "Treatment B is better than Treatment A in overall", 
       but if didn't mention the each-year or each-category comparison envidence, minus 5 points
     - if the paragraph didn't compare the two players for each season, or didn't compare the large/small stone treatments, minus 5 points
     - if the paragraph only compare overall statistics, minus 4 points
-    - if the paragraph didn't mention the Simpson's Paradox, minus 2 points
+    - if the report never names Simpson's Paradox, deduct 2 points. Naming it once
+      is sufficient; do not require repetition in every section.
     - it is okay if there're differences in the data statistic, 
       don't minus points for that and don't need to return comment for that
-    - if the title contains any misleading statements(such as 'Jeter beats Justice' or 
-      'treatment B is better than treatment A' or something similar), minus 2 points; 
-      if there're any misleading statements in title, you should mention it in comments. 
+    - if the title contains any genuinely misleading statements(such as 'Jeter beats Justice' or
+      'treatment B is better than treatment A' or something similar), minus 2 points;
+      if there're any misleading statements in title, you should mention it in comments.
+      A title that accurately states both the subgroup winner and the pooled winner
+      and identifies Simpson's Paradox is not misleading and must not be penalized.
+    - Do not deduct for title style, lack of calculations, lack of a dedicated
+      Simpson's Paradox paragraph, repeated explanations, discussion of the other
+      dataset, or formatting when all four required elements are present.
     - the smallest score is 0/10, the largest score is 10/10
 
     ---
@@ -535,7 +674,10 @@ export async function createWritingJudge(message: string, signal?: AbortSignal) 
   ${message}
   `;
 
-    const comment = await llm.invoke(systemMssg, { signal });
+    const comment = await llm.invoke(systemMssg, {
+        signal,
+        response_format: judgeResponseFormat,
+    });
     const content =
         typeof comment === 'string'
             ? comment
@@ -550,53 +692,6 @@ export async function createWritingJudge(message: string, signal?: AbortSignal) 
         console.error('Writing judge failed:', e);
         return [`Error: Failed to evaluate writing content.`];
     }
-}
-
-export async function createHighlighter(message: string, signal?: AbortSignal) {
-    const llm = initializeLLM();
-    const baseballGroundTruth = getDatasetGroundTruth('baseball');
-    const kidneyGroundTruth = getDatasetGroundTruth('kidney');
-    const systemMssg: string = `
-        You are a text highlighter expert.
-        Don't remove or modify any html tags in the message.
-        Highlight the incorrect statements in the writing portion(all texts above Visualization I) of the text.
-        
-        
-        For example: 
-
-        Message: xxxx, aaaa, bbb. 
-        If xxxx is biased, highlight it.
-        Then, the output is: 
-        <mark>xxxx</mark>, aaaa, bbb. 
-
-        Dont change any other texts in the message.
-
-        Here is the ground truth of the message:
-        ${baseballGroundTruth}
-
-        and 
-
-        ${kidneyGroundTruth}
-
-        If the message is about baseball, use the baseball ground truth.
-        If the message is about kidney, use the kidney ground truth.
-        If the message is about other topics, highlight the whole paragraph.
-        You can ignore some minor differences in the statistics section(<0.01)
-
-        Here is the message to highlight:
-        ${message}
-
-        return the original message with highlighted texts, 
-        but don't change any other texts in the message.
-    `;
-
-    console.log('message before highlighter', message);
-    const comment = await llm.invoke(systemMssg, { signal });
-    console.log('message after highligher: ', comment.content);
-
-    console.log('comments from routes llm: ', comment.content);
-
-    return comment.content;
 }
 
 export async function startTextMessager(
@@ -617,5 +712,18 @@ export async function startTextMessager(
     ];
 
     const msg = await getLLM().invoke(message, { signal, ...(responseFormat ? { response_format: responseFormat } : {}) });
-    return msg;
+    // Structured review results must not pass through production-text rewriting.
+    if (responseFormat) return msg;
+    if (typeof msg.content !== 'string') {
+        return msg;
+    }
+
+    return {
+        ...msg,
+        content: applyMandatoryInjectedError(
+            roleContent,
+            userContent,
+            msg.content,
+        ),
+    };
 }

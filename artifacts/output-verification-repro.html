@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Output verification regression</title><link rel="stylesheet" href="/style.css"><style>body{background:#544d3c}nav{position:relative;z-index:20000;padding:8px;display:flex;gap:8px}nav button{font:14px sans-serif}#results{position:relative;z-index:20000;background:#fff;color:#111;font:13px monospace;white-space:pre-wrap;padding:10px;margin-top:20px}.window{top:150px}</style></head><body><nav><button id="fixture">Show highlights</button><button id="pending">Pending</button><button id="partial">Incomplete</button><button id="clean">No findings</button><button id="failed">Failed</button><button id="live">Test live verifier</button><button id="lifecycle">Test run isolation</button></nav><div id="root"></div><pre id="results">Ready</pre><script type="module">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import DraggableWindow from '/src/components/DraggableWindow.tsx';
+import { updateVerifiedOutput, getVerificationRecords, subscribeToVerification, resetVerificationStore } from '/src/game/verificationStore.ts';
+import { toVerificationText } from '/src/utils/verificationMarkup.ts';
+import { parseVerificationResponse } from '/src/game/domain/outputVerification.ts';
+import { runVerifiedSceneWorkflow, createOutputVerification } from '/src/langgraph/outputVerifier.ts';
+import { getDatasetConfig } from '/src/game/config/index.ts';
+const root = ReactDOM.createRoot(document.getElementById('root'));
+const fixtureStyle=document.createElement('style');fixtureStyle.textContent='.window{left:4%;width:92%;top:145px;max-width:none}#results{max-height:50px;overflow:auto}';document.head.append(fixtureStyle);
+const raw = '# A misleading comparison\n\nJeter **beat Justice** in both 1995 and 1996. The difference was caused by superior coaching.\n\nThe dataset combines two years of baseball statistics.';
+const text = toVerificationText(raw);
+const evidence = [{id:'facts',text:'Justice had the higher batting average in both 1995 and 1996. The dataset does not measure coaching.'}];
+const parsed = parseVerificationResponse(JSON.stringify({annotations:[{quote:'Jeter beat Justice in both 1995 and 1996.',category:'contradicted',reason:'The stated yearly winner is reversed.',evidenceIds:['facts']},{quote:'The difference was caused by superior coaching.',category:'unsupported',reason:'No coaching data or causal evidence is provided.',evidenceIds:[]}]}),text,evidence);
+const fixture = {id:'fixture:1',runId:'fixture',model:'fixture',stageIndex:1,producer:'writer',text,ghostSources:['ghost'],evidence,status:'verified',annotations:parsed.annotations,rejectedCount:0};
+function show(context,id){root.render(React.createElement(React.StrictMode,{},React.createElement(DraggableWindow,{title:'Intermediate Report',context,verificationId:id,charts:[],onClose:()=>root.render(null)})));}
+function status(value){updateVerifiedOutput({...fixture,status:value,annotations:value==='verified'?fixture.annotations:[],rejectedCount:value==='partial'?1:0,error:value==='failed'?'Simulated request failure':undefined});show(raw,fixture.id);}
+document.getElementById('fixture').onclick=()=>status('verified');
+document.getElementById('pending').onclick=()=>status('pending');
+document.getElementById('partial').onclick=()=>status('partial');
+document.getElementById('failed').onclick=()=>status('failed');
+document.getElementById('clean').onclick=()=>{updateVerifiedOutput({...fixture,annotations:[],status:'verified'});show(raw,fixture.id);};
+const result = document.getElementById('results');
+const restore=document.createElement('button');restore.textContent='Restore live trace';document.querySelector('nav').append(restore);restore.onclick=()=>{const trace=JSON.parse(localStorage.getItem('agentopia-output-verification-latest')||'null');result.textContent=JSON.stringify(trace,null,2);if(trace?.records?.length){resetVerificationStore();trace.records.forEach(updateVerifiedOutput);show(raw,trace.records[0].id);}};
+function scene(){const values = new Map([['currentDataset','baseball']]);const events = new Map();return {registry:{get:k=>values.get(k),set:(k,v)=>values.set(k,v)},events:{once:(name,fn)=>{events.set(name,[...(events.get(name)||[]),fn]);},off:(name,fn)=>events.set(name,(events.get(name)||[]).filter(x=>x!==fn)),emit:name=>{for(const fn of [...(events.get(name)||[])])fn();}}};}
+const normal = {getName:()=> 'Normal peer',getBias:()=>''};
+const ghost = {getName:()=> 'Ghost',getBias:()=> 'injected'};
+document.getElementById('live').onclick=async()=>{
+ const runtimeScene=scene();let id;
+ await runVerifiedSceneWorkflow(runtimeScene,async(scope)=>{
+  scope.beginStage(0,'voting');const checks=createOutputVerification(runtimeScene,0);
+  id=checks.agent(ghost,raw);
+  checks.agent(normal,'A normal independent title');
+ }, error=>{result.textContent=String(error);});
+ show(raw,id);result.textContent='Live model request pending';
+ const off=subscribeToVerification(()=>{const records=getVerificationRecords();if(records.some(x=>x.status==='pending'))return;result.textContent=JSON.stringify(records,null,2);off();});
+};
+document.getElementById('lifecycle').onclick=async()=>{
+ const s=scene();let oldChecks;
+ await runVerifiedSceneWorkflow(s,async(scope)=>{scope.beginStage(0,'voting');oldChecks=createOutputVerification(s,0);oldChecks.agent(normal,'Old untouched output');},error=>{throw error;});
+ s.events.emit('shutdown');
+ await runVerifiedSceneWorkflow(s,async(scope)=>{scope.beginStage(0,'voting');createOutputVerification(s,0).agent(normal,'New untouched output');},error=>{throw error;});
+ const before=getVerificationRecords().length;
+ oldChecks.agent(ghost,'A stale Ghost result must be dropped');
+ oldChecks.stage('A stale summary must be dropped');
+ const records=getVerificationRecords();
+ result.textContent=JSON.stringify({test:'reset and new run isolation',pass:records.length===before&&records.every(x=>x.text.includes('New untouched output')&&x.status==='not_checked'),records},null,2);
+};
+status('verified');
+</script></body></html>

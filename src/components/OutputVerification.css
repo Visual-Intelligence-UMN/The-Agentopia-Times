@@ -1,88 +1,12 @@
-.verification-status-panel {
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-bottom: 2px solid #cabd91;
-  background: #f4eace;
-  color: #222;
-  font-size: 14px;
-}
-
-.verification-status-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.verification-status-pill {
-  padding: 2px 8px;
-  border-radius: 2px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.verification-status-ok {
-  background: #326447;
-}
-
-.verification-status-warning {
-  background: #f4d483;
-  color: #362512;
-}
-
-.verification-status-error {
-  background: #973329;
-}
-
-.verification-status-pending {
-  background: #607d8b;
-}
-
-.verification-status-neutral {
-  background: #62615a;
-}
-
-.verification-download-btn {
-  border: 1px solid #666;
-  background: #fff;
-  color: #333;
-  font-size: 14px;
-  padding: 3px 8px;
-  border-radius: 6px;
+.report-window-content mark {
+  background: transparent !important;
+  color: inherit;
 }
 
 .report-window-content mark.verification-mark {
   all: unset;
-  border-radius: 2px;
-  cursor: pointer;
-  font: inherit;
+  background: #fff59d !important;
   color: inherit;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
+  font: inherit;
   padding: 0;
 }
-
-.verification-mark:focus-visible { outline: 2px solid #30281b; outline-offset: 2px; }
-
-.report-window-content mark.verification-contradicted {
-  background: #ffcdd2;
-  border: 1px solid #ef9a9a;
-}
-
-.report-window-content mark.verification-unsupported {
-  background: #fff59d;
-  border: 1px solid #fff176;
-}
-
-.verification-detail-text,
-.verification-detail {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.verification-detail { max-height: 180px; overflow: auto; border-left: 3px solid #8f4524; padding: 0 12px; }

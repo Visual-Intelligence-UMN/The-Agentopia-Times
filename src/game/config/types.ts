@@ -69,6 +69,7 @@ export interface DatasetConfig {
     researchQuestion: string;
     neutralStatistics: string;
     hallucinationStatistics: Record<string, string>;
+    goldOutput: import('./goldOutputs.ts').GoldOutput;
 }
 
 export interface JudgeConfig {

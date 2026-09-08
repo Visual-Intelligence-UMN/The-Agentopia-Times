@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createFinalReport } from '../src/utils/finalReport.ts';
+import {
+    createFinalReport,
+    resolveReportDepartment,
+} from '../src/utils/finalReport.ts';
 import { renderRichText } from '../src/utils/markdown.ts';
 
 const chartCode = JSON.stringify({
@@ -53,4 +56,18 @@ test('Markdown intermediate reports and code fences retain their meaning', () =>
     assert.match(html, /<h1>Draft<\/h1>/);
     assert.match(html, /<strong>Bold<\/strong>/);
     assert.match(html, /&lt;div&gt;Example&lt;\/div&gt;/);
+});
+
+test('the final-looking report icon opens the published final report', () => {
+    assert.equal(
+        resolveReportDepartment('chaining', 2, {
+            isFinal: true,
+            finalReportIndex: 3,
+        }),
+        'final-3',
+    );
+    assert.equal(
+        resolveReportDepartment('chaining', 1),
+        'chaining-1',
+    );
 });

@@ -10,12 +10,63 @@ import {
 import {
     failMASTrace,
     finishMASTrace,
+    getLatestMASTrace,
+    interruptMASTrace,
     MASTraceCallbackHandler,
     recordMASStage,
     resetMASTraceForTests,
     startMASTrace,
     startOrContinueMASTrace,
 } from '../src/langgraph/masTrace.ts';
+
+test('a late call from an interrupted run cannot update the next run', () => {
+    resetMASTraceForTests();
+    const context = {
+        level: 'level1',
+        dataset: 'baseball',
+        workflow: ['voting'],
+    };
+    const first = startMASTrace(context);
+    const callback = new MASTraceCallbackHandler('test');
+    callback.handleLLMStart({}, ['old input'], 'old-call');
+    interruptMASTrace(first.runId, 'Reset');
+    assert.equal(getLatestMASTrace()?.status, 'interrupted');
+    const second = startMASTrace(context);
+    callback.handleLLMEnd(
+        { generations: [[{ text: 'late output' }]] },
+        'old-call',
+    );
+    assert.equal(getLatestMASTrace()?.runId, second.runId);
+    assert.equal(getLatestMASTrace()?.calls.length, 0);
+    callback.handleLLMStart({}, ['new input'], 'new-call');
+    assert.equal(
+        getLatestMASTrace()?.calls[0].input[0][0].content,
+        'new input',
+    );
+});
+
+test('manager changes start a new trace while matching prefetch keeps its assessment', () => {
+    resetMASTraceForTests();
+    const context = {
+        level: 'level1',
+        dataset: 'baseball',
+        workflow: ['voting'],
+    };
+    const first = startMASTrace({
+        ...context,
+        configuration: { manager: 'A', phase: 'manager-prefetch' },
+    });
+    const continued = startOrContinueMASTrace({
+        ...context,
+        configuration: { manager: 'A', agents: ['writer'] },
+    });
+    assert.equal(continued.runId, first.runId);
+    const replaced = startOrContinueMASTrace({
+        ...context,
+        configuration: { manager: 'B' },
+    });
+    assert.notEqual(replaced.runId, first.runId);
+});
 
 test('a post-model workflow failure preserves intermediate stages and marks the trace failed', () => {
     resetMASTraceForTests();

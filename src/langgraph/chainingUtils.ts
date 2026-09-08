@@ -25,13 +25,12 @@ interface subgraph{
 }
 
 
-export function initializeLLM(){
+function initializeConfiguredLLM(model: string) {
     const apiKey = getStoredOpenAIKey();
     if (!apiKey) {
         throw new Error('OpenAI API Key is not set.');
     }
 
-    const model = getMASModels().chat;
     return new ChatOpenAI({
         apiKey,
         modelName: model,
@@ -40,6 +39,14 @@ export function initializeLLM(){
         configuration: { fetch: getOpenAIRequestFetch() },
         callbacks: [createMASTraceCallback(model)],
     });
+}
+
+export function initializeLLM(){
+    return initializeConfiguredLLM(getMASModels().chat);
+}
+
+export function initializeJudgeLLM(){
+    return initializeConfiguredLLM(getMASModels().judge);
 }
 
 
@@ -152,7 +159,6 @@ export function constructSequentialGraph(
                         level
                     )
                 );
-                name = 'manager'
             }
             // else langgraph.addNode(agent.getName(), agent.activate());
             console.log("add a node", agent.getName(), agent.activate());

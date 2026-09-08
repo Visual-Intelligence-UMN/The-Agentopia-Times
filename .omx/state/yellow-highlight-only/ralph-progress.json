@@ -1,0 +1,10 @@
+{
+  "score": 98,
+  "verdict": "pass",
+  "category_match": true,
+  "differences": [],
+  "suggestions": [],
+  "reasoning": "The report preserves its paper background and typography with only yellow inline highlights. Status labels, explanatory panels, buttons and interactive marks are absent; no-findings state restores plain text without an extra row.",
+  "next_actions": [],
+  "threshold_pass": true
+}

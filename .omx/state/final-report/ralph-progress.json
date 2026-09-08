@@ -1,0 +1,12 @@
+{
+  "score": 95,
+  "verdict": "pass",
+  "category_match": true,
+  "differences": [
+    "The chart renders below Visualization I and the comments render as headings and lists."
+  ],
+  "suggestions": [],
+  "reasoning": "JSON, legacy JavaScript, a saved real chart, report switching, intermediate Markdown, close/reopen and visible errors passed browser checks. After the concurrent store fix, the integrated UI renders again and both report chart titles match.",
+  "next_actions": [],
+  "threshold": 90
+}

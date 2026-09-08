@@ -3,7 +3,10 @@ import test from 'node:test';
 
 import { ChatOpenAI } from '@langchain/openai';
 
-import { createRateLimitedFetch } from '../src/langgraph/openaiRequestGate.ts';
+import {
+    createOpenAIRequestLanes,
+    createRateLimitedFetch,
+} from '../src/langgraph/openaiRequestGate.ts';
 
 function delay(milliseconds: number) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -224,4 +227,50 @@ test('waits for an exhausted rate-limit window before starting the next request'
     ]);
 
     assert.deepEqual(startedAt, [1_000, 3_000]);
+});
+
+test('times out a hung request and releases the next queued request', async () => {
+    let calls = 0;
+    const fetchWithFirstCallHung: typeof fetch = async () => {
+        calls += 1;
+        if (calls === 1) return new Promise<Response>(() => undefined);
+        return new Response('{}', { status: 200 });
+    };
+    const gatedFetch = createRateLimitedFetch({
+        fetchImpl: fetchWithFirstCallHung,
+        maxRetries: 0,
+        minimumIntervalMs: 0,
+        requestTimeoutMs: 10,
+    });
+
+    const first = gatedFetch('https://api.openai.com/v1/chat/completions');
+    const second = gatedFetch('https://api.openai.com/v1/chat/completions');
+
+    await assert.rejects(first, /timed out/i);
+    assert.equal((await second).status, 200);
+});
+
+test('a hung verification request cannot block foreground MAS traffic', async () => {
+    const lanes = createOpenAIRequestLanes({
+        fetchImpl: async (_input, init) => {
+            if (new Headers(init?.headers).get('x-test-lane') === 'verification') {
+                return new Promise<Response>(() => undefined);
+            }
+            return new Response('{}', { status: 200 });
+        },
+        maxRetries: 0,
+        minimumIntervalMs: 0,
+        requestTimeoutMs: 25,
+    });
+
+    const verification = lanes.verification(
+        'https://api.openai.com/v1/chat/completions',
+        { headers: { 'x-test-lane': 'verification' } },
+    );
+    const foreground = lanes.foreground(
+        'https://api.openai.com/v1/chat/completions',
+    );
+
+    assert.equal((await foreground).status, 200);
+    await assert.rejects(verification, /timed out/i);
 });

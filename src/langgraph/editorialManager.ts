@@ -4,6 +4,8 @@ import {
     buildEditorialAssessmentMessages,
     buildEditorialDecisionMessages,
     buildEditorialRevisionMessages,
+    editorialAssessmentResponseFormat,
+    editorialDecisionResponseFormat,
     canPublishEditorialDecision,
     type EditorialAssessment,
     type EditorialDecision,
@@ -19,6 +21,7 @@ import { recorder } from '../game/utils/recorder';
 import { getDatasetConfigForScene } from './config';
 import { recordMASStage, startMASTrace } from './masTrace';
 import { startTextMessager } from './workflowUtils';
+import { getVisualizationData } from '../vega/visualizationData';
 
 export interface EditorialReviewHooks {
     onStatus?(status: string, color?: string): void;
@@ -82,7 +85,9 @@ async function requestDecision(
         assessment,
         candidateReport,
     });
-    const response = await startTextMessager(messages.system, messages.user);
+    const response = await startTextMessager(
+        messages.system, messages.user, undefined, editorialDecisionResponseFormat,
+    );
     return parseEditorialDecision(contentOf(response));
 }
 
@@ -110,12 +115,13 @@ export async function createIndependentEditorialAssessment(
         description: dataset.description,
         researchQuestion: dataset.researchQuestion,
         neutralStatistics: dataset.neutralStatistics,
-        rawEvidence,
+        rawEvidence: `Complete grouped count table (all outcomes, suitable for exact denominators):\n${getVisualizationData(dataset.id)}\n\nCSV excerpt (may be truncated):\n${rawEvidence}`,
     });
     const response = await startTextMessager(
         messages.system,
         messages.user,
         hooks.signal,
+        editorialAssessmentResponseFormat,
     );
     ensureCurrentAssessment(hooks);
     const assessment = parseEditorialAssessment(contentOf(response));
@@ -152,6 +158,7 @@ export function createEditorialManagerAssessmentCoordinator(
         (manager, context) => {
             const workflow = scene.registry.get('workflowConfig');
             startMASTrace({
+                configuration: { manager: manager.getName(), phase: 'manager-prefetch' },
                 level: String(scene.registry.get('currentLevel') ?? 'unknown'),
                 dataset: String(
                     scene.registry.get('currentDataset') ?? 'unknown',

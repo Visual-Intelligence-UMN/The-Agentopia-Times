@@ -77,7 +77,12 @@ export function setZonesCollisionDetection(
 }
 
 export function setZonesExitingDecoration(zones: any, agents: any) {
+    const liveNames = new Set(agents.getChildren().map((agent: Agent) => agent.getName()));
     zones.forEach((zoneData: any) => {
+        // Renaming a Ghost must not leave a phantom occupant behind.
+        for (const name of zoneData.agentsInside) {
+            if (!liveNames.has(name)) zoneData.agentsInside.delete(name);
+        }
         agents.getChildren().forEach((agent: any) => {
             // console.log("detecting exit: agent",agent, "zone", zoneData.zone);
             const isInside = Phaser.Geom.Intersects.RectangleToRectangle(

@@ -17,6 +17,41 @@ export interface EditorialDecision {
     revisionInstructions: string[];
 }
 
+const stringList = { type: 'array', items: { type: 'string' } };
+
+export const editorialAssessmentResponseFormat = {
+    type: 'json_schema' as const,
+    json_schema: {
+        name: 'editorial_assessment', strict: true,
+        schema: {
+            type: 'object', additionalProperties: false,
+            required: ['centralClaim', 'supportingEvidence', 'contradictions', 'caveats', 'confidence'],
+            properties: {
+                centralClaim: { type: 'string' }, supportingEvidence: stringList,
+                contradictions: stringList, caveats: stringList,
+                confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+            },
+        },
+    },
+};
+
+export const editorialDecisionResponseFormat = {
+    type: 'json_schema' as const,
+    json_schema: {
+        name: 'editorial_decision', strict: true,
+        schema: {
+            type: 'object', additionalProperties: false,
+            required: ['verdict', 'mismatches', 'evidenceReferences', 'returnTo', 'revisionInstructions'],
+            properties: {
+                verdict: { type: 'string', enum: ['approve', 'revise'] },
+                mismatches: stringList, evidenceReferences: stringList,
+                returnTo: { type: 'string', enum: ['analytics', 'writing', 'visualization'] },
+                revisionInstructions: stringList,
+            },
+        },
+    },
+};
+
 export interface ManagerCandidate {
     getName(): string;
     getBias(): string;
@@ -89,7 +124,7 @@ export function buildEditorialAssessmentMessages(evidence: {
     rawEvidence: string;
 }): EditorialPromptMessages {
     return {
-        system: `You are an independent Editorial Manager. Before seeing any production-agent discussion or draft, examine only the original evidence and record a sealed initial assessment. Do not write the newspaper article. Return JSON only with this exact shape: {"centralClaim":"string","supportingEvidence":["string"],"contradictions":["string"],"caveats":["string"],"confidence":"low|medium|high"}.`,
+        system: `You are an independent Editorial Manager. Before seeing any production-agent discussion or draft, examine only the original evidence and record a sealed initial assessment. Compare each subgroup separately from the pooled total: different leaders across these scopes are not by themselves a contradiction. Use the provided complete count table to check weighted totals, not a truncated CSV excerpt. Only list contradictions supported by two conflicting claims about the same comparison. Do not write the newspaper article. Return JSON only with this exact shape: {"centralClaim":"string","supportingEvidence":["string"],"contradictions":["string"],"caveats":["string"],"confidence":"low|medium|high"}.`,
         user: `Dataset description:\n${evidence.description}\n\nResearch question:\n${evidence.researchQuestion}\n\nNeutral statistics:\n${evidence.neutralStatistics}\n\nOriginal data:\n${evidence.rawEvidence}`,
     };
 }
@@ -99,7 +134,7 @@ export function buildEditorialDecisionMessages(input: {
     candidateReport: string;
 }): EditorialPromptMessages {
     return {
-        system: `You are the Editorial Manager accountable for final verification. Compare the sealed independent assessment with the candidate report. Approve only when the report's central claim and evidence agree with the assessment; otherwise return it for revision. Do not rewrite the article. Return JSON only with this exact shape: {"verdict":"approve|revise","mismatches":["string"],"evidenceReferences":["string"],"returnTo":"analytics|writing|visualization","revisionInstructions":["string"]}.`,
+        system: `You are the Editorial Manager accountable for final verification. Compare the sealed independent assessment with the candidate report. Approve when the report's central claim and cited evidence agree with the assessment; return it for revision for specific factual mismatches or unsupported central claims. Compare like-for-like: a subgroup leader and a different pooled leader can both be correct. A caveat in the assessment is not automatically an error in the report. Each mismatch must quote the candidate's claim and the conflicting evidence for that same scope. Do not require a named statistical phenomenon, extra headings, or stylistic rewrites. Do not rewrite the article. Return JSON only with this exact shape: {"verdict":"approve|revise","mismatches":["string"],"evidenceReferences":["string"],"returnTo":"analytics|writing|visualization","revisionInstructions":["string"]}.`,
         user: `Sealed independent assessment:\n${JSON.stringify(input.assessment)}\n\nCandidate report:\n${input.candidateReport}`,
     };
 }

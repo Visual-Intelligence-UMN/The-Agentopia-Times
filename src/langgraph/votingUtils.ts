@@ -9,9 +9,6 @@ import { VotingGraphStateAnnotation } from './states';
 import {
     returnDatasetDescription,
     startDataFetcher,
-    startHTMLConstructor,
-    startJudges,
-    startScoreComputer,
     startTextMessager,
     startVisualizer,
 } from './workflowUtils';
@@ -19,6 +16,7 @@ import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 import { createOutputVerification } from './outputVerifier';
 import { verifyManagerArtifact } from './managerVerification';
+import { PRODUCTION_WORKING_PREMISE } from '../game/config/productionAgentPolicy.ts';
 
 export async function parallelVotingExecutor(
     agents: any[],
@@ -72,11 +70,11 @@ export async function parallelVotingExecutor(
             `[Debug] Agent ${agent.getName()} is submitting vote to LLM...`,
         );
 
-        let datasetDescription = returnDatasetDescription(scene);
+        let datasetDescription = returnDatasetDescription(scene, agent);
         let msg: any = '';
 
         const hallucinationType = agent.getBiasType();
-        let bias = "don't provide any misleading statement, stay neutral";
+        let bias = PRODUCTION_WORKING_PREMISE;
         if (agent.getBias()!=="") {
             bias = getHallucinationInstruction(hallucinationType, scene);
         }
@@ -88,7 +86,12 @@ export async function parallelVotingExecutor(
             const userContent = `write a news title for the given topic: ${datasetDescription}; The title is prepared for a news or magazine article about the dataset.`;
             msg = await startTextMessager(roleContent, userContent);
         } else if (index === 1) {
-            msg = await startDataFetcher(scene, agent, level);
+            msg = await startDataFetcher(
+                scene,
+                agent,
+                level,
+                priorStageArtifact,
+            );
             let userContent =
                 'based on the given insights, generate a consice news article to summarize that(words<200)\n' +
                 `
@@ -172,8 +175,6 @@ export function createAggregator(
         let votes = state.votingVotes;
 
         const llm = initializeLLM();
-        let scoreData: any = {};
-
         // await updateStateIcons(zones, "work");
 
         console.log('[Debug] Submitting aggregated votes to LLM...');
@@ -211,20 +212,6 @@ export function createAggregator(
                 ${llmInput}
             `);
 
-            const judgeData = await startJudges(decision.content, state.votingInput);
-            await startHTMLConstructor(
-                judgeData.comments,
-                judgeData.writingComments,
-                judgeData.highlightedText,
-                'Report',
-                'voting',
-                index,
-                undefined,
-                decision.content as string,
-            );
-            scoreData = startScoreComputer(judgeData);
-
-            console.log('scoreData inside', scoreData);
         }
         console.log('[Debug] Received final decision from LLM.');
         const verificationId = verification.stage(String(decision.content ?? ''));
@@ -255,8 +242,6 @@ export function createAggregator(
         destination.y,
         { isFinal: finalRoom }
         );
-        await createReport(scene, 'voting', index, destination.x, destination.y);
-
         console.log('[Debug] Returning to office...');
         await autoControlAgent(
             scene,
@@ -295,7 +280,6 @@ export function createAggregator(
             return {
                 // ...state,
                 votingOutput: decision.content,
-                scoreData: scoreData,
             };
         }
 
@@ -330,9 +314,7 @@ export function constructVotingGraph(
         );
         console.log('[Debug] Voting phase completed.');
 
-            const context = returnDatasetDescription(scene);
-            return { ...state, votingVotes: votes, votingInput: context };
-        // return { ...state, votingVotes: votes };
+        return { ...state, votingVotes: votes };
     });
 
     votingGraph.addNode('aggregator', async (state: any) => {
@@ -346,9 +328,6 @@ export function constructVotingGraph(
             index,
         )(state);
         console.log('[Debug] Aggregator phase completed.');
-        if(index === 2) {
-            return {...state, votingOutput: decision.votingOutput, scoreData: decision.scoreData}
-        }
         return { ...state, votingOutput: decision.votingOutput };
     });
 

@@ -1,6 +1,6 @@
 import type { AgenticRisk, WorkflowType } from '../config/types.ts';
 
-export const MAX_CORRECT_STRATEGY_ATTEMPTS = 3;
+export const PASSING_STRATEGY_SCORE = 8;
 
 export interface LevelRunAgent {
     id: string;
@@ -29,61 +29,11 @@ export interface RiskConfigurationVerdict {
 
 export interface LevelCompletionOutcome {
     passed: boolean;
-    configurationCorrect: boolean;
-    correctStrategyAttempt: number;
-    maxCorrectStrategyAttempts: number;
-    qualityScore: number;
-    requiredQualityScore: number;
-    reason:
-        | 'wrong_strategy'
-        | 'quality_met'
-        | 'quality_retry'
-        | 'attempt_guarantee';
+    strategyScore: number;
+    outputScore: number;
+    refinementApplied: boolean;
+    reason: 'strategy_passed' | 'strategy_failed';
     explanation: string;
-}
-
-const ATTEMPT_STORAGE_KEY = 'agentopia-level-strategy-attempts-v1';
-
-export interface AttemptStorage {
-    getItem(key: string): string | null;
-    setItem(key: string, value: string): void;
-}
-
-interface StoredAttempt {
-    count: number;
-    updatedAt: string;
-}
-
-function readAttempts(storage: AttemptStorage): Record<string, StoredAttempt> {
-    try {
-        const raw = storage.getItem(ATTEMPT_STORAGE_KEY);
-        if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        return parsed && typeof parsed === 'object'
-            ? (parsed as Record<string, StoredAttempt>)
-            : {};
-    } catch {
-        return {};
-    }
-}
-
-function writeAttempts(
-    storage: AttemptStorage,
-    attempts: Record<string, StoredAttempt>,
-) {
-    const recentEntries = Object.entries(attempts)
-        .sort(([, left], [, right]) =>
-            String(right.updatedAt).localeCompare(String(left.updatedAt)),
-        )
-        .slice(0, 25);
-    try {
-        storage.setItem(
-            ATTEMPT_STORAGE_KEY,
-            JSON.stringify(Object.fromEntries(recentEntries)),
-        );
-    } catch {
-        // Passing still works for the current run when browser storage is unavailable.
-    }
 }
 
 function ghostStages(configuration: LevelRunConfiguration) {
@@ -114,20 +64,6 @@ function requireParticipatingGhost(
     };
 }
 
-function hasUnreviewedGhost(configuration: LevelRunConfiguration): boolean {
-    const managerStageIndex = configuration.stages.findIndex(stage =>
-        stage.agents.some(agent => agent.id === configuration.managerId),
-    );
-    if (managerStageIndex < 0) return true;
-    const managerStage = configuration.stages[managerStageIndex];
-    const managerPosition = managerStage.agents.findIndex(agent => agent.id === configuration.managerId);
-    return ghostStages(configuration).some(({ index, stage }) =>
-        index > managerStageIndex ||
-        (index === managerStageIndex && (stage.strategy === 'voting' ||
-            stage.agents.some((agent, position) => agent.ghost && position > managerPosition))),
-    );
-}
-
 function requireCompletedManagerReview(
     configuration: LevelRunConfiguration,
 ): RiskConfigurationVerdict | undefined {
@@ -145,6 +81,20 @@ function requireCompletedManagerReview(
                 'The Manager review did not complete with an approved evidence-based decision.',
         };
     }
+}
+
+function hasUnreviewedGhost(configuration: LevelRunConfiguration): boolean {
+    const managerStageIndex = configuration.stages.findIndex(stage =>
+        stage.agents.some(agent => agent.id === configuration.managerId),
+    );
+    if (managerStageIndex < 0) return true;
+    const managerStage = configuration.stages[managerStageIndex];
+    const managerPosition = managerStage.agents.findIndex(agent => agent.id === configuration.managerId);
+    return ghostStages(configuration).some(({ index, stage }) =>
+        index > managerStageIndex ||
+        (index === managerStageIndex && (stage.strategy === 'voting' ||
+            stage.agents.some((agent, position) => agent.ghost && position > managerPosition))),
+    );
 }
 
 /**
@@ -208,13 +158,13 @@ export function inspectRiskConfiguration(
                 return {
                     correct: false,
                     explanation:
-                        'The Ghost Agent acts after the assigned verification node or in an unseen parallel vote. The Manager can only verify its received input.',
+                        'Place the Manager node after the risky work. Its verification cannot inspect a later agent or unseen parallel votes.',
                 };
             }
             return {
                 correct: true,
                 explanation:
-                    'The assigned participant verified its received upstream work against the dataset during its own task.',
+                    'The assigned agent verified its complete input against original evidence while executing its node task.',
             };
         }
 
@@ -263,123 +213,37 @@ export function inspectRiskConfiguration(
                 return {
                     correct: false,
                     explanation:
-                        'The assigned participant cannot account for future nodes or unseen parallel votes. Place verification after the risky input.',
+                        'The accountable verification node must follow the risky work; later or parallel agents remain outside its review.',
                 };
             }
             return {
                 correct: true,
                 explanation:
-                    'A named participant completed verification of the received upstream work during its own task.',
+                    'A named participant completed accountable verification of its input while executing its node task.',
             };
         }
     }
 }
 
-export function createLevelConfigurationFingerprint(
-    configuration: LevelRunConfiguration,
-): string {
-    return JSON.stringify({
-        levelId: configuration.levelId,
-        datasetId: configuration.datasetId,
-        risk: configuration.risk,
-        managerId: configuration.managerId,
-        stages: configuration.stages.map((stage) => ({
-            strategy: stage.strategy,
-            ghostCount: stage.agents.filter((agent) => agent.ghost).length,
-        })),
-    });
-}
-
-export function evaluateLevelAttempt(input: {
-    configuration: LevelRunConfiguration;
-    qualityScore: number;
-    previousCorrectAttempts: number;
+export function createLevelCompletionOutcome(input: {
+    strategyScore: number;
+    outputScore: number;
+    refinementApplied: boolean;
+    explanation: string;
 }): LevelCompletionOutcome {
-    const verdict = inspectRiskConfiguration(input.configuration);
-    const qualityScore = Number.isFinite(input.qualityScore)
-        ? input.qualityScore
+    const strategyScore = Number.isFinite(input.strategyScore)
+        ? Math.max(0, Math.min(10, input.strategyScore))
         : 0;
-    const previousCorrectAttempts = Math.max(
-        0,
-        Math.min(
-            MAX_CORRECT_STRATEGY_ATTEMPTS,
-            Math.floor(input.previousCorrectAttempts),
-        ),
-    );
-
-    if (!verdict.correct) {
-        return {
-            passed: false,
-            configurationCorrect: false,
-            correctStrategyAttempt: previousCorrectAttempts,
-            maxCorrectStrategyAttempts: MAX_CORRECT_STRATEGY_ATTEMPTS,
-            qualityScore,
-            requiredQualityScore: Math.max(
-                0,
-                input.configuration.requiredScore,
-            ),
-            reason: 'wrong_strategy',
-            explanation: verdict.explanation,
-        };
-    }
-
-    const correctStrategyAttempt = Math.min(
-        MAX_CORRECT_STRATEGY_ATTEMPTS,
-        previousCorrectAttempts + 1,
-    );
-    const qualityThresholds = [
-        Math.max(0, input.configuration.requiredScore),
-        Math.max(0, input.configuration.requiredScore - 1),
-        0,
-    ];
-    const requiredQualityScore = qualityThresholds[correctStrategyAttempt - 1];
-    const qualityMet = qualityScore >= requiredQualityScore;
-    const guaranteed = correctStrategyAttempt === MAX_CORRECT_STRATEGY_ATTEMPTS;
-
+    const outputScore = Number.isFinite(input.outputScore)
+        ? Math.max(0, Math.min(10, input.outputScore))
+        : 0;
+    const passed = strategyScore >= PASSING_STRATEGY_SCORE;
     return {
-        passed: qualityMet || guaranteed,
-        configurationCorrect: true,
-        correctStrategyAttempt,
-        maxCorrectStrategyAttempts: MAX_CORRECT_STRATEGY_ATTEMPTS,
-        qualityScore,
-        requiredQualityScore,
-        reason: guaranteed
-            ? 'attempt_guarantee'
-            : qualityMet
-              ? 'quality_met'
-              : 'quality_retry',
-        explanation: guaranteed
-            ? 'The structural intervention is correct; the third completed attempt is protected from model-scoring variance.'
-            : qualityMet
-              ? verdict.explanation
-              : `${verdict.explanation} The strategy is correct, but this generation scored below ${requiredQualityScore.toFixed(1)}.`,
+        passed,
+        strategyScore,
+        outputScore,
+        refinementApplied: passed && input.refinementApplied,
+        reason: passed ? 'strategy_passed' : 'strategy_failed',
+        explanation: input.explanation,
     };
-}
-
-/** Record only successfully completed runs using a structurally correct setup. */
-export function evaluateAndRecordLevelAttempt(input: {
-    configuration: LevelRunConfiguration;
-    qualityScore: number;
-    storage: AttemptStorage;
-}): LevelCompletionOutcome {
-    const fingerprint = createLevelConfigurationFingerprint(
-        input.configuration,
-    );
-    const attempts = readAttempts(input.storage);
-    const previous = attempts[fingerprint]?.count ?? 0;
-    const outcome = evaluateLevelAttempt({
-        configuration: input.configuration,
-        qualityScore: input.qualityScore,
-        previousCorrectAttempts: previous,
-    });
-
-    if (outcome.configurationCorrect) {
-        attempts[fingerprint] = {
-            count: outcome.correctStrategyAttempt,
-            updatedAt: new Date().toISOString(),
-        };
-        writeAttempts(input.storage, attempts);
-    }
-
-    return outcome;
 }

@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/style.css"><title>Final report regression preview</title></head><body><nav><button id="json">JSON chart</button><button id="legacy">Legacy JavaScript chart</button><button id="invalid">Invalid chart</button><button id="recorded">Recorded chart</button><button id="intermediate">Intermediate report</button></nav><div id="root"></div><output id="result"></output><script type="module">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import DraggableWindow from '/src/components/DraggableWindow.tsx';
+import {EventBus} from '/src/game/EventBus.ts';
+import {startHTMLConstructor} from '/src/langgraph/workflowUtils.ts';
+const root = ReactDOM.createRoot(document.getElementById('root'));
+const spec={data:{values:[{player:'Jeter',rate:31.0},{player:'Justice',rate:27.0}]},mark:'bar',width:450,height:220,encoding:{x:{field:'player',type:'nominal'},y:{field:'rate',type:'quantitative'}},title:'Batting average (%)'};
+let charts = [{id:'chart-repro',code:JSON.stringify(spec)}];
+let currentReport;
+function show(report) { currentReport=report; root.render(React.createElement(DraggableWindow,{title:report.title,context:report.report,format:report.format,charts:Array.isArray(report.charts) ? report.charts : charts,onClose:()=>root.render(null)})); }
+EventBus.on('final-report', show);
+async function publish(code=JSON.stringify(spec)) {charts=[{id:'chart-repro',code}];await startHTMLConstructor(['The chart compares player batting averages.'],['Compare each year as well as the overall rates.'],'<h2>Report preview</h2><p>Regression fixture with deterministic chart data.</p>','Report','repro',2,undefined,code);}
+document.getElementById('json').onclick=()=>publish();
+document.getElementById('recorded').onclick=async()=>publish(await (await fetch('./final-report-recorded-chart.json')).text());
+document.getElementById('legacy').onclick=()=>publish(`const spec = ${JSON.stringify(spec)}; vegaEmbed('#test-chart', spec, {renderer: 'canvas', actions:true});`);
+document.getElementById('invalid').onclick=()=>publish('{"mark":"not-a-real-mark"}');
+document.getElementById('intermediate').onclick=()=>show({title:'Intermediate Report',report:'# Draft\n\n**Markdown** still works.',charts:[]});
+await publish();
+</script></body></html>

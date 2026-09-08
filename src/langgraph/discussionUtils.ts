@@ -1,6 +1,5 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph/web';
 import type Phaser from 'phaser';
-import { compile, type TopLevelSpec } from 'vega-lite';
 
 import { getGameConfig } from '../game/config';
 import type { WorkflowAgentPrompt } from '../game/config/types';
@@ -13,7 +12,14 @@ import { EventBus } from '../game/EventBus';
 import type { Agent } from '../game/sprites/Agent';
 import { autoControlAgent, transmitReport } from '../game/utils/controlUtils';
 import { recorder } from '../game/utils/recorder';
-import { getVisualizationData } from '../vega/visualizationData';
+import {
+    getVisualizationData,
+    getVisualizationDataForAgent,
+} from '../vega/visualizationData';
+import {
+    prepareProductionContext,
+    PRODUCTION_COMPARISON_QUESTION,
+} from '../game/config/productionAgentPolicy.ts';
 import { createReport } from './agents';
 import {
     getAgentMASPrompt,
@@ -24,9 +30,6 @@ import { recordMASStage } from './masTrace';
 import { createOutputVerification } from './outputVerifier';
 import { verifyManagerArtifact } from './managerVerification';
 import {
-    startHTMLConstructor,
-    startJudges,
-    startScoreComputer,
     startTextMessager,
 } from './workflowUtils';
 
@@ -34,7 +37,7 @@ const DiscussionState = Annotation.Root({
     discussionInput: Annotation<string>,
     discussionOutput: Annotation<string>,
     discussionResult: Annotation<DiscussionResult>,
-    scoreData: Annotation<ReturnType<typeof startScoreComputer>>,
+    scoreData: Annotation<unknown>,
 });
 
 const stageKeys = [
@@ -80,11 +83,14 @@ export function constructDiscussionGraph(
                 result = await runDiscussion({
                     input: state.discussionInput,
                     task,
-                    participants: agents.map((agent, index) => ({
-                        name: agent.getName(),
-                        systemPrompt: `${prompts[index % prompts.length].agent_persona}\n${getAgentMASPrompt(scene, agent.getBias() !== '', agent.getBiasType())}`,
-                        evidence: `Dataset: ${dataset.description}\nQuestion: ${dataset.researchQuestion}\nStatistics: ${agent.getBias() !== '' ? getHallucinationStats(dataset.id, agent.getBiasType()) : dataset.neutralStatistics}${visualizationData ? `\nChart data values: ${visualizationData}` : ''}`,
-                    })),
+                    participants: agents.map((agent, index) => {
+                        const isGhost = agent.getBias() !== '';
+                        return {
+                            name: agent.getName(),
+                            systemPrompt: `${prompts[index % prompts.length].agent_persona}\n${getAgentMASPrompt(scene, isGhost, agent.getBiasType())}`,
+                            evidence: `Dataset: ${dataset.label}\nQuestion: ${isGhost ? PRODUCTION_COMPARISON_QUESTION : prepareProductionContext(dataset.researchQuestion)}\nStatistics: ${isGhost ? getHallucinationStats(dataset.id, agent.getBiasType()) : dataset.neutralStatistics}${visualizationData ? `\nChart data values: ${getVisualizationDataForAgent(dataset.id, agent)}` : ''}`,
+                        };
+                    }),
                     summarySystemPrompt: `You are the newsroom discussion facilitator. Synthesize the shared conversation into the required stage output. Consider disagreements as well as agreements.\n${getAgentMASPrompt(scene, false)}\n${task}${visualizationData ? `\nUse exactly these chart data values: ${visualizationData}` : ''}`,
                     complete: async ({ system, user }) => {
                         ensureActive();
@@ -170,7 +176,6 @@ export function constructDiscussionGraph(
         })
         .addNode('publish', async (state) => {
             ensureActive();
-            let scoreData: ReturnType<typeof startScoreComputer> | undefined;
             let discussionOutput = state.discussionOutput;
             const verificationId = verification.stage(discussionOutput);
             if (stageIndex === 2) {
@@ -178,44 +183,16 @@ export function constructDiscussionGraph(
                     .trim()
                     .replace(/^```(?:json)?\s*/i, '')
                     .replace(/```\s*$/, '');
-                const spec = JSON.parse(cleaned) as TopLevelSpec;
-                if (!spec || typeof spec !== 'object' || Array.isArray(spec))
-                    throw new Error(
-                        'Discussion must produce a Vega-Lite object.',
-                    );
-                spec.data = {
-                    values: JSON.parse(
-                        getVisualizationData(
-                            getDatasetConfigForScene(scene).id,
-                        ),
-                    ),
-                };
-                compile(spec);
-                const chartCode = JSON.stringify(spec);
-                const judgement = await startJudges(
-                    chartCode,
-                    state.discussionInput,
-                    abort.signal,
-                );
-                ensureActive();
-                await startHTMLConstructor(
-                    judgement.comments,
-                    judgement.writingComments,
-                    judgement.highlightedText,
-                    'Report',
-                    'discussion',
-                    stageIndex,
-                    undefined,
-                    chartCode,
-                );
-                scoreData = startScoreComputer(judgement);
-                // Like the existing final-stage workflows, carry the report to scoring/history.
-                discussionOutput = state.discussionInput;
+                // Carry the actual chart to finalization, including invalid model output.
+                // The shared evaluator grades validity; one bad chart must not abort
+                // report publication or silently become the previous room's article.
+                const chartCode = cleaned;
+                discussionOutput = chartCode;
                 recordMASStage({
                     stageIndex,
                     workflow: 'discussion_visualization',
                     input: { report: state.discussionInput },
-                    output: { chartCode, scoreData },
+                    output: { chartCode },
                 });
             } else {
                 EventBus.emit('final-report', {
@@ -239,7 +216,7 @@ export function constructDiscussionGraph(
                 abort.signal,
             );
             ensureActive();
-            return { discussionOutput, ...(scoreData ? { scoreData } : {}) };
+            return { discussionOutput };
         })
         .addEdge(START, 'discuss')
         .addEdge('discuss', 'publish')

@@ -7,17 +7,22 @@ import {
     type VerificationSession,
 } from '../game/domain/verificationSession';
 import { runSceneWorkflow } from '../game/domain/workflowRun';
+import { EventBus } from '../game/EventBus';
 import type { Agent } from '../game/sprites/Agent';
 import {
     resetVerificationStore,
     updateVerifiedOutput,
 } from '../game/verificationStore';
+import { archiveRunEvent } from '../utils/localRunArchive';
 import { getStoredOpenAIKey } from '../utils/openai';
 import { toVerificationText } from '../utils/verificationMarkup';
 import { getDatasetConfigForScene, getMASModels } from './config';
+import { getLatestMASTrace, interruptMASTrace } from './masTrace';
 import { getOpenAIRequestFetch } from './openaiRequestGate';
 
 interface VerificationRun {
+    archiveRunId?: string;
+    persist: () => void;
     session: VerificationSession;
     provenance: ReturnType<typeof createVerificationProvenance>;
     outputs: Map<number, { text: string; sources: string; id: string }>;
@@ -84,6 +89,12 @@ function startVerification(scene: Phaser.Scene): VerificationRun {
     ];
     let llm: ChatOpenAI | undefined;
     const persist = () => {
+        archiveRunEvent(run.archiveRunId, 'verification', {
+            runId,
+            dataset: dataset.id,
+            model,
+            records: session.records(),
+        });
         if (activeRun !== run) return;
         try {
             localStorage.setItem(
@@ -113,7 +124,12 @@ function startVerification(scene: Phaser.Scene): VerificationRun {
                     modelName: model,
                     maxRetries: 0,
                     modelKwargs: { reasoning_effort: 'medium' },
-                    configuration: { fetch: getOpenAIRequestFetch() },
+                    configuration: {
+                        fetch: getOpenAIRequestFetch(
+                            run.archiveRunId,
+                            'verification',
+                        ),
+                    },
                 });
             }
             const response = await llm.invoke(
@@ -135,6 +151,10 @@ function startVerification(scene: Phaser.Scene): VerificationRun {
     });
     const dispose = () => {
         session.cancel();
+        interruptMASTrace(
+            run.archiveRunId,
+            'Scene reset, changed, or replaced',
+        );
         scene.events.off('shutdown', dispose);
         runs.delete(scene);
         if (activeRun === run) {
@@ -143,6 +163,7 @@ function startVerification(scene: Phaser.Scene): VerificationRun {
         }
     };
     const run: VerificationRun = {
+        persist,
         session,
         provenance: createVerificationProvenance(),
         outputs: new Map(),
@@ -151,7 +172,6 @@ function startVerification(scene: Phaser.Scene): VerificationRun {
     runs.set(scene, run);
     activeRun = run;
     scene.events.once('shutdown', dispose);
-    persist();
     return run;
 }
 
@@ -160,6 +180,7 @@ export function runVerifiedSceneWorkflow(
     scene: Phaser.Scene,
     work: (scope: {
         beginStage: (index: number, strategy: string) => void;
+        bindArchiveRun: (runId: string) => void;
     }) => Promise<void>,
     onError: (error: unknown) => void,
 ) {
@@ -167,13 +188,52 @@ export function runVerifiedSceneWorkflow(
         scene,
         async () => {
             const run = startVerification(scene);
-            await work({
-                beginStage: (index, strategy) => {
-                    if (activeRun !== run)
-                        throw new Error('This workflow run has ended.');
-                    run.provenance.beginStage(index, strategy);
-                },
-            });
+            const saveReport = (data: unknown) =>
+                archiveRunEvent(run.archiveRunId, 'report', data);
+            const saveAgent = (data: unknown) =>
+                archiveRunEvent(run.archiveRunId, 'agent-output', data);
+            EventBus.on('final-report', saveReport);
+            EventBus.on('agent-information', saveAgent);
+            const stopObserving = () => {
+                EventBus.off('final-report', saveReport);
+                EventBus.off('agent-information', saveAgent);
+            };
+            scene.events.once('shutdown', stopObserving);
+            try {
+                const task = work({
+                    bindArchiveRun: (runId) => {
+                        run.archiveRunId = runId;
+                        run.persist();
+                    },
+                    beginStage: (index, strategy) => {
+                        if (activeRun !== run)
+                            throw new Error('This workflow run has ended.');
+                        run.provenance.beginStage(index, strategy);
+                    },
+                });
+                const agents = (scene.children?.list ?? []).filter(
+                    (child): child is Agent =>
+                        'getName' in child &&
+                        'getBias' in child &&
+                        'getPersona' in child,
+                );
+                archiveRunEvent(run.archiveRunId, 'configuration', {
+                    level: scene.registry.get('currentLevel'),
+                    dataset: getDatasetConfigForScene(scene),
+                    workflow: scene.registry.get('workflowConfig'),
+                    models: getMASModels(),
+                    traceContext: getLatestMASTrace()?.context,
+                    agents: agents.map((agent) => ({
+                        name: agent.getName(),
+                        bias: agent.getBias(),
+                        persona: agent.getPersona(),
+                    })),
+                });
+                await task;
+            } finally {
+                stopObserving();
+                scene.events.off('shutdown', stopObserving);
+            }
         },
         onError,
     );
