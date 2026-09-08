@@ -19,6 +19,7 @@ import {
 import { createMASTraceCallback } from './masTrace';
 import { getOpenAIRequestFetch } from './openaiRequestGate';
 import { createOutputVerification } from './outputVerifier';
+import { verifyManagerArtifact } from './managerVerification';
 import { SequentialGraphStateAnnotation } from './states';
 import { generateChartImage } from './visualizationGenerate';
 import {
@@ -196,7 +197,8 @@ export function createJournalist(
         }
 
         console.log('graph:1st agent msg:', msg.content);
-        const visibleOutput = String(msg.content ?? msg.d3Code ?? '');
+        const visibleOutput = await verifyManagerArtifact(scene, agent, index, String(msg.content ?? msg.d3Code ?? ''), state.sequentialInput);
+        msg = index === 2 ? { ...msg, content: visibleOutput, d3Code: visibleOutput } : { ...msg, content: visibleOutput };
         const verificationId = verification.agent(agent, visibleOutput);
         const originalAgent1X = agent.x;
         const originalAgent1Y = agent.y;
@@ -292,7 +294,7 @@ export function createManager(
             }
         } else if (index === 2) {
             // generating visualization code
-            const code = state.sequentialFirstAgentOutput.d3Code;
+            const code = state.sequentialSecondAgentOutput ?? state.sequentialFirstAgentOutput.d3Code;
             const roleContent = `
                     You are a Vega-Lite visualization expert.
 
@@ -317,6 +319,7 @@ export function createManager(
 
             msg = await startTextMessager(roleContent, userContent);
 
+            msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), String(state.sequentialSecondAgentOutput ?? '')) };
             const judgeData = await startJudges(
                 msg.content,
                 state.sequentialInput,
@@ -337,6 +340,7 @@ export function createManager(
 
         // const msg = await getLLM().invoke(message);
 
+        if (index !== 2) msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), String(state.sequentialSecondAgentOutput ?? '')) };
         console.log('graph:3rd agent msg:', msg.content);
         const verificationId = verification.agent(agent, String(msg.content ?? ''));
         // await updateStateIcons(zones, "idle", 0);
@@ -470,6 +474,7 @@ export function createWriter(
             msg = await startTextMessager(roleContent, userContent);
         }
 
+        msg = { ...msg, content: await verifyManagerArtifact(scene, agent, index, String(msg.content ?? ''), typeof state.sequentialFirstAgentOutput === 'string' ? state.sequentialFirstAgentOutput : JSON.stringify(state.sequentialFirstAgentOutput)) };
         const rawText = msg.content as string;
         const verificationId = verification.agent(agent, rawText);
         const htmlContent = marked.parse(rawText);

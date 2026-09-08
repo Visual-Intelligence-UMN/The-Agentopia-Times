@@ -142,7 +142,7 @@ export function constructSequentialGraph(
             }
             else if(j===2){
                 langgraph.addNode(
-                    "manager", 
+                    agent.getName(),
                     createManager(
                         agent, 
                         scene, 

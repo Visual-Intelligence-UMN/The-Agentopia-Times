@@ -603,6 +603,7 @@ export async function startTextMessager(
     roleContent: string,
     userContent: string,
     signal?: AbortSignal,
+    responseFormat?: { type: 'json_schema'; json_schema: { name: string; strict: boolean; schema: Record<string, unknown> } },
 ) {
     const message = [
         {
@@ -615,6 +616,6 @@ export async function startTextMessager(
         },
     ];
 
-    const msg = await getLLM().invoke(message, { signal });
+    const msg = await getLLM().invoke(message, { signal, ...(responseFormat ? { response_format: responseFormat } : {}) });
     return msg;
 }

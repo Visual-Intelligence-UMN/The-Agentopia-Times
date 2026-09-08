@@ -18,6 +18,7 @@ import {
 import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 import { createOutputVerification } from './outputVerifier';
+import { verifyManagerArtifact } from './managerVerification';
 
 export async function parallelVotingExecutor(
     agents: any[],
@@ -27,6 +28,7 @@ export async function parallelVotingExecutor(
     index: number,
     level: string,
     verification = createOutputVerification(scene, index),
+    priorStageArtifact = '',
 ) {
     console.log('[Debug] Starting parallelVotingExecutor...');
     const originalPositions = agents.map((agent) => ({
@@ -104,7 +106,8 @@ export async function parallelVotingExecutor(
         }
 
         //await agent.playDialogue(scene, msg.content);
-        const visibleOutput = String(msg.content ?? msg.d3Code ?? '');
+        const visibleOutput = await verifyManagerArtifact(scene, agent, index, String(msg.content ?? msg.d3Code ?? ''), priorStageArtifact);
+        msg = index === 2 ? { ...msg, content: visibleOutput, d3Code: visibleOutput } : { ...msg, content: visibleOutput };
         const verificationId = verification.agent(agent, visibleOutput);
         await agent.setAgentInformation(visibleOutput, verificationId);
         await agent.addMssgSprite(scene, "agent_mssg");
@@ -323,6 +326,7 @@ export function constructVotingGraph(
             index,
             level,
             verification,
+            state.votingInput,
         );
         console.log('[Debug] Voting phase completed.');
 

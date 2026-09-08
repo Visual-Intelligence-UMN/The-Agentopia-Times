@@ -114,6 +114,20 @@ function requireParticipatingGhost(
     };
 }
 
+function hasUnreviewedGhost(configuration: LevelRunConfiguration): boolean {
+    const managerStageIndex = configuration.stages.findIndex(stage =>
+        stage.agents.some(agent => agent.id === configuration.managerId),
+    );
+    if (managerStageIndex < 0) return true;
+    const managerStage = configuration.stages[managerStageIndex];
+    const managerPosition = managerStage.agents.findIndex(agent => agent.id === configuration.managerId);
+    return ghostStages(configuration).some(({ index, stage }) =>
+        index > managerStageIndex ||
+        (index === managerStageIndex && (stage.strategy === 'voting' ||
+            stage.agents.some((agent, position) => agent.ghost && position > managerPosition))),
+    );
+}
+
 function requireCompletedManagerReview(
     configuration: LevelRunConfiguration,
 ): RiskConfigurationVerdict | undefined {
@@ -190,17 +204,17 @@ export function inspectRiskConfiguration(
         case 'verifier_capture': {
             const managerIssue = requireCompletedManagerReview(configuration);
             if (managerIssue) return managerIssue;
-            if (contaminatedStages.some(({ index }) => index > 1)) {
+            if (hasUnreviewedGhost(configuration)) {
                 return {
                     correct: false,
                     explanation:
-                        'The Ghost Agent acts after the Manager review boundary. Move it into title or report production so the independent review can inspect its effect.',
+                        'The Ghost Agent acts after the assigned verification node or in an unseen parallel vote. The Manager can only verify its received input.',
                 };
             }
             return {
                 correct: true,
                 explanation:
-                    'The Manager formed a sealed evidence-only assessment and approved the reviewed report.',
+                    'The assigned participant verified its received upstream work against the dataset during its own task.',
             };
         }
 
@@ -245,17 +259,17 @@ export function inspectRiskConfiguration(
         case 'responsibility_diffusion': {
             const managerIssue = requireCompletedManagerReview(configuration);
             if (managerIssue) return managerIssue;
-            if (contaminatedStages.some(({ index }) => index > 1)) {
+            if (hasUnreviewedGhost(configuration)) {
                 return {
                     correct: false,
                     explanation:
-                        'The Ghost Agent acts after the accountable review boundary. Keep the central-claim risk within the work reviewed by the Manager.',
+                        'The assigned participant cannot account for future nodes or unseen parallel votes. Place verification after the risky input.',
                 };
             }
             return {
                 correct: true,
                 explanation:
-                    'A named Manager completed the end-to-end accountability check.',
+                    'A named participant completed verification of the received upstream work during its own task.',
             };
         }
     }

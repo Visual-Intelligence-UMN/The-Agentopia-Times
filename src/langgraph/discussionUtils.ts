@@ -22,6 +22,7 @@ import {
 } from './config';
 import { recordMASStage } from './masTrace';
 import { createOutputVerification } from './outputVerifier';
+import { verifyManagerArtifact } from './managerVerification';
 import {
     startHTMLConstructor,
     startJudges,
@@ -116,6 +117,8 @@ export function constructDiscussionGraph(
                         ensureActive();
                     },
                     onTurnComplete: async (turn, index) => {
+                        ensureActive();
+                        turn.output = await verifyManagerArtifact(scene, agents[index], stageIndex, turn.output, turn.input.user, 'discussion', abort.signal);
                         ensureActive();
                         recordMASStage({
                             stageIndex,

@@ -4,18 +4,12 @@ import { render } from 'phaser-jsx';
 import { getDatasetGroundTruth } from '../../langgraph/config';
 import { constructDiscussionGraph } from '../../langgraph/discussionUtils';
 import { runVerifiedSceneWorkflow as runSceneWorkflow } from '../../langgraph/outputVerifier';
-import {
-    createEditorialManagerAssessmentCoordinator,
-    reviewCandidateReport,
-    type EditorialManagerAssessmentCoordinator,
-    type EditorialReviewResult,
-} from '../../langgraph/editorialManager';
+import { getManagerVerificationSummary } from '../../langgraph/managerVerification';
 import { resetReportIcons, testInput } from '../../langgraph/agents';
 import {
     failMASTrace,
     finishMASTrace,
     recordMASStage,
-    startOrContinueMASTrace,
     startMASTrace,
 } from '../../langgraph/masTrace';
 import {
@@ -88,7 +82,6 @@ export interface Zone {
     agentsInside: Set<string>;
 }
 
-const REPORT_WRITING_STAGE_INDEX = 1;
 
 export class BaseLevelScene extends ParentScene {
     private readonly levelKey: string;
@@ -136,7 +129,6 @@ export class BaseLevelScene extends ParentScene {
     private selectedText?: Phaser.GameObjects.Text;
     private selectedDataset: string = 'none';
     private managerAssignment?: ManagerAssignmentController;
-    private managerAssessment?: EditorialManagerAssessmentCoordinator;
 
     // private requiredBiasedAgents: number = 1; // the number of the biased agents in this level
     // private biasedAgentsStatusText!: Phaser.GameObjects.Text;
@@ -355,23 +347,10 @@ export class BaseLevelScene extends ParentScene {
         if (
             levelConfig.semanticActions?.includes('hire_editorial_manager')
         ) {
-            this.managerAssessment =
-                createEditorialManagerAssessmentCoordinator(this, {
-                    onStatus: (status, color) =>
-                        this.managerAssignment?.setStatus(status, color),
-                });
             this.managerAssignment = createManagerAssignmentHUD(
                 this,
                 () => this.controllableCharacters as Agent[],
-                {
-                    onManagerAssigned: (manager) =>
-                        this.managerAssessment?.assign(manager),
-                },
             );
-            this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-                this.managerAssessment?.destroy();
-                this.managerAssessment = undefined;
-            });
         }
 
         // register a global variable
@@ -955,10 +934,7 @@ export class BaseLevelScene extends ParentScene {
                             .setStroke('#ebebec', 2)
                             .disableInteractive();
                         this.baseBallBtn.setDepth(998);
-                        const datasetChanged =
-                            this.registry.get('currentDataset') !== 'baseball';
                         this.registry.set('currentDataset', 'baseball');
-                        if (datasetChanged) this.managerAssessment?.refresh();
                     } else {
                         this.selectedDataset = 'none';
                         this.selectedText?.destroy();
@@ -1078,10 +1054,7 @@ export class BaseLevelScene extends ParentScene {
                             .setOrigin(0.5, 0.5)
                             .disableInteractive();
                         this.kidneyBtn.setDepth(998);
-                        const datasetChanged =
-                            this.registry.get('currentDataset') !== 'kidney';
                         this.registry.set('currentDataset', 'kidney');
-                        if (datasetChanged) this.managerAssessment?.refresh();
                     } else {
                         this.selectedDataset = 'none';
                         this.selectedText?.destroy();
@@ -1097,15 +1070,11 @@ export class BaseLevelScene extends ParentScene {
             this.attachInfoIcon(this.kidneyBtn, 'kidney_groundtruth');
 
             this.debateStartBtn.on('pointerdown', () => runSceneWorkflow(this, async (verification) => {
-                const managerAssessmentRun =
-                    this.managerAssessment?.capture() ?? null;
-                const editorialManager = managerAssessmentRun?.manager ?? null;
+                this.registry.remove('managerVerificationResults');
+                const editorialManager = this.managerAssignment?.getManager() ?? null;
                 recorder.recordEvent({ type: 'simulation_started', configuration: { level: this.levelKey, dataset: this.registry.get('currentDataset'), workflow: this.registry.get('workflowConfig'), editorialManager: editorialManager?.getName() ?? null } });
                 const traceWorkflow = this.registry.get('workflowConfig');
-                const beginTrace = managerAssessmentRun
-                    ? startOrContinueMASTrace
-                    : startMASTrace;
-                beginTrace({
+                startMASTrace({
                     level: this.levelKey,
                     dataset: String(
                         this.registry.get('currentDataset') ?? 'unknown',
@@ -1119,7 +1088,6 @@ export class BaseLevelScene extends ParentScene {
                 resetReportIcons(this);
                 resetScoreUI(this);
 
-                let editorialReview: EditorialReviewResult | null = null;
                 console.log('btn pre-start zones data', this.parallelZones);
                 const agentsInfo = getAllAgents(this.parallelZones);
                 console.log('agentsInfo', agentsInfo);
@@ -1328,69 +1296,6 @@ export class BaseLevelScene extends ParentScene {
                         }
                     }
 
-                    if (
-                        i === REPORT_WRITING_STAGE_INDEX &&
-                        editorialManager &&
-                        managerAssessmentRun
-                    ) {
-                        const assessmentOutcome =
-                            await managerAssessmentRun.outcome;
-                        if (assessmentOutcome.status !== 'ready') continue;
-                        const candidateReport = String(
-                            cycleOutputs[i + 1] ?? '',
-                        );
-                        try {
-                            editorialReview = await reviewCandidateReport(
-                                this,
-                                editorialManager,
-                                assessmentOutcome.assessment,
-                                candidateReport,
-                                {
-                                    onStatus: (status, color) =>
-                                        this.managerAssignment?.setStatus(
-                                            status,
-                                            color,
-                                        ),
-                                },
-                            );
-                            if (editorialReview.publicationBlocked) {
-                                this.registry.set(
-                                    'isWorkflowRunning',
-                                    false,
-                                );
-                                recorder.recordEvent({
-                                    type: 'editorial_publication_blocked',
-                                    finalDecision:
-                                        editorialReview.finalDecision,
-                                });
-                                finishMASTrace({
-                                    cycleOutputs,
-                                    editorialReview,
-                                    publicationBlocked: true,
-                                    finalScore: null,
-                                });
-                                return;
-                            }
-                            cycleOutputs[i + 1] =
-                                editorialReview.reportForPublication;
-                        } catch (error) {
-                            console.error(
-                                'Editorial Manager comparison failed:',
-                                error,
-                            );
-                            this.managerAssignment?.setStatus(
-                                'REVIEW FAILED',
-                                '#ff8a65',
-                            );
-                            recorder.recordEvent({
-                                type: 'editorial_comparison_failed',
-                                message:
-                                    error instanceof Error
-                                        ? error.message
-                                        : String(error),
-                            });
-                        }
-                    }
                 }
 
                 console.log('scoreData', scoreData);
@@ -1428,9 +1333,7 @@ export class BaseLevelScene extends ParentScene {
                     workflow: workflowConfig,
                     dataMaps: datamaps,
                     managerId: editorialManager?.getName() ?? null,
-                    managerReviewApproved:
-                        editorialReview?.finalDecision.verdict === 'approve' &&
-                        !editorialReview.publicationBlocked,
+                    managerReviewApproved: getManagerVerificationSummary(this, editorialManager?.getName()).approved,
                     qualityScore: finalScore,
                     storage: window.localStorage,
                 });
@@ -1445,7 +1348,7 @@ export class BaseLevelScene extends ParentScene {
                     cycleOutputs,
                     scoreData,
                     finalScore,
-                    editorialReview,
+                    managerVerification: getManagerVerificationSummary(this, editorialManager?.getName()),
                     completion,
                 });
 

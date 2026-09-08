@@ -149,7 +149,7 @@ test('the five risks enforce their intended structural intervention', () => {
             configuration({
                 levelId: 'level3',
                 risk: 'verifier_capture',
-                managerId: 'manager-a',
+                managerId: 'writer-a',
                 managerReviewApproved: true,
             }),
         ).correct,
@@ -189,12 +189,30 @@ test('the five risks enforce their intended structural intervention', () => {
             configuration({
                 levelId: 'level5',
                 risk: 'responsibility_diffusion',
-                managerId: 'manager-a',
+                managerId: 'writer-a',
                 managerReviewApproved: true,
             }),
         ).correct,
         true,
     );
+});
+
+test('Manager coverage follows its real node, not a fixed room boundary', () => {
+    const ghost = { id: 'ghost', ghost: true };
+    const manager = { id: 'manager', ghost: false };
+    for (const risk of ['verifier_capture', 'responsibility_diffusion'] as const) {
+        const check = (stages: LevelRunConfiguration['stages']) => inspectRiskConfiguration(configuration({ risk, managerId: 'manager', managerReviewApproved: true, stages })).correct;
+        assert.equal(check([{ strategy: 'sequential', agents: [ghost, manager] }]), true);
+        assert.equal(check([{ strategy: 'sequential', agents: [manager, ghost] }]), false);
+        assert.equal(check([{ strategy: 'voting', agents: [ghost, manager] }]), false);
+        assert.equal(check([{ strategy: 'discussion', agents: [ghost, manager] }]), true);
+        assert.equal(check([{ strategy: 'discussion', agents: [manager, ghost] }]), false);
+        assert.equal(check([
+            { strategy: 'single_agent', agents: [ghost] },
+            { strategy: 'single_agent', agents: [{ id: 'writer', ghost: false }] },
+            { strategy: 'single_agent', agents: [manager] },
+        ]), true);
+    }
 });
 
 test('manager-only risks do not pass when the review did not complete', () => {
@@ -205,7 +223,7 @@ test('manager-only risks do not pass when the review did not complete', () => {
         const result = inspectRiskConfiguration(
             configuration({
                 risk,
-                managerId: 'manager-a',
+                managerId: 'writer-a',
                 managerReviewApproved: false,
             }),
         );

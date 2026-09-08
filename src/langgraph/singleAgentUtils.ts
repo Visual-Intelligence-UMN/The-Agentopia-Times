@@ -10,6 +10,7 @@ import { marked } from 'marked';
 import { generateChartImage } from './visualizationGenerate';
 import { getAgentMASPrompt, getHallucinationInstruction } from './config';
 import { createOutputVerification } from './outputVerifier';
+import { verifyManagerArtifact } from './managerVerification';
 import {
     returnDatasetDescription,
     startDataFetcher,
@@ -106,6 +107,7 @@ export function createAgent(
             mssg = await startTextMessager(roleContent, userContent);
         } else if (index === 2) {
             let codeData = await generateChartImage(scene, agent);
+            codeData = { ...codeData, d3Code: await verifyManagerArtifact(scene, agent, index, codeData.d3Code, state.singleAgentInput) };
 
             console.log('graph:single-agent input: ', state.singleAgentInput);
 
@@ -126,7 +128,7 @@ export function createAgent(
 
             scoreData = startScoreComputer(judgeData);
 
-            mssg = { content: state.singleAgentInput };
+            mssg = { content: codeData.d3Code };
 
         }
         // await updateStateIcons(zones, "mail");
@@ -134,6 +136,7 @@ export function createAgent(
         console.log('graph:single agent msg', mssg.content);
 
         //await agent.playDialogue(scene, mssg.content);
+        if (index !== 2) mssg = { ...mssg, content: await verifyManagerArtifact(scene, agent, index, String(mssg.content ?? ''), state.singleAgentInput) };
         const verificationId = verification.agent(agent, String(mssg.content ?? ''));
         await agent.setAgentInformation(mssg.content, verificationId);
         if (index < 2) {
