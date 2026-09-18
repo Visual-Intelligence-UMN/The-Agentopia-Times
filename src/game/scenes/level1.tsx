@@ -71,6 +71,14 @@ import {
     getRequiredLevelConfig,
     initializeLevelRegistry,
 } from './configUtils';
+import {
+    applyCaseStudyCast,
+    applyCaseStudyWorkflow,
+    armCaseStudyStartButton,
+    decorateCaseStudyHud,
+    isCaseStudyMode,
+    restoreCaseStudyMode,
+} from '../caseStudy';
 
 const level = 'level1';
 
@@ -226,15 +234,23 @@ export class Level1 extends ParentScene {
     }
 
     create() {
+        restoreCaseStudyMode(this);
         const levelConfig = getRequiredLevelConfig(level);
 
         initializeLevelRegistry(this, levelConfig);
+        applyCaseStudyWorkflow(this);
 
         Agent.resetBiasedAgentsCount(); // reset the count of biased agents
         Agent.maxAllowedBiased = levelConfig.hallucination.hallucinatedAgents;
 
+        if (isCaseStudyMode(this)) {
+            this.controllableCharacters = [];
+            this.agentList = new Map();
+        }
+
         // Randomly select an agent to be biased
         this.time.delayedCall(100, () => {
+            if (isCaseStudyMode(this)) return;
             const agentsArray = Array.from(
                 this.agentGroup.getChildren(),
             ) as Agent[];
@@ -298,6 +314,7 @@ export class Level1 extends ParentScene {
 
         // DifficultySelector
         createDifficultySelector(this);
+        if (isCaseStudyMode(this)) decorateCaseStudyHud(this);
 
         // The PDF icon to open the instruction PDF
         addPDFIcon(this);
@@ -311,6 +328,11 @@ export class Level1 extends ParentScene {
                 this,
                 () => this.controllableCharacters as Agent[],
             );
+        }
+
+        if (isCaseStudyMode(this)) {
+            applyCaseStudyCast(this);
+            this.time.delayedCall(0, () => applyCaseStudyCast(this));
         }
 
         // register a global variable
@@ -1402,6 +1424,7 @@ export class Level1 extends ParentScene {
                     },
                 ),
             );
+            armCaseStudyStartButton(this);
         }
 
         // if(

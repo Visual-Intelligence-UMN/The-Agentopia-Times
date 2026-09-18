@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Draggable from 'react-draggable';
 
+import { renderCaseStudyContent } from '../game/caseStudy/highlight';
 import type { ReportChart, ReportFormat } from '../utils/finalReport';
 import OutputVerification from './OutputVerification';
 import { renderRichText } from '../utils/markdown';
@@ -24,7 +25,9 @@ const DraggableWindow: React.FC<DraggableWindowProps> = ({
     verificationId,
 }) => {
     const contentRef = useRef<HTMLDivElement>(null);
-    const renderedContext = renderRichText(context, format);
+    const renderedContext = renderCaseStudyContent(context, (text) =>
+        renderRichText(text, format),
+    );
 
     useEffect(() => {
         const content = contentRef.current;

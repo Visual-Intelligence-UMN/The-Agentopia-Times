@@ -2,6 +2,8 @@ import { Scene } from 'phaser';
 import { MainMenuButton } from '../components';
 import { TextInput } from '../components/TextInput';
 import { mainmenu_background, title } from '../assets/images';
+import { key } from '../constants';
+import { clearCaseStudyMode, enterCaseStudyMode } from '../caseStudy';
 
 export class MainMenu extends Scene {
   private messageText!: Phaser.GameObjects.Text;
@@ -53,12 +55,6 @@ export class MainMenu extends Scene {
     // Creating Input Boxes
     this.textInput = new TextInput(this, centerX, centerY + 60, 400, 50, 20, 0x444444, '#ffffff', '#007bff');
 
-    // Create error message text
-    this.errorText = this.add.text(centerX, centerY + 180, '', {
-      fontSize: '20px',
-      color: '#ff0000',
-    }).setOrigin(0.5).setDepth(1002).setVisible(false);
-
     // Create Button
     new MainMenuButton(
       this,
@@ -67,6 +63,26 @@ export class MainMenu extends Scene {
       'Start Game',
       () => { this.verifyApiKeyAndStartGame(); }
     );
+
+    new MainMenuButton(
+      this,
+      centerX, centerY + 205,
+      168, 36,
+      'Case Study',
+      () => { this.startCaseStudy(); },
+      { fill: 0xc45e20, hoverFill: 0x3cb371, fontSize: '18px' },
+    );
+
+    this.add.text(centerX, centerY + 238, 'No API key · preset scene', {
+      fontSize: '13px',
+      color: '#f4bd4a',
+    }).setOrigin(0.5);
+
+    // Create error message text
+    this.errorText = this.add.text(centerX, centerY + 268, '', {
+      fontSize: '20px',
+      color: '#ff0000',
+    }).setOrigin(0.5).setDepth(1002).setVisible(false);
   }
 
   update(time: number, delta: number) {
@@ -83,11 +99,21 @@ export class MainMenu extends Scene {
     this.titleImage.y = this.cameras.main.centerY - 140 + yOffset;
   }
 
+  private startCaseStudy() {
+    enterCaseStudyMode(this, 'incorrect');
+    if (this.cache.tilemap.exists(key.tilemap.level1_office)) {
+      this.scene.start('level1');
+      return;
+    }
+    this.scene.start(key.scene.boot);
+  }
+
   private async verifyApiKeyAndStartGame() {
     const apiKey = this.textInput.getText().trim();
     if (this.isValidApiKey(apiKey)) {
       const isValid = await this.verifyApiKey(apiKey);
       if (isValid) {
+        clearCaseStudyMode(this);
         localStorage.setItem('openai-api-key', apiKey);
         console.log('API Key is valid. Starting game...');
         window.location.reload();
