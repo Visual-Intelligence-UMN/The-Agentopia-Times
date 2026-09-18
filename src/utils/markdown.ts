@@ -40,7 +40,7 @@ function configureMarked() {
                 },
                 renderer(token: Tokens.Generic) {
                     const highlightToken = token as HighlightToken;
-                    return `<mark>${marked.parser(highlightToken.tokens)}</mark>`;
+                    return `<mark>${marked.parseInline(highlightToken.text)}</mark>`;
                 },
             },
         ],

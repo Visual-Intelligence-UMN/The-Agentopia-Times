@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 
 import { getStoredOpenAIKey } from '../../utils/openai';
+import { isCaseStudyMode, restoreCaseStudyMode } from '../caseStudy';
 import { getGameConfig } from '../config';
 import { key } from '../constants';
 
@@ -41,6 +42,13 @@ export class Boot extends Scene {
 
         // remove it during deployment
         // this.scene.start('level2');
+
+        // Case Study never requires an API key and must not change the
+        // key-verification path used by the normal game.
+        restoreCaseStudyMode(this);
+        if (isCaseStudyMode(this)) {
+            return;
+        }
 
         // Check if there is a stored API Key
         const storedApiKey = getStoredOpenAIKey();
@@ -83,6 +91,12 @@ export class Boot extends Scene {
         } catch {
             // console.error('Error verifying API key:', error);
             return false; // Returns false if the request fails
+        }
+    }
+
+    create() {
+        if (isCaseStudyMode(this)) {
+            this.scene.start(getGameConfig().defaults.startScene);
         }
     }
 }

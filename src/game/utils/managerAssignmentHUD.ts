@@ -14,6 +14,8 @@ const NAVY = 0x202957;
 
 export interface ManagerAssignmentController {
     getManager(): Agent | null;
+    assignManager(agent: Agent): void;
+    lock(): void;
     setStatus(status: string, color?: string): void;
     destroy(): void;
 }
@@ -295,6 +297,11 @@ export function createManagerAssignmentHUD(
 
     return {
         getManager: () => manager,
+        assignManager,
+        lock: () => {
+            sourceHat.disableInteractive();
+            setStatus(manager ? 'PRESET ASSIGNMENT' : 'PRESET');
+        },
         setStatus,
         destroy,
     };

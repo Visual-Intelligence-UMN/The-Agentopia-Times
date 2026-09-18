@@ -11,18 +11,26 @@ export class MainMenuButton {
     width: number,
     height: number,
     text: string,
-    callback: () => void
+    callback: () => void,
+    options?: {
+      fill?: number;
+      hoverFill?: number;
+      fontSize?: string;
+    },
   ) {
+    const fill = options?.fill ?? 0xff7f2a;
+    const hoverFill = options?.hoverFill ?? 0x00ff00;
+
     // Creating a Button Background
     this.buttonBackground = scene.add
-      .rectangle(x, y, width, height, 0xff7f2a)
+      .rectangle(x, y, width, height, fill)
       .setInteractive()
       .setOrigin(0.5, 0.5)
       .setDepth(1000);
 
     // Creating text on buttons
     this.buttonText = scene.add.text(x, y, text, {
-      fontSize: '24px',
+      fontSize: options?.fontSize ?? '24px',
       color: '#ffffff',
       align: 'center',
     })
@@ -34,11 +42,11 @@ export class MainMenuButton {
 
     // Mouse hover effect
     this.buttonBackground.on('pointerover', () => {
-      this.buttonBackground.setFillStyle(0x00ff00);  // Turns green on mouse hover
+      this.buttonBackground.setFillStyle(hoverFill);
     });
 
     this.buttonBackground.on('pointerout', () => {
-      this.buttonBackground.setFillStyle(0xff7f2a);  // Turns to blue on mouseover
+      this.buttonBackground.setFillStyle(fill);
     });
   }
 }

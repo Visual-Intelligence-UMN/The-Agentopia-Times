@@ -4,6 +4,10 @@ import Phaser from 'phaser';
 import { getGameConfig } from '../config';
 import { key } from '../constants';
 import { Agent } from '../sprites/Agent';
+import {
+    createCaseStudyVariantSelector,
+    isCaseStudyMode,
+} from '../caseStudy';
 import { shiftControlStackY } from '../utils/managerVisualLayout';
 import { recorder } from '../utils/recorder';
 
@@ -54,6 +58,8 @@ export function saveHistory(level: string, score: number) {
 
 // Create a button in the bottom right corner and click Show History
 export function createHistoryButton(scene: Phaser.Scene, level: string) {
+    if (isCaseStudyMode(scene)) return;
+
     const screenWidth = scene.cameras.main.width;
     const screenHeight = scene.cameras.main.height;
 
@@ -464,6 +470,10 @@ export function createSimpleInstructionHUD(scene: Phaser.Scene) {
 
 // DifficultySelector
 export function createDifficultySelector(scene: Phaser.Scene) {
+    if (isCaseStudyMode(scene)) {
+        return createCaseStudyVariantSelector(scene);
+    }
+
     const levels = getGameConfig().mechanics.levels;
 
     // Determine the initial index based on the current scene.key
