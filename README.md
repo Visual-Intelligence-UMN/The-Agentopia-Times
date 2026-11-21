@@ -6,8 +6,8 @@
 <h3 align="center">Understanding and Mitigating Hallucinations in Multi-Agent LLM Systems via Data Journalism Gameplay</h3>
 
 <p align="center">
-  <a href="https://vis-llm-game-93u2xlfu6-harryluumns-projects.vercel.app"><img src="https://img.shields.io/badge/🌐_Project_Page-Live_Demo-blue?style=for-the-badge" alt="Project Page"></a>
-  <a href="https://vis-llm-game-93u2xlfu6-harryluumns-projects.vercel.app"><img src="https://img.shields.io/badge/🎮_Demo-Try_Online-green?style=for-the-badge" alt="Demo"></a>
+  <!-- <a href="https://vis-llm-game-93u2xlfu6-harryluumns-projects.vercel.app"><img src="https://img.shields.io/badge/🌐_Project_Page-Live_Demo-blue?style=for-the-badge" alt="Project Page"></a> -->
+  <a href="https://visual-intelligence-umn.github.io/The-Agentopia-Times/"><img src="https://img.shields.io/badge/🎮_Demo-Try_Online-green?style=for-the-badge" alt="Demo"></a>
   <a href="https://www.youtube.com/watch?v=kv6urb4J95c"><img src="https://img.shields.io/badge/▶_Video-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white" alt="Video"></a>
   <a href="https://ieeexplore.ieee.org/document/11298897"><img src="https://img.shields.io/badge/IEEE-Paper-00629B?style=for-the-badge&logo=ieee&logoColor=white" alt="IEEE"></a>
   <a href="https://github.com/Visual-Intelligence-UMN/The-Agentopia-Times"><img src="https://img.shields.io/badge/💻_Code-GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Code"></a>
