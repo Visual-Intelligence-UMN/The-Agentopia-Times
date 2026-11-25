@@ -6,7 +6,6 @@
 <h3 align="center">Understanding and Mitigating Hallucinations in Multi-Agent LLM Systems via Data Journalism Gameplay</h3>
 
 <p align="center">
-  <!-- <a href="https://vis-llm-game-93u2xlfu6-harryluumns-projects.vercel.app"><img src="https://img.shields.io/badge/🌐_Project_Page-Live_Demo-blue?style=for-the-badge" alt="Project Page"></a> -->
   <a href="https://visual-intelligence-umn.github.io/The-Agentopia-Times/"><img src="https://img.shields.io/badge/🎮_Demo-Try_Online-green?style=for-the-badge" alt="Demo"></a>
   <a href="https://www.youtube.com/watch?v=kv6urb4J95c"><img src="https://img.shields.io/badge/▶_Video-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white" alt="Video"></a>
   <a href="https://ieeexplore.ieee.org/document/11298897"><img src="https://img.shields.io/badge/IEEE-Paper-00629B?style=for-the-badge&logo=ieee&logoColor=white" alt="IEEE"></a>
@@ -27,18 +26,18 @@
 
 ## 📑 Table of Contents
 
-- [📑 Table of Contents](#table-of-contents)
-- [📖 Overview](#overview)
-    - [✨ Key Features](#key-features)
-- [🎮 Demo: Gameplay Examples](#demo-gameplay-examples)
-- [👥 Team](#team)
-- [📄 Paper](#paper)
-- [🚀 Getting Started](#getting-started)
-    - [⚙️ Prerequisites](#prerequisites)
-    - [📦 Installation](#installation)
-    - [▶️ Run Locally](#run-locally)
-- [📝 Citation](#citation)
-- [📜 License](#license)
+- [📖 Overview](#-overview)
+    - [✨ Key Features](#-key-features)
+- [🎮 Demo: Gameplay Examples](#-demo-gameplay-examples)
+- [👥 Team](#-team)
+- [📄 Paper](#-paper)
+- [🚀 Getting Started](#-getting-started)
+    - [⚙️ Prerequisites](#️-prerequisites)
+    - [📦 Installation](#-installation)
+    - [▶️ Run Locally](#️-run-locally)
+    - [🔑 Configure an OpenAI API Key](#-configure-an-openai-api-key)
+- [📝 Citation](#-citation)
+- [📜 License](#-license)
 
 ---
 
@@ -66,16 +65,16 @@
   <tr>
     <td align="center">
       <b>Configuring MAS Strategies</b><br/>
-        <sub>
-          Users can assign different strategies (e.g., Sequential, Voting, or Single-Agent) to each newsroom room, determining how LLM agents collaborate to complete tasks and validate results.
-        </sub>
-      </td>
-      <td align="center">
-        <b>Viewing Reports</b><br/>
-        <sub>
-          Users can inspect intermediate and final reports, including outputs from each room and individual agents throughout the workflow.
-        </sub>
-      </td>
+      <sub>
+        Users can assign different strategies (e.g., Sequential, Voting, or Single-Agent) to each newsroom room, determining how LLM agents collaborate to complete tasks and validate results.
+      </sub>
+    </td>
+    <td align="center">
+      <b>Viewing Reports</b><br/>
+      <sub>
+        Users can inspect intermediate and final reports, including outputs from each room and individual agents throughout the workflow.
+      </sub>
+    </td>
   </tr>
 </table>
 
@@ -101,34 +100,48 @@ Yilin Lu, Shurui Du, Qianwen Wang
 
 ### ⚙️ Prerequisites
 
-- Node.js 18+
-- npm, yarn, pnpm, or bun
+- Git
+- Node.js 22 (the version in `.nvmrc`) and npm
 
 ### 📦 Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/Visual-Intelligence-UMN/The-Agentopia-Times.git
 cd The-Agentopia-Times
-
-# Install dependencies
-npm install
+npm ci
 ```
 
 ### ▶️ Run Locally
 
+From the repository root, start the Vite development server.
+
 ```bash
 npm run start
-# or: yarn start | pnpm start
 ```
 
-The app will open in your browser. Alternatively, open [http://localhost:5173](http://localhost:5173) (Vite default port).
+Vite opens the game in your browser. You can also open the URL printed in the terminal, usually [http://localhost:5173](http://localhost:5173).
+
+### 🔑 Configure an OpenAI API Key
+
+To play with live LLM agents, create a key on the [OpenAI API Keys page](https://platform.openai.com/api-keys), then set it in the game menu or in a local environment file.
+
+**Game menu.** Paste the key into the main menu and click **Start Game**. Once the key is verified, the browser saves it for later visits at the same local URL.
+
+**Local environment file.** Create `.env.local` in the repository root next to `package.json` and replace the placeholder with your key.
+
+```dotenv
+VITE_OPENAI_API_KEY=sk-your-key-here
+```
+
+If Vite is already running, stop it and run `npm run start` again, then reload the page. A key already saved in the browser takes precedence. To switch to the key in `.env.local`, delete the `openai-api-key` entry from the site's local storage and reload.
+
+Use this file for local development only. Vite includes `VITE_` variables used by the app in the browser bundle. Remove the key from `.env.local` before building for distribution. See the [Vite environment variable guide](https://vite.dev/guide/env-and-mode).
 
 ---
 
 ## 📝 Citation
 
-If you find The Agentopia Times useful, please cite our paper:
+If you find The Agentopia Times useful, please cite our paper.
 
 ```bibtex
 @inproceedings{agentopia2025,
