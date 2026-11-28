@@ -8,7 +8,6 @@
 <p align="center">
   <a href="https://visual-intelligence-umn.github.io/The-Agentopia-Times/"><img src="https://img.shields.io/badge/🎮_Demo-Try_Online-green?style=for-the-badge" alt="Demo"></a>
   <a href="https://www.youtube.com/watch?v=kv6urb4J95c"><img src="https://img.shields.io/badge/▶_Video-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white" alt="Video"></a>
-  <a href="https://ieeexplore.ieee.org/document/11298897"><img src="https://img.shields.io/badge/IEEE-Paper-00629B?style=for-the-badge&logo=ieee&logoColor=white" alt="IEEE"></a>
   <a href="https://github.com/Visual-Intelligence-UMN/The-Agentopia-Times"><img src="https://img.shields.io/badge/💻_Code-GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Code"></a>
 </p>
 
@@ -30,13 +29,11 @@
     - [✨ Key Features](#-key-features)
 - [🎮 Demo: Gameplay Examples](#-demo-gameplay-examples)
 - [👥 Team](#-team)
-- [📄 Paper](#-paper)
 - [🚀 Getting Started](#-getting-started)
     - [⚙️ Prerequisites](#️-prerequisites)
     - [📦 Installation](#-installation)
     - [▶️ Run Locally](#️-run-locally)
     - [🔑 Configure an OpenAI API Key](#-configure-an-openai-api-key)
-- [📝 Citation](#-citation)
 - [📜 License](#-license)
 
 ---
@@ -86,16 +83,6 @@ Yilin Lu, Shurui Du, Qianwen Wang
 
 ---
 
-## 📄 Paper
-
-📄 **[The Agentopia Times: Understanding and Mitigating Hallucinations in Multi-Agent LLM Systems via Data Journalism Gameplay](https://ieeexplore.ieee.org/document/11298897)**
-
-- [IEEE Xplore](https://ieeexplore.ieee.org/document/11298897) · _IEEE VIS 2025 (Short Paper Track)_
-
-> Large language models (LLMs) are increasingly used to support data analysis and visualization tasks but remain prone to hallucinations and produce incorrect results. Recent work suggests that multi-agent systems (MAS) can mitigate hallucinations by enabling internal validation and cross-verification among diverse agents. However, designing effective MAS architectures is challenging, particularly for newcomers, due to the wide range of coordination strategies and a lack of interactive, hands-on learning tools. To address this, we present The Agentopia Times, an educational game that teaches MAS design for hallucination mitigation through active experimentation. The Agentopia Times simulates a newsroom where LLM agents collaborate to create data-driven narratives, with users tasked to adjust communication protocols to manage hallucinated content. The game features a structured mapping between MAS concepts and familiar gameplay mechanics, providing immediate feedback on agent performance and hallucination outcomes. Through two use cases, we demonstrate how The Agentopia Times enables users to explore hallucination propagation and refine MAS strategies.
-
----
-
 ## 🚀 Getting Started
 
 ### ⚙️ Prerequisites
@@ -136,21 +123,6 @@ VITE_OPENAI_API_KEY=sk-your-key-here
 If Vite is already running, stop it and run `npm run start` again, then reload the page. A key already saved in the browser takes precedence. To switch to the key in `.env.local`, delete the `openai-api-key` entry from the site's local storage and reload.
 
 Use this file for local development only. Vite includes `VITE_` variables used by the app in the browser bundle. Remove the key from `.env.local` before building for distribution. See the [Vite environment variable guide](https://vite.dev/guide/env-and-mode).
-
----
-
-## 📝 Citation
-
-If you find The Agentopia Times useful, please cite our paper.
-
-```bibtex
-@inproceedings{agentopia2025,
-  title={The Agentopia Times: Understanding and Mitigating Hallucinations in Multi-Agent LLM Systems via Data Journalism Gameplay},
-  author={Lu, Yilin and Du, Shurui and Wang, Qianwen},
-  booktitle={IEEE VIS},
-  year={2025}
-}
-```
 
 ---
 
